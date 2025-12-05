@@ -8,6 +8,8 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import logging
+import httpx
+import uuid
 
 # Load environment variables first
 load_dotenv()
@@ -867,6 +869,50 @@ async def send_contact(request: ContactRequest, background_tasks: BackgroundTask
         "status": "success",
         "message": "Ваша заявка принята! Мы свяжемся с вами в ближайшее время."
     }
+
+# ======================== CHATKIT AI ========================
+
+CHATKIT_WORKFLOW_ID = "wf_69333a7229648190a17d2a1519d676ec078aefd89b4f760e"
+
+@app.post("/api/chatkit/session")
+async def create_chatkit_session():
+    """Create a ChatKit session for AI chat"""
+    openai_api_key = os.getenv('OPENAI_API_KEY')
+
+    if not openai_api_key:
+        raise HTTPException(status_code=500, detail="OpenAI API key not configured")
+
+    # Generate a unique user ID for anonymous users
+    user_id = str(uuid.uuid4())
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "https://api.openai.com/v1/chatkit/sessions",
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {openai_api_key}",
+                    "OpenAI-Beta": "chatkit_beta=v1"
+                },
+                json={
+                    "workflow": {"id": CHATKIT_WORKFLOW_ID},
+                    "user": user_id
+                },
+                timeout=30.0
+            )
+
+            if response.status_code != 200:
+                logger.error(f"ChatKit API error: {response.status_code} - {response.text}")
+                raise HTTPException(status_code=response.status_code, detail="Failed to create ChatKit session")
+
+            data = response.json()
+            return {"client_secret": data.get("client_secret")}
+
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="ChatKit API timeout")
+    except Exception as e:
+        logger.error(f"ChatKit error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create ChatKit session")
 
 if __name__ == "__main__":
     import uvicorn
