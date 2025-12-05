@@ -1,0 +1,30 @@
+[
+  {
+    "content": "Phase 1: Получить SMTP playbook через integration_playbook_expert_v2",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 1: Получить дизайн-гайдлайны через design_agent",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 2: Разработать Backend (API endpoints, SMTP, логика маркировки)",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 2: Разработать Frontend (все страницы, формы, компоненты)",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 2: Протестировать через testing_agent_v3",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 2: Исправить найденные баги",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 3: Финальная доставка",
+    "status": "pending"
+  }
+]
