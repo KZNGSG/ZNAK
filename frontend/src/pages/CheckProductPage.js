@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { RadioGroup, RadioGroupItem } from '../components/ui/radio-group';
 import { Label } from '../components/ui/label';
-import { CheckCircle, XCircle, ArrowLeft, ArrowRight, Package, FlaskConical, Check } from 'lucide-react';
+import { CheckCircle, XCircle, ArrowLeft, ArrowRight, Package, FlaskConical, Check, Search, X } from 'lucide-react';
 import { toast } from 'sonner';
 import Stepper from '../components/Stepper';
 
@@ -21,9 +21,77 @@ const CheckProductPage = () => {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const searchRef = useRef(null);
+
   useEffect(() => {
     fetchCategories();
   }, []);
+
+  // Close search dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setIsSearchFocused(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Search results - search across all categories by TN VED or product name
+  const searchResults = useMemo(() => {
+    if (!searchQuery.trim() || searchQuery.length < 2) return [];
+
+    const query = searchQuery.toLowerCase().trim();
+    const results = [];
+
+    categories.forEach((group) => {
+      group.subcategories?.forEach((sub) => {
+        const matchesTnved = sub.tnved?.toLowerCase().includes(query);
+        const matchesName = sub.name?.toLowerCase().includes(query);
+
+        if (matchesTnved || matchesName) {
+          results.push({
+            ...sub,
+            groupId: group.id,
+            groupName: group.name,
+            groupStatus: group.status,
+            matchType: matchesTnved ? 'tnved' : 'name'
+          });
+        }
+      });
+    });
+
+    // Sort: TN VED matches first, then by name
+    results.sort((a, b) => {
+      if (a.matchType === 'tnved' && b.matchType !== 'tnved') return -1;
+      if (a.matchType !== 'tnved' && b.matchType === 'tnved') return 1;
+      return a.name.localeCompare(b.name);
+    });
+
+    return results.slice(0, 10); // Limit to 10 results
+  }, [searchQuery, categories]);
+
+  const handleSearchSelect = (result) => {
+    // Find the group and select it
+    const group = categories.find(g => g.id === result.groupId);
+    if (group) {
+      setSelectedGroup(group);
+      setSelectedCategory(group.id);
+      setSelectedSubcategory(result.id);
+      setSearchQuery('');
+      setIsSearchFocused(false);
+      toast.success(`Выбран: ${result.name}`);
+    }
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
+    setIsSearchFocused(false);
+  };
 
   const fetchCategories = async () => {
     try {
@@ -118,7 +186,94 @@ const CheckProductPage = () => {
 
         {/* Step 1: Category Selection */}
         {step === 1 && !result && (
-          <div className="grid grid-cols-1 lg:grid-cols-[300px,1fr] gap-8" data-testid="step-1">
+          <div data-testid="step-1">
+            {/* Search Bar */}
+            <div className="mb-6" ref={searchRef}>
+              <div className="relative max-w-2xl">
+                <div className="relative">
+                  <Search
+                    size={20}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                  />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => setIsSearchFocused(true)}
+                    placeholder="Поиск по коду ТН ВЭД или названию товара..."
+                    className="w-full pl-12 pr-12 py-4 text-base rounded-2xl border-2 border-gray-200 bg-white shadow-sm focus:outline-none focus:border-[rgb(var(--brand-yellow-500))] focus:ring-4 focus:ring-[rgb(var(--brand-yellow-100))] transition-all placeholder:text-gray-400"
+                    data-testid="tnved-search-input"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={clearSearch}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      <X size={18} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Search Results Dropdown */}
+                {isSearchFocused && searchQuery.length >= 2 && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl border border-gray-200 shadow-xl z-50 max-h-[400px] overflow-y-auto">
+                    {searchResults.length > 0 ? (
+                      <div className="p-2">
+                        <div className="text-xs text-gray-500 px-3 py-2 font-medium">
+                          Найдено: {searchResults.length} товаров
+                        </div>
+                        {searchResults.map((item, index) => (
+                          <button
+                            key={`${item.groupId}-${item.id}-${index}`}
+                            onClick={() => handleSearchSelect(item)}
+                            className="w-full text-left px-3 py-3 rounded-xl hover:bg-[rgb(var(--brand-yellow-50))] transition-colors flex items-start gap-3 group"
+                          >
+                            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 group-hover:bg-[rgb(var(--brand-yellow-100))] flex items-center justify-center transition-colors">
+                              {item.groupStatus === 'experiment' ? (
+                                <FlaskConical size={18} className="text-amber-500" />
+                              ) : (
+                                <Package size={18} className="text-[rgb(var(--brand-yellow-600))]" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-gray-900 text-sm leading-tight line-clamp-2">
+                                {item.name}
+                              </div>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="font-mono text-xs font-bold text-[rgb(var(--brand-yellow-700))] bg-[rgb(var(--brand-yellow-100))] px-2 py-0.5 rounded">
+                                  {item.tnved}
+                                </span>
+                                <span className="text-xs text-gray-500 truncate">
+                                  {item.groupName}
+                                </span>
+                              </div>
+                            </div>
+                            <span className={`flex-shrink-0 text-[10px] px-2 py-1 rounded-full font-medium ${
+                              item.groupStatus === 'experiment'
+                                ? 'bg-amber-50 text-amber-700'
+                                : 'bg-emerald-50 text-emerald-700'
+                            }`}>
+                              {item.groupStatus === 'experiment' ? 'Эксп.' : 'Обяз.'}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-6 text-center">
+                        <Search size={32} className="mx-auto text-gray-300 mb-2" />
+                        <p className="text-gray-500 text-sm">Ничего не найдено</p>
+                        <p className="text-gray-400 text-xs mt-1">Попробуйте изменить запрос</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mt-2 ml-1">
+                Введите код ТН ВЭД (например: 6403) или название товара для быстрого поиска
+              </p>
+            </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-[300px,1fr] gap-8">
             {/* Left: Category Menu */}
             <aside className="space-y-2 max-h-[70vh] overflow-y-auto pr-2" data-testid="category-menu">
               {categories.map((group) => {
@@ -237,6 +392,7 @@ const CheckProductPage = () => {
                 ))}
               </div>
             </div>
+          </div>
           </div>
         )}
 
