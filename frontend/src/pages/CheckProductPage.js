@@ -187,36 +187,46 @@ const CheckProductPage = () => {
         {/* Step 1: Category Selection */}
         {step === 1 && !result && (
           <div data-testid="step-1">
-            {/* Search Bar */}
-            <div className="mb-6" ref={searchRef}>
-              <div className="relative max-w-2xl">
+            {/* Search Bar - Styled Container */}
+            <div className="mb-8 bg-gradient-to-r from-[rgb(var(--brand-yellow-50))] to-[rgb(var(--brand-yellow-100))] rounded-2xl p-6 border-2 border-[rgb(var(--brand-yellow-200))]" ref={searchRef}>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-xl bg-[rgb(var(--brand-yellow-200))]">
+                  <Search size={20} className="text-[rgb(var(--grey-800))]" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-[rgb(var(--grey-900))]">Быстрый поиск по ТН ВЭД</h3>
+                  <p className="text-xs text-[rgb(var(--grey-600))]">Введите код или название товара</p>
+                </div>
+              </div>
+
+              <div className="relative">
                 <div className="relative">
                   <Search
                     size={20}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-[rgb(var(--brand-yellow-600))]"
                   />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onFocus={() => setIsSearchFocused(true)}
-                    placeholder="Поиск по коду ТН ВЭД или названию товара..."
-                    className="w-full pl-12 pr-12 py-4 text-base rounded-2xl border-2 border-gray-200 bg-white shadow-sm focus:outline-none focus:border-[rgb(var(--brand-yellow-500))] focus:ring-4 focus:ring-[rgb(var(--brand-yellow-100))] transition-all placeholder:text-gray-400"
+                    placeholder="Например: 6403 или шубы..."
+                    className="w-full pl-12 pr-12 py-4 text-base rounded-xl border-2 border-[rgb(var(--brand-yellow-300))] bg-white shadow-md focus:outline-none focus:border-[rgb(var(--brand-yellow-500))] focus:ring-4 focus:ring-[rgb(var(--brand-yellow-200))] transition-all placeholder:text-gray-400 font-medium"
                     data-testid="tnved-search-input"
                   />
                   {searchQuery && (
                     <button
                       onClick={clearSearch}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors"
                     >
-                      <X size={18} />
+                      <X size={16} />
                     </button>
                   )}
                 </div>
 
                 {/* Search Results Dropdown */}
                 {isSearchFocused && searchQuery.length >= 2 && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl border border-gray-200 shadow-xl z-50 max-h-[400px] overflow-y-auto">
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl border-2 border-[rgb(var(--brand-yellow-300))] shadow-2xl z-50 max-h-[400px] overflow-y-auto">
                     {searchResults.length > 0 ? (
                       <div className="p-2">
                         <div className="text-xs text-gray-500 px-3 py-2 font-medium">
@@ -268,9 +278,6 @@ const CheckProductPage = () => {
                   </div>
                 )}
               </div>
-              <p className="text-xs text-gray-500 mt-2 ml-1">
-                Введите код ТН ВЭД (например: 6403) или название товара для быстрого поиска
-              </p>
             </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-[300px,1fr] gap-8">
