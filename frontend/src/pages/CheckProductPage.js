@@ -7,7 +7,7 @@ import { CheckCircle, XCircle, ArrowLeft, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 import Stepper from '../components/Stepper';
 
-const API_URL = import.meta.env.VITE_REACT_APP_BACKEND_URL || process.env.REACT_APP_BACKEND_URL;
+const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const CheckProductPage = () => {
   const navigate = useNavigate();
