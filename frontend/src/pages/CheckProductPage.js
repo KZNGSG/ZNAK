@@ -117,13 +117,16 @@ const CheckProductPage = () => {
                 <button
                   key={group.id}
                   onClick={() => handleCategorySelect(group)}
-                  className={`w-full text-left rounded-[12px] px-4 py-3 transition-colors text-sm font-medium ${
+                  className={`w-full text-left rounded-xl px-5 py-4 transition-all text-sm font-bold ${
                     selectedCategory === group.id
-                      ? 'bg-primary text-white'
-                      : 'bg-white hover:bg-primary/5 text-gray-700 border border-gray-200'
+                      ? 'bg-gradient-to-r from-[rgb(var(--brand-yellow-500))] to-[rgb(var(--brand-yellow-600))] text-[rgb(var(--black))] shadow-lg scale-105'
+                      : 'bg-white hover:bg-[rgb(var(--brand-yellow-50))] text-[rgb(var(--grey-700))] border-2 border-[rgb(var(--grey-300))] hover:border-[rgb(var(--brand-yellow-400))] shadow-sm hover:shadow-md'
                   }`}
                   data-testid="category-menu-item"
                 >
+                  {selectedCategory === group.id && (
+                    <span className="inline-block mr-2">✓</span>
+                  )}
                   {group.name}
                 </button>
               ))}
