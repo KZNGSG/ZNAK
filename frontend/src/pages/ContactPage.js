@@ -144,23 +144,26 @@ const ContactPage = () => {
                 <Label htmlFor="phone" className="text-base font-semibold text-primary mb-2 block">
                   Телефон <span className="text-rose-500">*</span>
                 </Label>
-                <InputMask
-                  mask="+7 (999) 999-99-99"
+                <Input
+                  id="phone"
+                  type="tel"
                   value={formData.phone}
-                  onChange={(e) => handleChange('phone', e.target.value)}
-                >
-                  {(inputProps) => (
-                    <Input
-                      {...inputProps}
-                      id="phone"
-                      type="tel"
-                      placeholder="+7 (___) ___-__-__"
-                      className="rounded-[12px]"
-                      data-testid="phone-input"
-                      required
-                    />
-                  )}
-                </InputMask>
+                  onChange={(e) => {
+                    let value = e.target.value.replace(/\D/g, '');
+                    if (value.length > 11) value = value.slice(0, 11);
+                    if (value.length > 0 && value[0] !== '7') value = '7' + value;
+                    let formatted = '+7';
+                    if (value.length > 1) formatted += ' (' + value.slice(1, 4);
+                    if (value.length >= 5) formatted += ') ' + value.slice(4, 7);
+                    if (value.length >= 8) formatted += '-' + value.slice(7, 9);
+                    if (value.length >= 10) formatted += '-' + value.slice(9, 11);
+                    handleChange('phone', formatted);
+                  }}
+                  placeholder="+7 (___) ___-__-__"
+                  className="rounded-[12px]"
+                  data-testid="phone-input"
+                  required
+                />
               </div>
 
               {/* Email */}
