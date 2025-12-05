@@ -61,26 +61,26 @@ const HomePage = () => {
     <div className="fade-in">
       {/* Hero Section - Enhanced */}
       <section className="relative py-20 sm:py-32 noise-bg overflow-hidden" data-testid="hero-section">
-        {/* Enhanced decorative elements */}
+        {/* Enhanced decorative elements - Yellow glow */}
         <motion.div
           initial={{ opacity: 0 }}
-          animate={{ opacity: 0.6 }}
+          animate={{ opacity: 0.4 }}
           transition={{ duration: 1 }}
-          className="absolute -top-20 -right-20 w-[500px] h-[500px] rounded-full"
+          className="absolute -top-20 -right-20 w-[600px] h-[600px] rounded-full"
           style={{
-            background: 'radial-gradient(circle, rgba(30,58,138,0.15) 0%, rgba(30,58,138,0) 70%)',
-            filter: 'blur(60px)'
+            background: 'radial-gradient(circle, rgba(255,218,7,0.2) 0%, rgba(255,218,7,0) 70%)',
+            filter: 'blur(80px)'
           }}
           aria-hidden="true"
         />
         <motion.div
           initial={{ opacity: 0 }}
-          animate={{ opacity: 0.5 }}
+          animate={{ opacity: 0.35 }}
           transition={{ duration: 1, delay: 0.2 }}
-          className="absolute bottom-0 -left-20 w-[600px] h-[600px] rounded-full"
+          className="absolute bottom-0 -left-20 w-[700px] h-[700px] rounded-full"
           style={{
-            background: 'radial-gradient(circle, rgba(5,150,105,0.12) 0%, rgba(5,150,105,0) 70%)',
-            filter: 'blur(80px)'
+            background: 'radial-gradient(circle, rgba(245,195,0,0.15) 0%, rgba(245,195,0,0) 70%)',
+            filter: 'blur(90px)'
           }}
           aria-hidden="true"
         />
