@@ -200,43 +200,62 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Actions Section */}
-      <section className="py-12 bg-gradient-to-b from-white to-slate-50" data-testid="actions-section">
+      {/* Actions Section - Enhanced */}
+      <section className="py-20 section-blue-tint" data-testid="actions-section">
         <div className="mx-auto max-w-[1200px] px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl sm:text-3xl font-semibold text-primary text-center mb-8">
-            Что вы хотите сделать?
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl font-bold text-[rgb(var(--text-strong))] mb-4">
+              Что вы хотите сделать?
+            </h2>
+            <p className="text-lg text-[rgb(var(--text-muted))] max-w-2xl mx-auto">
+              Выберите нужную услугу и получите результат за несколько минут
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {actions.map((action, index) => {
               const Icon = action.icon;
+              const isComingSoon = action.disabled;
               return (
                 <motion.div
                   key={index}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.3 + index * 0.1 }}
-                  onClick={() => !action.disabled && navigate(action.path)}
-                  className={`bg-white rounded-[16px] p-6 border border-gray-200 card-hover ${
-                    action.disabled ? 'opacity-60' : 'cursor-pointer'
+                  transition={{ duration: 0.6, delay: 0.4 + index * 0.1 }}
+                  onClick={() => !isComingSoon && navigate(action.path)}
+                  className={`group relative bg-white rounded-2xl p-6 border-2 border-[rgb(var(--border-1))] overflow-hidden ${
+                    isComingSoon ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer card-hover'
                   }`}
                   data-testid="action-card"
+                  style={{ boxShadow: 'var(--shadow-layer)' }}
                 >
-                  <div className="flex flex-col h-full">
-                    <div className="p-3 rounded-xl bg-accent/10 w-fit">
-                      <Icon className="text-accent" size={28} strokeWidth={1.75} />
+                  {/* Gradient overlay on hover */}
+                  {!isComingSoon && (
+                    <div className="absolute inset-0 bg-gradient-to-br from-[rgb(var(--brand-emerald-50))] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  )}
+                  
+                  <div className="relative flex flex-col h-full">
+                    <div className="icon-wrapper icon-wrapper-emerald p-4 rounded-2xl shadow-md mb-4 group-hover:scale-110 transition-transform duration-300">
+                      <Icon size={32} strokeWidth={2} />
                     </div>
-                    <h3 className="text-lg font-semibold text-primary mt-4 mb-2 flex items-center gap-2">
+                    
+                    <h3 className="text-lg font-bold text-[rgb(var(--text-strong))] mb-2 flex items-center gap-2 group-hover:text-[rgb(var(--brand-emerald-700))] transition-colors">
                       {action.title}
                       {action.badge && (
-                        <span className="text-xs font-medium px-2 py-1 rounded-full bg-gray-100 text-gray-500">
+                        <span className="badge badge-blue text-xs">
                           {action.badge}
                         </span>
                       )}
                     </h3>
-                    <p className="text-sm text-gray-600 flex-1">{action.description}</p>
-                    {!action.disabled && (
-                      <div className="mt-4">
-                        <span className="text-accent text-sm font-medium">Перейти →</span>
+                    
+                    <p className="text-sm text-[rgb(var(--text-muted))] flex-1 leading-relaxed mb-4">
+                      {action.description}
+                    </p>
+                    
+                    {!isComingSoon && (
+                      <div className="flex items-center gap-2 text-[rgb(var(--brand-emerald-600))] font-semibold text-sm group-hover:gap-3 transition-all">
+                        <span>Перейти</span>
+                        <span className="text-lg">→</span>
                       </div>
                     )}
                   </div>
