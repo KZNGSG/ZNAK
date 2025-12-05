@@ -1,38 +1,26 @@
 [
   {
-    "content": "Phase 1: Получить SMTP playbook через integration_playbook_expert_v2",
+    "content": "Улучшить визуал - пригласить design_agent",
     "status": "completed"
   },
   {
-    "content": "Phase 1: Получить дизайн-гайдлайны через design_agent",
+    "content": "Обновить App.css с новой цветовой палитрой и тенями",
     "status": "completed"
   },
   {
-    "content": "Phase 2: Разработать Backend (API endpoints, SMTP, логика маркировки)",
+    "content": "Улучшить HomePage - Hero, Benefits, Actions секции",
     "status": "completed"
   },
   {
-    "content": "Phase 2: Разработать Frontend (все страницы, формы, компоненты)",
+    "content": "Улучшить Header - более контрастная навигация",
     "status": "completed"
   },
   {
-    "content": "Phase 2: Протестировать через testing_agent_v3",
+    "content": "Улучшить Footer - email в виде кнопки",
     "status": "completed"
   },
   {
-    "content": "Phase 2: Исправить CRITICAL: Contact page - react-input-mask несовместим с React 18",
-    "status": "completed"
-  },
-  {
-    "content": "Phase 2: Исправить CRITICAL: CheckProduct Step 3 - результат не отображается",
-    "status": "completed"
-  },
-  {
-    "content": "Phase 2: Повторное тестирование после исправлений",
-    "status": "completed"
-  },
-  {
-    "content": "Phase 2: Все тесты пройдены успешно - 100% frontend, 100% backend",
+    "content": "Проверить результат - скриншоты показывают отличный визуал",
     "status": "completed"
   }
 ]
