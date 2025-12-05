@@ -870,38 +870,10 @@ async def send_contact(request: ContactRequest, background_tasks: BackgroundTask
         "message": "Ваша заявка принята! Мы свяжемся с вами в ближайшее время."
     }
 
-# ======================== AI CHAT ========================
+# ======================== AI CHAT (OpenAI ChatKit) ========================
 
-SYSTEM_PROMPT = """Ты — эксперт-консультант Алекс по маркировке товаров в системе «Честный ЗНАК» из сервиса ПроМаркируй (promarkirui.ru).
-Ты работаешь в интересах компании — это твоя главная задача. Не просто консультировать, а предлагать решить вопрос после того как клиент запутается или будет много вопросов, сказать что наши специалисты могут оперативно помочь.
-
-СТРОГИЙ ЗАПРЕТ: Отвечай ТОЛЬКО на вопросы о маркировке товаров. На любые другие темы отвечай: «Я консультант по маркировке. По этому вопросу помочь не смогу. Есть вопросы о маркировке — с удовольствием отвечу!»
-
-СТИЛЬ ОБЩЕНИЯ:
-- Короткие сообщения: 2-4 предложения
-- Дружелюбно, простыми словами, без канцелярита
-- Всегда задавай уточняющий вопрос перед ответом
-
-ВОРОНКА ДИАЛОГА:
-1. Уточни ситуацию: что продаёт, где (WB/Ozon/розница), производитель или закупает
-2. Дай конкретный ответ по его случаю
-3. Предложи помощь и дай ссылку promarkirui.ru/check
-
-ЗАПРЕЩЕНО:
-- Любые ссылки кроме promarkirui.ru/check
-- Называть цены на услуги (говори: «заполните форму — рассчитаем»)
-- Отправлять на сайт честныйзнак.рф или другие ресурсы
-- Говорить «не знаю» (говори: «оставьте заявку — эксперт разберётся»)
-- Длинные ответы-простыни
-
-КЛЮЧЕВЫЕ ФАКТЫ:
-- Моторные масла: обязательная маркировка с 1 сентября 2025, запрет продаж без маркировки с 1 декабря 2025
-- Одежда, обувь, молочка, вода, БАДы, парфюмерия — уже маркируются
-- Штрафы: ИП 5-10 тыс, ООО 50-300 тыс + конфискация
-
-ФРАЗЫ ДЛЯ ЗАКРЫТИЯ:
-- «Хотите, настроим под ключ? Заполните форму на promarkirui.ru/check»
-- «Оставьте заявку — подготовим решение под вашу ситуацию»"""
+# ChatKit workflow ID with configured prompt and vector database
+CHATKIT_WORKFLOW_ID = os.getenv('CHATKIT_WORKFLOW_ID', 'wf_69333a7229648190a17d2a1519d676ec078aefd89b4f760e')
 
 class ChatMessage(BaseModel):
     role: str
@@ -910,19 +882,109 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     messages: List[ChatMessage]
 
-@app.post("/api/ai/chat")
-async def ai_chat(request: ChatRequest):
-    """AI chat endpoint using OpenAI Chat Completions"""
+class ChatKitSessionRequest(BaseModel):
+    user_id: Optional[str] = None
+
+@app.post("/api/chatkit/session")
+async def create_chatkit_session(request: ChatKitSessionRequest = None):
+    """Create a new ChatKit session and return client_secret for frontend"""
     openai_api_key = os.getenv('OPENAI_API_KEY')
 
     if not openai_api_key:
         raise HTTPException(status_code=500, detail="OpenAI API key not configured")
 
     try:
-        # Prepare messages for OpenAI
-        messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+        # Generate a unique user ID if not provided
+        user_id = request.user_id if request and request.user_id else str(uuid.uuid4())
 
-        # Add conversation history (last 10 messages to save tokens)
+        async with httpx.AsyncClient() as client:
+            # Create ChatKit session using the official API
+            response = await client.post(
+                "https://api.openai.com/v1/chatkit/sessions",
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {openai_api_key}",
+                    "OpenAI-Beta": "chatkit_beta=v1"
+                },
+                json={
+                    "workflow": {"id": CHATKIT_WORKFLOW_ID},
+                    "user": user_id
+                },
+                timeout=30.0
+            )
+
+            if response.status_code != 200:
+                logger.error(f"ChatKit session error: {response.status_code} - {response.text}")
+                raise HTTPException(status_code=500, detail="Failed to create ChatKit session")
+
+            data = response.json()
+            client_secret = data.get("client_secret")
+
+            return {
+                "client_secret": client_secret,
+                "workflow_id": CHATKIT_WORKFLOW_ID,
+                "user_id": user_id
+            }
+
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="Service timeout")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"ChatKit session error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create ChatKit session")
+
+@app.post("/api/chatkit/refresh")
+async def refresh_chatkit_session(current_client_secret: str = None):
+    """Refresh an existing ChatKit session"""
+    openai_api_key = os.getenv('OPENAI_API_KEY')
+
+    if not openai_api_key:
+        raise HTTPException(status_code=500, detail="OpenAI API key not configured")
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "https://api.openai.com/v1/chatkit/sessions/refresh",
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {openai_api_key}",
+                    "OpenAI-Beta": "chatkit_beta=v1"
+                },
+                json={
+                    "client_secret": current_client_secret
+                },
+                timeout=30.0
+            )
+
+            if response.status_code != 200:
+                logger.error(f"ChatKit refresh error: {response.status_code} - {response.text}")
+                # If refresh fails, create a new session
+                return await create_chatkit_session()
+
+            data = response.json()
+            return {"client_secret": data.get("client_secret")}
+
+    except Exception as e:
+        logger.error(f"ChatKit refresh error: {str(e)}")
+        return await create_chatkit_session()
+
+# Keep the fallback chat endpoint for non-ChatKit usage
+@app.post("/api/ai/chat")
+async def ai_chat(request: ChatRequest):
+    """Fallback AI chat endpoint using OpenAI Chat Completions API"""
+    openai_api_key = os.getenv('OPENAI_API_KEY')
+
+    if not openai_api_key:
+        raise HTTPException(status_code=500, detail="OpenAI API key not configured")
+
+    FALLBACK_PROMPT = """Ты — эксперт-консультант Алекс по маркировке товаров в системе «Честный ЗНАК» из сервиса ПроМаркируй.
+Отвечай коротко (2-4 предложения), дружелюбно. Помогай с вопросами о маркировке товаров.
+На любые нетематические вопросы отвечай: «Я консультант по маркировке. По этому вопросу помочь не смогу.»
+Предлагай помощь на promarkirui.ru/check"""
+
+    try:
+        messages = [{"role": "system", "content": FALLBACK_PROMPT}]
         for msg in request.messages[-10:]:
             messages.append({"role": msg.role, "content": msg.content})
 
@@ -943,16 +1005,16 @@ async def ai_chat(request: ChatRequest):
             )
 
             if response.status_code != 200:
-                logger.error(f"OpenAI API error: {response.status_code} - {response.text}")
+                logger.error(f"OpenAI error: {response.status_code} - {response.text}")
                 raise HTTPException(status_code=500, detail="AI service error")
 
             data = response.json()
-            ai_response = data["choices"][0]["message"]["content"]
-
-            return {"response": ai_response}
+            return {"response": data["choices"][0]["message"]["content"]}
 
     except httpx.TimeoutException:
         raise HTTPException(status_code=504, detail="AI service timeout")
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"AI chat error: {str(e)}")
         raise HTTPException(status_code=500, detail="AI service error")

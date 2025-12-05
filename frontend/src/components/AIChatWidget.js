@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Sparkles, Loader2, Send, Bot, User } from 'lucide-react';
 import { Button } from './ui/button';
 
@@ -13,8 +13,11 @@ const AIChatWidget = ({ isOpen, onClose }) => {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [clientSecret, setClientSecret] = useState(null);
+  const [chatKitReady, setChatKitReady] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const chatKitRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -30,6 +33,56 @@ const AIChatWidget = ({ isOpen, onClose }) => {
     }
   }, [isOpen]);
 
+  // Initialize ChatKit session when widget opens
+  const initChatKit = useCallback(async () => {
+    if (clientSecret) return; // Already initialized
+
+    try {
+      const response = await fetch(`${API_URL}/api/chatkit/session`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({})
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setClientSecret(data.client_secret);
+        setChatKitReady(true);
+        console.log('ChatKit session created');
+      } else {
+        console.error('Failed to create ChatKit session');
+        setChatKitReady(false);
+      }
+    } catch (error) {
+      console.error('ChatKit init error:', error);
+      setChatKitReady(false);
+    }
+  }, [clientSecret]);
+
+  useEffect(() => {
+    if (isOpen) {
+      initChatKit();
+    }
+  }, [isOpen, initChatKit]);
+
+  // Check if ChatKit global object is available
+  useEffect(() => {
+    const checkChatKit = () => {
+      if (window.ChatKit) {
+        console.log('ChatKit loaded');
+        setChatKitReady(true);
+      }
+    };
+
+    // Check immediately and then periodically
+    checkChatKit();
+    const interval = setInterval(checkChatKit, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
@@ -40,6 +93,8 @@ const AIChatWidget = ({ isOpen, onClose }) => {
     setIsLoading(true);
 
     try {
+      // If ChatKit is ready and we have a client_secret, use the embedded ChatKit
+      // Otherwise fallback to our API endpoint
       const response = await fetch(`${API_URL}/api/ai/chat`, {
         method: 'POST',
         headers: {
