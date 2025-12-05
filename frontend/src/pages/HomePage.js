@@ -115,13 +115,9 @@ const HomePage = () => {
                 >
                   Проверить товар →
                 </Button>
-                <Button
-                  onClick={() => navigate('/contact')}
-                  className="rounded-2xl bg-white backdrop-blur-sm text-[rgb(var(--black))] px-8 py-4 text-base font-bold h-auto border-2 border-[rgb(var(--grey-300))] hover:bg-[rgb(var(--grey-100))] hover:border-[rgb(var(--grey-400))] shadow-md hover:shadow-lg"
-                  data-testid="hero-secondary-cta"
-                >
-                  Оставить заявку
-                </Button>
+                <p className="text-sm text-[rgb(var(--grey-600))] font-medium mt-3">
+                  Без регистрации • Занимает 2 минуты
+                </p>
               </div>
             </motion.div>
 
