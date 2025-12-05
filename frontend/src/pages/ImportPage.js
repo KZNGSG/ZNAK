@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from '../components/ui/select';
 
-const API_URL = import.meta.env.VITE_REACT_APP_BACKEND_URL || process.env.REACT_APP_BACKEND_URL;
+const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const ImportPage = () => {
   const navigate = useNavigate();
