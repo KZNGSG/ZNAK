@@ -203,19 +203,19 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Actions Section - Enhanced */}
-      <section className="py-20 section-blue-tint" data-testid="actions-section">
+      {/* Actions Section - Yellow Theme */}
+      <section className="py-20 section-yellow-tint" data-testid="actions-section">
         <div className="mx-auto max-w-[1200px] px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold text-[rgb(var(--text-strong))] mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold text-[rgb(var(--black))] mb-4">
               Что вы хотите сделать?
             </h2>
-            <p className="text-lg text-[rgb(var(--text-muted))] max-w-2xl mx-auto">
+            <p className="text-lg text-[rgb(var(--grey-700))] max-w-2xl mx-auto font-medium">
               Выберите нужную услугу и получите результат за несколько минут
             </p>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {actions.map((action, index) => {
               const Icon = action.icon;
               const isComingSoon = action.disabled;
@@ -226,37 +226,37 @@ const HomePage = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: 0.4 + index * 0.1 }}
                   onClick={() => !isComingSoon && navigate(action.path)}
-                  className={`group relative bg-white rounded-2xl p-6 border-2 border-[rgb(var(--border-1))] overflow-hidden ${
-                    isComingSoon ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer card-hover'
+                  className={`group relative bg-white rounded-2xl p-7 border-2 border-[rgb(var(--grey-300))] overflow-hidden ${
+                    isComingSoon ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer card-hover'
                   }`}
                   data-testid="action-card"
                   style={{ boxShadow: 'var(--shadow-layer)' }}
                 >
-                  {/* Gradient overlay on hover */}
+                  {/* Yellow gradient overlay on hover */}
                   {!isComingSoon && (
-                    <div className="absolute inset-0 bg-gradient-to-br from-[rgb(var(--brand-emerald-50))] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-[rgb(var(--brand-yellow-100))] via-[rgb(var(--brand-yellow-50))] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-400" />
                   )}
                   
                   <div className="relative flex flex-col h-full">
-                    <div className="icon-wrapper icon-wrapper-emerald p-4 rounded-2xl shadow-md mb-4 group-hover:scale-110 transition-transform duration-300">
-                      <Icon size={32} strokeWidth={2} />
+                    <div className="icon-wrapper icon-wrapper-yellow p-5 rounded-2xl shadow-lg mb-5 group-hover:scale-110 group-hover:shadow-xl transition-all duration-300">
+                      <Icon size={36} strokeWidth={2.5} />
                     </div>
                     
-                    <h3 className="text-lg font-bold text-[rgb(var(--text-strong))] mb-2 flex items-center gap-2 group-hover:text-[rgb(var(--brand-emerald-700))] transition-colors">
+                    <h3 className="text-lg font-bold text-[rgb(var(--black))] mb-3 flex items-center gap-2 group-hover:text-[rgb(var(--grey-900))] transition-colors">
                       {action.title}
                       {action.badge && (
-                        <span className="badge badge-blue text-xs">
+                        <span className="badge badge-grey text-xs">
                           {action.badge}
                         </span>
                       )}
                     </h3>
                     
-                    <p className="text-sm text-[rgb(var(--text-muted))] flex-1 leading-relaxed mb-4">
+                    <p className="text-sm text-[rgb(var(--grey-600))] flex-1 leading-relaxed mb-4 font-medium">
                       {action.description}
                     </p>
                     
                     {!isComingSoon && (
-                      <div className="flex items-center gap-2 text-[rgb(var(--brand-emerald-600))] font-semibold text-sm group-hover:gap-3 transition-all">
+                      <div className="flex items-center gap-2 text-[rgb(var(--brand-yellow-600))] font-bold text-sm group-hover:gap-3 transition-all">
                         <span>Перейти</span>
                         <span className="text-lg">→</span>
                       </div>
