@@ -188,7 +188,7 @@ const EquipmentPage = () => {
                     data-testid="equipment-scanner"
                   />
                   <Label htmlFor="scanner" className="cursor-pointer flex-1 flex items-center gap-3">
-                    <Scanner size={20} className="text-primary" />
+                    <ScanLine size={20} className="text-primary" />
                     <span>Сканер штрих-кодов</span>
                   </Label>
                 </div>
