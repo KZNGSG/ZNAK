@@ -55,9 +55,9 @@ const CheckProductPage = () => {
       toast.error('Заполните все поля');
       return;
     }
-    if (step < 3) {
-      setStep(step + 1);
-    } else {
+    if (step === 1) {
+      setStep(2);
+    } else if (step === 2) {
       handleSubmit();
     }
   };
