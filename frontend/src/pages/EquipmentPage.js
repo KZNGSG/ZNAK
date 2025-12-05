@@ -4,7 +4,7 @@ import { Button } from '../components/ui/button';
 import { RadioGroup, RadioGroupItem } from '../components/ui/radio-group';
 import { Checkbox } from '../components/ui/checkbox';
 import { Label } from '../components/ui/label';
-import { ArrowLeft, ArrowRight, Printer, Scanner, Smartphone, Monitor } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Printer, ScanLine, Smartphone, Monitor } from 'lucide-react';
 import { toast } from 'sonner';
 import Stepper from '../components/Stepper';
 
