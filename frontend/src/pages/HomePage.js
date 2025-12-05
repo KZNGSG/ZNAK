@@ -54,11 +54,12 @@ const HomePage = () => {
     },
     {
       icon: MessageSquare,
-      title: 'Консультация',
-      description: 'Задайте вопрос эксперту по маркировке',
-      path: '/contact',
+      title: 'Чат с AI-экспертом',
+      description: 'Получите ответы от AI-ассистента по маркировке 24/7',
+      path: '/consultation',
       disabled: false,
-      badge: 'Скоро'
+      badge: 'AI',
+      special: true
     }
   ];
 
