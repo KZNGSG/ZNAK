@@ -9,6 +9,7 @@ import CheckProductPage from './pages/CheckProductPage';
 import ImportPage from './pages/ImportPage';
 import EquipmentPage from './pages/EquipmentPage';
 import ContactPage from './pages/ContactPage';
+import ConsultationPage from './pages/ConsultationPage';
 
 function App() {
   return (
