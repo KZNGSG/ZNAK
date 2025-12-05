@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
-import { CheckCircle, Zap, Shield, Search, Plane, Wrench, MessageSquare } from 'lucide-react';
+import { CheckCircle, Zap, Shield, Package, Search, Plane, Wrench, MessageSquare } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const HomePage = () => {
