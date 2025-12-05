@@ -9,22 +9,22 @@ const HomePage = () => {
 
   const benefits = [
     {
-      icon: CheckCircle,
+      icon: BadgeCheck,
       title: 'Понятно',
       description: 'Объясняем человеческим языком'
     },
     {
-      icon: Zap,
+      icon: Rocket,
       title: 'Быстро',
       description: 'Ответ за 2 минуты вместо часов'
     },
     {
-      icon: Shield,
+      icon: ShieldCheck,
       title: 'Надёжно',
       description: 'Актуальные данные из официальных источников'
     },
     {
-      icon: Package,
+      icon: Layers,
       title: 'Всё включено',
       description: 'Проверка, оборудование, импорт — всё в одном месте'
     }
