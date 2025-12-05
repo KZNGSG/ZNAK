@@ -109,9 +109,16 @@ const CheckProductPage = () => {
   };
 
   const handleCategorySelect = (group) => {
-    setSelectedGroup(group);
-    setSelectedCategory(group.id);
-    setSelectedSubcategory('');
+    // Toggle: если нажали на ту же категорию - закрыть её
+    if (selectedCategory === group.id) {
+      setSelectedGroup(null);
+      setSelectedCategory('');
+      setSelectedSubcategory('');
+    } else {
+      setSelectedGroup(group);
+      setSelectedCategory(group.id);
+      setSelectedSubcategory('');
+    }
   };
 
   const handleNext = () => {
