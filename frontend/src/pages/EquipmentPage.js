@@ -8,7 +8,7 @@ import { ArrowLeft, ArrowRight, Printer, ScanLine, Smartphone, Monitor } from 'l
 import { toast } from 'sonner';
 import Stepper from '../components/Stepper';
 
-const API_URL = import.meta.env.VITE_REACT_APP_BACKEND_URL || process.env.REACT_APP_BACKEND_URL;
+const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const EquipmentPage = () => {
   const navigate = useNavigate();
