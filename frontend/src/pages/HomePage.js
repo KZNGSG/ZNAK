@@ -161,28 +161,36 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Benefits Section */}
-      <section className="py-12 bg-white" data-testid="benefits-section">
+      {/* Benefits Section - Enhanced */}
+      <section className="py-16 bg-white" data-testid="benefits-section">
         <div className="mx-auto max-w-[1200px] px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {benefits.map((benefit, index) => {
               const Icon = benefit.icon;
               return (
                 <motion.div
                   key={index}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  className="bg-card rounded-[16px] p-6 border border-gray-200 card-hover"
+                  transition={{ duration: 0.6, delay: index * 0.15 }}
+                  className="group relative bg-white rounded-2xl p-6 border-2 border-[rgb(var(--border-1))] card-hover overflow-hidden"
                   data-testid="info-card"
+                  style={{ boxShadow: 'var(--shadow-layer)' }}
                 >
-                  <div className="flex items-start gap-4">
-                    <div className="p-3 rounded-xl bg-primary/10">
-                      <Icon className="text-primary" size={24} strokeWidth={1.75} />
+                  {/* Gradient overlay on hover */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-[rgb(var(--brand-blue-50))] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  
+                  <div className="relative flex items-start gap-4">
+                    <div className="icon-wrapper icon-wrapper-blue p-4 rounded-2xl shadow-md">
+                      <Icon size={28} strokeWidth={2} />
                     </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-primary mb-1">{benefit.title}</h3>
-                      <p className="text-sm text-gray-600">{benefit.description}</p>
+                    <div className="flex-1">
+                      <h3 className="text-xl font-bold text-[rgb(var(--text-strong))] mb-2 group-hover:text-[rgb(var(--brand-blue-700))] transition-colors">
+                        {benefit.title}
+                      </h3>
+                      <p className="text-base text-[rgb(var(--text-muted))] leading-relaxed">
+                        {benefit.description}
+                      </p>
                     </div>
                   </div>
                 </motion.div>
