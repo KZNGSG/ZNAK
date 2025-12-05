@@ -32,28 +32,28 @@ const HomePage = () => {
 
   const actions = [
     {
-      icon: Search,
+      icon: ScanLine,
       title: 'Проверить товар',
       description: 'Узнайте, подлежит ли ваш товар обязательной маркировке',
       path: '/check',
       disabled: false
     },
     {
-      icon: Plane,
+      icon: Ship,
       title: 'Импорт товаров',
       description: 'Как правильно завезти и промаркировать импортный товар',
       path: '/import',
       disabled: false
     },
     {
-      icon: Wrench,
+      icon: Settings,
       title: 'Оснащение производства',
       description: 'Подберём оборудование для маркировки под ваш объём',
       path: '/equipment',
       disabled: false
     },
     {
-      icon: MessageSquare,
+      icon: Bot,
       title: 'Чат с AI-экспертом',
       description: 'Получите ответы от AI-ассистента по маркировке 24/7',
       path: '/consultation',
