@@ -21,15 +21,15 @@
   },
   {
     "content": "Phase 2: Исправить CRITICAL: Contact page - react-input-mask несовместим с React 18",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Phase 2: Исправить CRITICAL: CheckProduct Step 3 - результат не отображается",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Phase 2: Повторное тестирование после исправлений",
-    "status": "pending"
+    "status": "in_progress"
   },
   {
     "content": "Phase 3: Финальная доставка",
