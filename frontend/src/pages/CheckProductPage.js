@@ -86,6 +86,7 @@ const CheckProductPage = () => {
       });
       const data = await response.json();
       setResult(data);
+      setStep(3);  // Переключаем на шаг 3 для отображения результата
       toast.success('Результат получен');
     } catch (error) {
       toast.error('Ошибка получения результата');
