@@ -221,6 +221,8 @@ const HomePage = () => {
             {actions.map((action, index) => {
               const Icon = action.icon;
               const isComingSoon = action.disabled;
+              const isSpecial = action.special; // AI карточка
+              
               return (
                 <motion.div
                   key={index}
@@ -228,11 +230,19 @@ const HomePage = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: 0.4 + index * 0.1 }}
                   onClick={() => !isComingSoon && navigate(action.path)}
-                  className={`group relative bg-white rounded-2xl p-7 border-2 border-[rgb(var(--grey-300))] overflow-hidden ${
-                    isComingSoon ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer card-hover'
+                  className={`group relative bg-white rounded-2xl p-7 overflow-hidden ${
+                    isComingSoon 
+                      ? 'opacity-60 cursor-not-allowed border-2 border-[rgb(var(--grey-300))]' 
+                      : isSpecial
+                      ? 'cursor-pointer card-hover ai-card-pulse'
+                      : 'cursor-pointer card-hover border-2 border-[rgb(var(--grey-300))]'
                   }`}
                   data-testid="action-card"
-                  style={{ boxShadow: 'var(--shadow-layer)' }}
+                  style={{ 
+                    boxShadow: isSpecial 
+                      ? '0 0 0 2px rgb(var(--brand-yellow-500)), var(--shadow-layer), 0 0 40px rgba(255,218,7,0.3)' 
+                      : 'var(--shadow-layer)' 
+                  }}
                 >
                   {/* Yellow gradient overlay on hover */}
                   {!isComingSoon && (
@@ -240,14 +250,16 @@ const HomePage = () => {
                   )}
                   
                   <div className="relative flex flex-col h-full">
-                    <div className="icon-wrapper icon-wrapper-yellow p-5 rounded-2xl shadow-lg mb-5 group-hover:scale-110 group-hover:shadow-xl transition-all duration-300">
+                    <div className={`icon-wrapper icon-wrapper-yellow p-5 rounded-2xl shadow-lg mb-5 transition-all duration-300 ${
+                      isSpecial ? 'group-hover:scale-110 group-hover:shadow-2xl' : 'group-hover:scale-110 group-hover:shadow-xl'
+                    }`}>
                       <Icon size={36} strokeWidth={2.5} />
                     </div>
                     
                     <h3 className="text-lg font-bold text-[rgb(var(--black))] mb-3 flex items-center gap-2 group-hover:text-[rgb(var(--grey-900))] transition-colors">
                       {action.title}
                       {action.badge && (
-                        <span className="badge badge-grey text-xs">
+                        <span className={`badge ${isSpecial ? 'badge-yellow' : 'badge-grey'} text-xs`}>
                           {action.badge}
                         </span>
                       )}
