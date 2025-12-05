@@ -14,7 +14,6 @@ import {
 } from '../components/ui/select';
 import { CheckCircle, Mail, Phone } from 'lucide-react';
 import { toast } from 'sonner';
-import InputMask from 'react-input-mask';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
