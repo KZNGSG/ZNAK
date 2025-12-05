@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { RadioGroup, RadioGroupItem } from '../components/ui/radio-group';
 import { Label } from '../components/ui/label';
-import { CheckCircle, XCircle, ArrowLeft, ArrowRight } from 'lucide-react';
+import { CheckCircle, XCircle, ArrowLeft, ArrowRight, Package, FlaskConical, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import Stepper from '../components/Stepper';
 
@@ -86,7 +86,7 @@ const CheckProductPage = () => {
       });
       const data = await response.json();
       setResult(data);
-      setStep(3);  // Переключаем на шаг 3 для отображения результата
+      setStep(3);
       toast.success('Результат получен');
     } catch (error) {
       toast.error('Ошибка получения результата');
@@ -98,9 +98,17 @@ const CheckProductPage = () => {
 
   const stepLabels = ['Категория', 'Детали', 'Результат'];
 
+  // Определяем статус категории для бейджа
+  const getCategoryStatus = (group) => {
+    if (group?.status === 'experiment') {
+      return { label: 'Эксперимент', color: 'bg-amber-100 text-amber-700 border-amber-200' };
+    }
+    return { label: 'Обязательная', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' };
+  };
+
   return (
     <div className="py-12 bg-gradient-to-b from-slate-50 to-white min-h-screen">
-      <div className="mx-auto max-w-[1200px] px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="text-3xl sm:text-4xl font-semibold text-primary mb-2">Проверка товара</h1>
           <p className="text-gray-600">Узнайте, подлежит ли ваш товар обязательной маркировке</p>
@@ -110,50 +118,124 @@ const CheckProductPage = () => {
 
         {/* Step 1: Category Selection */}
         {step === 1 && !result && (
-          <div className="grid grid-cols-1 lg:grid-cols-[280px,1fr] gap-8" data-testid="step-1">
+          <div className="grid grid-cols-1 lg:grid-cols-[300px,1fr] gap-8" data-testid="step-1">
             {/* Left: Category Menu */}
-            <aside className="space-y-2" data-testid="category-menu">
-              {categories.map((group) => (
-                <button
-                  key={group.id}
-                  onClick={() => handleCategorySelect(group)}
-                  className={`w-full text-left rounded-xl px-5 py-4 transition-all text-sm font-bold ${
-                    selectedCategory === group.id
-                      ? 'bg-gradient-to-r from-[rgb(var(--brand-yellow-500))] to-[rgb(var(--brand-yellow-600))] text-[rgb(var(--black))] shadow-lg scale-105'
-                      : 'bg-white hover:bg-[rgb(var(--brand-yellow-50))] text-[rgb(var(--grey-700))] border-2 border-[rgb(var(--grey-300))] hover:border-[rgb(var(--brand-yellow-400))] shadow-sm hover:shadow-md'
-                  }`}
-                  data-testid="category-menu-item"
-                >
-                  {selectedCategory === group.id && (
-                    <span className="inline-block mr-2">✓</span>
-                  )}
-                  {group.name}
-                </button>
-              ))}
+            <aside className="space-y-2 max-h-[70vh] overflow-y-auto pr-2" data-testid="category-menu">
+              {categories.map((group) => {
+                const status = getCategoryStatus(group);
+                return (
+                  <button
+                    key={group.id}
+                    onClick={() => handleCategorySelect(group)}
+                    className={`w-full text-left rounded-xl px-4 py-3 transition-all text-sm font-medium flex items-center justify-between gap-2 ${
+                      selectedCategory === group.id
+                        ? 'bg-gradient-to-r from-[rgb(var(--brand-yellow-500))] to-[rgb(var(--brand-yellow-600))] text-[rgb(var(--black))] shadow-lg'
+                        : 'bg-white hover:bg-[rgb(var(--brand-yellow-50))] text-[rgb(var(--grey-700))] border border-[rgb(var(--grey-200))] hover:border-[rgb(var(--brand-yellow-400))] shadow-sm hover:shadow-md'
+                    }`}
+                    data-testid="category-menu-item"
+                  >
+                    <span className="flex items-center gap-2">
+                      {selectedCategory === group.id && <Check size={16} className="flex-shrink-0" />}
+                      <span className="truncate">{group.name}</span>
+                    </span>
+                    {group.status === 'experiment' && (
+                      <span className="flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-amber-200 text-amber-800">
+                        Эксп.
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </aside>
 
-            {/* Right: Subcategories */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4" data-testid="subcategory-tiles">
-              {selectedGroup?.subcategories?.map((sub) => (
-                <button
-                  key={sub.id}
-                  onClick={() => setSelectedSubcategory(sub.id)}
-                  className={`bg-white rounded-2xl p-5 border-2 transition-all text-left font-semibold ${
-                    selectedSubcategory === sub.id
-                      ? 'border-[rgb(var(--brand-yellow-500))] bg-[rgb(var(--brand-yellow-100))] shadow-lg scale-105'
-                      : 'border-[rgb(var(--grey-300))] hover:border-[rgb(var(--brand-yellow-400))] hover:bg-[rgb(var(--brand-yellow-50))] shadow-md hover:shadow-lg'
-                  }`}
-                  data-testid="subcategory-card"
-                >
-                  {selectedSubcategory === sub.id && (
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-2 h-2 rounded-full bg-[rgb(var(--brand-yellow-600))] animate-pulse"></div>
-                      <span className="text-xs font-bold text-[rgb(var(--brand-yellow-600))] uppercase">Выбрано</span>
-                    </div>
+            {/* Right: Subcategories - Beautiful Cards */}
+            <div>
+              {/* Category Header */}
+              <div className="mb-6 flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-[rgb(var(--brand-yellow-100))]">
+                  {selectedGroup?.status === 'experiment' ? (
+                    <FlaskConical size={24} className="text-amber-600" />
+                  ) : (
+                    <Package size={24} className="text-[rgb(var(--brand-yellow-600))]" />
                   )}
-                  <div className="text-sm text-[rgb(var(--black))]">{sub.name}</div>
-                </button>
-              ))}
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">{selectedGroup?.name}</h2>
+                  <p className="text-sm text-gray-500">
+                    {selectedGroup?.subcategories?.length} товаров •
+                    <span className={`ml-1 ${selectedGroup?.status === 'experiment' ? 'text-amber-600' : 'text-emerald-600'}`}>
+                      {selectedGroup?.status === 'experiment' ? 'Эксперимент' : 'Обязательная маркировка'}
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Product Cards Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" data-testid="subcategory-tiles">
+                {selectedGroup?.subcategories?.map((sub) => (
+                  <button
+                    key={sub.id}
+                    onClick={() => setSelectedSubcategory(sub.id)}
+                    className={`group relative bg-white rounded-2xl p-4 border-2 transition-all duration-200 text-left h-[140px] flex flex-col justify-between ${
+                      selectedSubcategory === sub.id
+                        ? 'border-[rgb(var(--brand-yellow-500))] bg-[rgb(var(--brand-yellow-50))] shadow-lg ring-2 ring-[rgb(var(--brand-yellow-200))]'
+                        : 'border-gray-200 hover:border-[rgb(var(--brand-yellow-400))] hover:shadow-lg hover:bg-gray-50'
+                    }`}
+                    data-testid="subcategory-card"
+                  >
+                    {/* Selection indicator */}
+                    {selectedSubcategory === sub.id && (
+                      <div className="absolute -top-2 -right-2 w-6 h-6 bg-[rgb(var(--brand-yellow-500))] rounded-full flex items-center justify-center shadow-md">
+                        <Check size={14} className="text-black" />
+                      </div>
+                    )}
+
+                    {/* Product Name */}
+                    <div className="flex-1">
+                      <h3 className={`font-semibold text-sm leading-tight line-clamp-2 ${
+                        selectedSubcategory === sub.id ? 'text-gray-900' : 'text-gray-800 group-hover:text-gray-900'
+                      }`}>
+                        {sub.name}
+                      </h3>
+                    </div>
+
+                    {/* TN VED Code */}
+                    <div className="mt-3 pt-3 border-t border-gray-100">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] uppercase tracking-wide text-gray-400 font-medium">ТН ВЭД</span>
+                        <span className={`font-mono text-xs font-bold ${
+                          selectedSubcategory === sub.id
+                            ? 'text-[rgb(var(--brand-yellow-700))]'
+                            : 'text-gray-600 group-hover:text-gray-800'
+                        }`}>
+                          {sub.tnved}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Status Badge */}
+                    <div className="mt-2">
+                      <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-full font-medium ${
+                        selectedGroup?.status === 'experiment'
+                          ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                          : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                      }`}>
+                        {selectedGroup?.status === 'experiment' ? (
+                          <>
+                            <FlaskConical size={10} />
+                            Эксперимент
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle size={10} />
+                            Обязательная
+                          </>
+                        )}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -254,23 +336,26 @@ const CheckProductPage = () => {
                       </h2>
                     </div>
                   </div>
-                  
+
                   <div className="bg-rose-50 border border-rose-200 rounded-lg p-4 mb-6">
-                    <p className="text-rose-800">{result.message}</p>
+                    <p className="text-rose-800 font-medium">{result.message}</p>
                     {result.tnved && (
-                      <p className="text-sm text-rose-700 mt-2">Код ТН ВЭД: {result.tnved}</p>
+                      <div className="mt-3 flex items-center gap-2">
+                        <span className="text-sm text-rose-600">Код ТН ВЭД:</span>
+                        <span className="font-mono font-bold text-rose-800 bg-rose-100 px-2 py-1 rounded">{result.tnved}</span>
+                      </div>
                     )}
                   </div>
 
                   <div className="mb-6">
                     <h3 className="text-lg font-semibold text-primary mb-3">Что нужно сделать:</h3>
                     <ol className="space-y-3">
-                      {result.steps?.map((step, index) => (
+                      {result.steps?.map((stepItem, index) => (
                         <li key={index} className="flex gap-3">
                           <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-sm font-medium">
                             {index + 1}
                           </span>
-                          <span className="text-gray-700 flex-1">{step}</span>
+                          <span className="text-gray-700 flex-1">{stepItem}</span>
                         </li>
                       ))}
                     </ol>
@@ -295,26 +380,67 @@ const CheckProductPage = () => {
                 </div>
               ) : (
                 <div>
-                  {/* Does not require marking */}
+                  {/* Does not require marking or experiment */}
                   <div className="flex items-center gap-3 mb-4" data-testid="result-success">
-                    <div className="p-3 rounded-full bg-emerald-100">
-                      <CheckCircle className="text-emerald-600" size={32} />
+                    <div className={`p-3 rounded-full ${result.status === 'experiment' ? 'bg-amber-100' : 'bg-emerald-100'}`}>
+                      {result.status === 'experiment' ? (
+                        <FlaskConical className="text-amber-600" size={32} />
+                      ) : (
+                        <CheckCircle className="text-emerald-600" size={32} />
+                      )}
                     </div>
                     <div>
                       <h2 className="text-2xl font-semibold text-primary">
-                        Ваш товар пока не подлежит маркировке
+                        {result.status === 'experiment'
+                          ? 'Товар участвует в эксперименте'
+                          : 'Ваш товар пока не подлежит маркировке'
+                        }
                       </h2>
                     </div>
                   </div>
-                  
-                  <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mb-6">
-                    <p className="text-emerald-800">{result.message}</p>
+
+                  <div className={`border rounded-lg p-4 mb-6 ${
+                    result.status === 'experiment'
+                      ? 'bg-amber-50 border-amber-200'
+                      : 'bg-emerald-50 border-emerald-200'
+                  }`}>
+                    <p className={result.status === 'experiment' ? 'text-amber-800' : 'text-emerald-800'}>
+                      {result.message}
+                    </p>
+                    {result.tnved && (
+                      <div className="mt-3 flex items-center gap-2">
+                        <span className={`text-sm ${result.status === 'experiment' ? 'text-amber-600' : 'text-emerald-600'}`}>
+                          Код ТН ВЭД:
+                        </span>
+                        <span className={`font-mono font-bold px-2 py-1 rounded ${
+                          result.status === 'experiment'
+                            ? 'text-amber-800 bg-amber-100'
+                            : 'text-emerald-800 bg-emerald-100'
+                        }`}>
+                          {result.tnved}
+                        </span>
+                      </div>
+                    )}
                   </div>
+
+                  {result.steps && result.steps.length > 0 && (
+                    <div className="mb-6">
+                      <h3 className="text-lg font-semibold text-primary mb-3">Рекомендации:</h3>
+                      <ul className="space-y-2">
+                        {result.steps.map((stepItem, index) => (
+                          <li key={index} className="flex gap-2 text-gray-700">
+                            <span className="text-amber-500">•</span>
+                            <span>{stepItem}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
                   <div className="flex gap-3 pt-4 border-t">
                     <Button
                       onClick={() => navigate('/contact')}
-                      className="btn-gradient-emerald rounded-[12px]"
+                      className={`rounded-[12px] ${result.status === 'experiment' ? 'btn-gradient' : 'btn-gradient-emerald'}`}
                       data-testid="subscribe-updates"
                     >
                       Подписаться на обновления
@@ -337,7 +463,7 @@ const CheckProductPage = () => {
             <ArrowLeft size={18} />
             {step === 1 ? 'На главную' : 'Назад'}
           </Button>
-          
+
           {!result && (
             <Button
               onClick={handleNext}
