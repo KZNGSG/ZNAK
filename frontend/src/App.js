@@ -24,6 +24,7 @@ function App() {
             <Route path="/import" element={<ImportPage />} />
             <Route path="/equipment" element={<EquipmentPage />} />
             <Route path="/contact" element={<ContactPage />} />
+            <Route path="/consultation" element={<ConsultationPage />} />
           </Routes>
         </main>
         <Footer />
