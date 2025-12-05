@@ -135,14 +135,20 @@ const CheckProductPage = () => {
                 <button
                   key={sub.id}
                   onClick={() => setSelectedSubcategory(sub.id)}
-                  className={`bg-white rounded-[16px] p-4 border-2 transition-all card-hover text-left ${
+                  className={`bg-white rounded-2xl p-5 border-2 transition-all text-left font-semibold ${
                     selectedSubcategory === sub.id
-                      ? 'border-accent bg-accent/5'
-                      : 'border-gray-200 hover:border-accent/50'
+                      ? 'border-[rgb(var(--brand-yellow-500))] bg-[rgb(var(--brand-yellow-100))] shadow-lg scale-105'
+                      : 'border-[rgb(var(--grey-300))] hover:border-[rgb(var(--brand-yellow-400))] hover:bg-[rgb(var(--brand-yellow-50))] shadow-md hover:shadow-lg'
                   }`}
                   data-testid="subcategory-card"
                 >
-                  <div className="font-medium text-sm text-primary">{sub.name}</div>
+                  {selectedSubcategory === sub.id && (
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-2 h-2 rounded-full bg-[rgb(var(--brand-yellow-600))] animate-pulse"></div>
+                      <span className="text-xs font-bold text-[rgb(var(--brand-yellow-600))] uppercase">Выбрано</span>
+                    </div>
+                  )}
+                  <div className="text-sm text-[rgb(var(--black))]">{sub.name}</div>
                 </button>
               ))}
             </div>
