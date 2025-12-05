@@ -870,49 +870,77 @@ async def send_contact(request: ContactRequest, background_tasks: BackgroundTask
         "message": "Ваша заявка принята! Мы свяжемся с вами в ближайшее время."
     }
 
-# ======================== CHATKIT AI ========================
+# ======================== AI CHAT ========================
 
-CHATKIT_WORKFLOW_ID = "wf_69333a7229648190a17d2a1519d676ec078aefd89b4f760e"
+SYSTEM_PROMPT = """Ты - AI-эксперт по маркировке товаров в России. Ты помогаешь предпринимателям разобраться в системе маркировки "Честный ЗНАК".
 
-@app.post("/api/chatkit/session")
-async def create_chatkit_session():
-    """Create a ChatKit session for AI chat"""
+Твои знания включают:
+- Какие товары подлежат обязательной маркировке (одежда, обувь, табак, лекарства, молочная продукция, вода, парфюмерия, шины, фотоаппараты, БАДы, антисептики, пиво и др.)
+- Коды ТН ВЭД для маркируемых товаров
+- Процесс регистрации в системе "Честный ЗНАК"
+- Необходимое оборудование для маркировки (принтеры этикеток, сканеры, ТСД)
+- Штрафы за нарушение требований маркировки
+- Сроки введения маркировки для разных категорий товаров
+- Особенности маркировки для импортёров, производителей, розницы
+- Работа с остатками товаров
+
+Отвечай кратко, по делу, простым языком. Если не уверен в ответе - честно скажи об этом и предложи обратиться к официальным источникам (сайт честныйзнак.рф).
+
+Не отвечай на вопросы, не связанные с маркировкой товаров."""
+
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+
+class ChatRequest(BaseModel):
+    messages: List[ChatMessage]
+
+@app.post("/api/ai/chat")
+async def ai_chat(request: ChatRequest):
+    """AI chat endpoint using OpenAI Chat Completions"""
     openai_api_key = os.getenv('OPENAI_API_KEY')
 
     if not openai_api_key:
         raise HTTPException(status_code=500, detail="OpenAI API key not configured")
 
-    # Generate a unique user ID for anonymous users
-    user_id = str(uuid.uuid4())
-
     try:
+        # Prepare messages for OpenAI
+        messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+
+        # Add conversation history (last 10 messages to save tokens)
+        for msg in request.messages[-10:]:
+            messages.append({"role": msg.role, "content": msg.content})
+
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                "https://api.openai.com/v1/chatkit/sessions",
+                "https://api.openai.com/v1/chat/completions",
                 headers={
                     "Content-Type": "application/json",
-                    "Authorization": f"Bearer {openai_api_key}",
-                    "OpenAI-Beta": "chatkit_beta=v1"
+                    "Authorization": f"Bearer {openai_api_key}"
                 },
                 json={
-                    "workflow": {"id": CHATKIT_WORKFLOW_ID},
-                    "user": user_id
+                    "model": "gpt-4o-mini",
+                    "messages": messages,
+                    "max_tokens": 1000,
+                    "temperature": 0.7
                 },
-                timeout=30.0
+                timeout=60.0
             )
 
             if response.status_code != 200:
-                logger.error(f"ChatKit API error: {response.status_code} - {response.text}")
-                raise HTTPException(status_code=response.status_code, detail="Failed to create ChatKit session")
+                logger.error(f"OpenAI API error: {response.status_code} - {response.text}")
+                raise HTTPException(status_code=500, detail="AI service error")
 
             data = response.json()
-            return {"client_secret": data.get("client_secret")}
+            ai_response = data["choices"][0]["message"]["content"]
+
+            return {"response": ai_response}
 
     except httpx.TimeoutException:
-        raise HTTPException(status_code=504, detail="ChatKit API timeout")
+        raise HTTPException(status_code=504, detail="AI service timeout")
     except Exception as e:
-        logger.error(f"ChatKit error: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to create ChatKit session")
+        logger.error(f"AI chat error: {str(e)}")
+        raise HTTPException(status_code=500, detail="AI service error")
 
 if __name__ == "__main__":
     import uvicorn

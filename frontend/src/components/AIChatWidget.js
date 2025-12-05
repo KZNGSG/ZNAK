@@ -1,82 +1,81 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, MessageSquare, Sparkles, Loader2, Send } from 'lucide-react';
+import { X, Sparkles, Loader2, Send, Bot, User } from 'lucide-react';
 import { Button } from './ui/button';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const AIChatWidget = ({ isOpen, onClose }) => {
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const chatContainerRef = useRef(null);
+  const [messages, setMessages] = useState([
+    {
+      role: 'assistant',
+      content: 'Здравствуйте! Я AI-эксперт по маркировке товаров. Задайте мне любой вопрос о системе маркировки "Честный ЗНАК", требованиях к маркировке, оборудовании или процессе подключения.'
+    }
+  ]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   useEffect(() => {
-    if (isOpen) {
-      initChatKit();
+    scrollToBottom();
+  }, [messages]);
+
+  useEffect(() => {
+    if (isOpen && inputRef.current) {
+      inputRef.current.focus();
     }
   }, [isOpen]);
 
-  const initChatKit = async () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!input.trim() || isLoading) return;
+
+    const userMessage = input.trim();
+    setInput('');
+    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setIsLoading(true);
-    setError(null);
 
     try {
-      // Get client secret from our backend
-      const response = await fetch(`${API_URL}/api/chatkit/session`, {
+      const response = await fetch(`${API_URL}/api/ai/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          messages: [...messages, { role: 'user', content: userMessage }]
+        }),
       });
 
       if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.detail || 'Failed to start chat session');
+        throw new Error('Ошибка сервера');
       }
 
-      const { client_secret } = await response.json();
-
-      // Initialize ChatKit if available
-      if (window.ChatKit && chatContainerRef.current) {
-        // Clear previous instance
-        chatContainerRef.current.innerHTML = '';
-
-        // Create ChatKit element
-        const chatElement = document.createElement('openai-chatkit');
-        chatElement.setAttribute('client-secret', client_secret);
-        chatElement.style.width = '100%';
-        chatElement.style.height = '100%';
-
-        chatContainerRef.current.appendChild(chatElement);
-        setIsLoading(false);
-      } else {
-        // Fallback: wait for ChatKit to load
-        setTimeout(() => {
-          if (window.ChatKit && chatContainerRef.current) {
-            chatContainerRef.current.innerHTML = '';
-            const chatElement = document.createElement('openai-chatkit');
-            chatElement.setAttribute('client-secret', client_secret);
-            chatElement.style.width = '100%';
-            chatElement.style.height = '100%';
-            chatContainerRef.current.appendChild(chatElement);
-            setIsLoading(false);
-          } else {
-            setError('ChatKit не загружен. Попробуйте обновить страницу.');
-            setIsLoading(false);
-          }
-        }, 2000);
-      }
-    } catch (err) {
-      console.error('ChatKit init error:', err);
-      setError(err.message || 'Не удалось запустить чат. Попробуйте позже.');
+      const data = await response.json();
+      setMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
+    } catch (error) {
+      console.error('Chat error:', error);
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: 'Извините, произошла ошибка. Попробуйте позже или свяжитесь с нами через форму обратной связи.'
+      }]);
+    } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleClose = () => {
+    onClose();
   };
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="relative w-full max-w-2xl h-[80vh] bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+      <div className="relative w-full max-w-2xl h-[85vh] bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-[rgb(var(--brand-yellow-100))] to-[rgb(var(--brand-yellow-50))]">
           <div className="flex items-center gap-3">
@@ -85,11 +84,11 @@ const AIChatWidget = ({ isOpen, onClose }) => {
             </div>
             <div>
               <h2 className="font-bold text-lg text-[rgb(var(--black))]">AI-эксперт по маркировке</h2>
-              <p className="text-xs text-[rgb(var(--grey-600))]">Задайте любой вопрос о маркировке товаров</p>
+              <p className="text-xs text-[rgb(var(--grey-600))]">Powered by GPT</p>
             </div>
           </div>
           <Button
-            onClick={onClose}
+            onClick={handleClose}
             variant="ghost"
             size="icon"
             className="rounded-full hover:bg-[rgb(var(--brand-yellow-200))]"
@@ -98,32 +97,76 @@ const AIChatWidget = ({ isOpen, onClose }) => {
           </Button>
         </div>
 
-        {/* Chat Container */}
-        <div className="flex-1 overflow-hidden">
-          {isLoading && (
-            <div className="flex flex-col items-center justify-center h-full gap-4">
-              <Loader2 size={40} className="animate-spin text-[rgb(var(--brand-yellow-500))]" />
-              <p className="text-[rgb(var(--grey-600))]">Подключаемся к AI-эксперту...</p>
-            </div>
-          )}
-
-          {error && (
-            <div className="flex flex-col items-center justify-center h-full gap-4 p-6 text-center">
-              <div className="p-4 rounded-full bg-red-100">
-                <MessageSquare size={32} className="text-red-500" />
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {messages.map((message, index) => (
+            <div
+              key={index}
+              className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              {message.role === 'assistant' && (
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[rgb(var(--brand-yellow-100))] flex items-center justify-center">
+                  <Bot size={18} className="text-[rgb(var(--grey-800))]" />
+                </div>
+              )}
+              <div
+                className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                  message.role === 'user'
+                    ? 'bg-[rgb(var(--grey-900))] text-white'
+                    : 'bg-[rgb(var(--grey-100))] text-[rgb(var(--grey-900))]'
+                }`}
+              >
+                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
               </div>
-              <p className="text-red-600 font-medium">{error}</p>
-              <Button onClick={initChatKit} className="btn-gradient rounded-xl">
-                Попробовать снова
-              </Button>
+              {message.role === 'user' && (
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[rgb(var(--grey-200))] flex items-center justify-center">
+                  <User size={18} className="text-[rgb(var(--grey-600))]" />
+                </div>
+              )}
+            </div>
+          ))}
+
+          {isLoading && (
+            <div className="flex gap-3 justify-start">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[rgb(var(--brand-yellow-100))] flex items-center justify-center">
+                <Bot size={18} className="text-[rgb(var(--grey-800))]" />
+              </div>
+              <div className="bg-[rgb(var(--grey-100))] rounded-2xl px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <Loader2 size={16} className="animate-spin text-[rgb(var(--brand-yellow-600))]" />
+                  <span className="text-sm text-[rgb(var(--grey-500))]">Думаю...</span>
+                </div>
+              </div>
             </div>
           )}
 
-          <div
-            ref={chatContainerRef}
-            className={`w-full h-full ${isLoading || error ? 'hidden' : ''}`}
-          />
+          <div ref={messagesEndRef} />
         </div>
+
+        {/* Input */}
+        <form onSubmit={handleSubmit} className="p-4 border-t bg-white">
+          <div className="flex gap-2">
+            <input
+              ref={inputRef}
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Задайте вопрос о маркировке..."
+              className="flex-1 px-4 py-3 rounded-xl border-2 border-[rgb(var(--grey-200))] focus:outline-none focus:border-[rgb(var(--brand-yellow-500))] transition-colors text-sm"
+              disabled={isLoading}
+            />
+            <Button
+              type="submit"
+              disabled={isLoading || !input.trim()}
+              className="btn-gradient rounded-xl px-4"
+            >
+              <Send size={18} />
+            </Button>
+          </div>
+          <p className="text-xs text-[rgb(var(--grey-400))] mt-2 text-center">
+            AI может ошибаться. Проверяйте важную информацию.
+          </p>
+        </form>
       </div>
     </div>
   );
