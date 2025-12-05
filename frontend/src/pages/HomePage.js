@@ -59,49 +59,65 @@ const HomePage = () => {
 
   return (
     <div className="fade-in">
-      {/* Hero Section */}
-      <section className="relative py-16 sm:py-24 noise-bg overflow-hidden" data-testid="hero-section">
-        {/* Parallax decorative elements */}
+      {/* Hero Section - Enhanced */}
+      <section className="relative py-20 sm:py-32 noise-bg overflow-hidden" data-testid="hero-section">
+        {/* Enhanced decorative elements */}
         <motion.div
           initial={{ opacity: 0 }}
-          animate={{ opacity: 0.4 }}
+          animate={{ opacity: 0.6 }}
           transition={{ duration: 1 }}
-          className="absolute -top-10 -right-10 w-72 h-72 rounded-2xl bg-primary/5 blur-3xl"
+          className="absolute -top-20 -right-20 w-[500px] h-[500px] rounded-full"
+          style={{
+            background: 'radial-gradient(circle, rgba(30,58,138,0.15) 0%, rgba(30,58,138,0) 70%)',
+            filter: 'blur(60px)'
+          }}
           aria-hidden="true"
         />
         <motion.div
           initial={{ opacity: 0 }}
-          animate={{ opacity: 0.3 }}
+          animate={{ opacity: 0.5 }}
           transition={{ duration: 1, delay: 0.2 }}
-          className="absolute top-24 -left-10 w-96 h-96 rounded-2xl bg-emerald-50 blur-3xl"
+          className="absolute bottom-0 -left-20 w-[600px] h-[600px] rounded-full"
+          style={{
+            background: 'radial-gradient(circle, rgba(5,150,105,0.12) 0%, rgba(5,150,105,0) 70%)',
+            filter: 'blur(80px)'
+          }}
           aria-hidden="true"
         />
 
         <div className="relative mx-auto max-w-[1200px] px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Left: Content */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
+              transition={{ duration: 0.7 }}
+              className="space-y-6"
             >
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight text-primary">
-                Маркировка товаров — просто
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 backdrop-blur-sm border border-blue-200 shadow-sm">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-sm font-semibold text-[rgb(var(--text-strong))]">Работает 24/7</span>
+              </div>
+              
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.1] tracking-tight text-[rgb(var(--text-strong))]">
+                Маркировка товаров — <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#1E3A8A] to-[#059669]">просто</span>
               </h1>
-              <p className="mt-4 text-base md:text-lg text-slate-600">
-                Узнайте за 2 минуты, нужен ли вам Честный ЗНАК и что делать
+              
+              <p className="text-lg md:text-xl text-[rgb(var(--text-muted))] leading-relaxed max-w-xl">
+                Узнайте за <strong className="text-[rgb(var(--text-default))] font-semibold">2 минуты</strong>, нужен ли вам Честный ЗНАК и что делать
               </p>
-              <div className="mt-8 flex flex-wrap gap-3">
+              
+              <div className="flex flex-wrap gap-4 pt-2">
                 <Button
                   onClick={() => navigate('/check')}
-                  className="btn-gradient rounded-[12px] px-5 py-3"
+                  className="btn-gradient rounded-xl px-7 py-4 text-base font-semibold h-auto shadow-lg hover:shadow-2xl"
                   data-testid="hero-primary-cta"
                 >
-                  Проверить товар
+                  Проверить товар →
                 </Button>
                 <Button
                   onClick={() => navigate('/contact')}
-                  className="rounded-[12px] bg-slate-100 text-primary px-5 py-3 hover:bg-slate-200"
+                  className="rounded-xl bg-white/80 backdrop-blur-sm text-[rgb(var(--brand-blue-700))] px-7 py-4 text-base font-semibold h-auto border-2 border-[rgb(var(--brand-blue-200))] hover:bg-white hover:border-[rgb(var(--brand-blue-300))] shadow-md hover:shadow-lg"
                   data-testid="hero-secondary-cta"
                 >
                   Оставить заявку
@@ -109,24 +125,32 @@ const HomePage = () => {
               </div>
             </motion.div>
 
-            {/* Right: Decorative area */}
+            {/* Right: Enhanced decorative pattern */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="hidden lg:flex relative min-h-[420px] items-center justify-center"
+              transition={{ duration: 0.7, delay: 0.3 }}
+              className="hidden lg:flex relative min-h-[480px] items-center justify-center"
             >
               <div className="relative w-full h-full flex items-center justify-center">
-                {/* Data Matrix inspired decorative pattern */}
-                <div className="grid grid-cols-8 gap-2 opacity-20">
+                {/* Enhanced Data Matrix pattern */}
+                <div className="grid grid-cols-8 gap-3 p-6">
                   {[...Array(64)].map((_, i) => (
                     <motion.div
                       key={i}
-                      initial={{ opacity: 0, scale: 0 }}
-                      animate={{ opacity: Math.random() > 0.5 ? 1 : 0.3, scale: 1 }}
-                      transition={{ duration: 0.5, delay: i * 0.01 }}
-                      className={`w-8 h-8 rounded-sm ${
-                        i % 3 === 0 ? 'bg-primary' : i % 3 === 1 ? 'bg-accent' : 'bg-gray-300'
+                      initial={{ opacity: 0, scale: 0, rotate: 0 }}
+                      animate={{ 
+                        opacity: Math.random() > 0.4 ? 0.8 : 0.2, 
+                        scale: 1,
+                        rotate: Math.random() * 10 - 5
+                      }}
+                      transition={{ duration: 0.6, delay: i * 0.015 }}
+                      className={`w-10 h-10 rounded-lg shadow-sm ${
+                        i % 3 === 0 
+                          ? 'bg-gradient-to-br from-[#1E3A8A] to-[#23419A]' 
+                          : i % 3 === 1 
+                          ? 'bg-gradient-to-br from-[#059669] to-[#06A77D]' 
+                          : 'bg-gradient-to-br from-gray-200 to-gray-300'
                       }`}
                     />
                   ))}
