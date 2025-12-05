@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
-import { ArrowLeft, ArrowRight, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle, XCircle, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import Stepper from '../components/Stepper';
 import {
@@ -109,15 +109,25 @@ const ImportPage = () => {
                 <button
                   key={country.code}
                   onClick={() => setSelectedCountry(country.code)}
-                  className={`bg-white rounded-[16px] p-6 border-2 transition-all card-hover text-center ${
+                  className={`relative bg-white rounded-2xl p-6 border-2 transition-all text-center ${
                     selectedCountry === country.code
-                      ? 'border-accent bg-accent/5'
-                      : 'border-gray-200 hover:border-accent/50'
+                      ? 'border-[rgb(var(--brand-yellow-500))] bg-[rgb(var(--brand-yellow-50))] shadow-lg ring-2 ring-[rgb(var(--brand-yellow-200))]'
+                      : 'border-gray-200 hover:border-[rgb(var(--brand-yellow-400))] hover:shadow-md hover:bg-gray-50'
                   }`}
                   data-testid="country-card"
                 >
+                  {/* Selection indicator */}
+                  {selectedCountry === country.code && (
+                    <div className="absolute -top-2 -right-2 w-6 h-6 bg-[rgb(var(--brand-yellow-500))] rounded-full flex items-center justify-center shadow-md">
+                      <Check size={14} className="text-black" />
+                    </div>
+                  )}
                   <div className="text-4xl mb-2">{country.flag}</div>
-                  <div className="font-medium text-sm text-primary">{country.name}</div>
+                  <div className={`font-medium text-sm ${
+                    selectedCountry === country.code
+                      ? 'text-[rgb(var(--grey-900))]'
+                      : 'text-[rgb(var(--grey-700))]'
+                  }`}>{country.name}</div>
                 </button>
               ))}
             </div>
