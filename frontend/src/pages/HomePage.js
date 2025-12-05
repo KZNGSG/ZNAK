@@ -94,30 +94,30 @@ const HomePage = () => {
               transition={{ duration: 0.7 }}
               className="space-y-6"
             >
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 backdrop-blur-sm border border-blue-200 shadow-sm">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-sm font-semibold text-[rgb(var(--text-strong))]">Работает 24/7</span>
+              <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/90 backdrop-blur-sm border-2 border-[rgb(var(--brand-yellow-300))] shadow-md">
+                <div className="w-2.5 h-2.5 rounded-full bg-[rgb(var(--brand-yellow-500))] animate-pulse shadow-sm" />
+                <span className="text-sm font-bold text-[rgb(var(--black))]">Работает 24/7</span>
               </div>
               
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.1] tracking-tight text-[rgb(var(--text-strong))]">
-                Маркировка товаров — <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#1E3A8A] to-[#059669]">просто</span>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.05] tracking-tight text-[rgb(var(--black))]">
+                Маркировка товаров — <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FFDA07] to-[#F5C300]" style={{WebkitTextStroke: '1px rgba(0,0,0,0.1)'}}>просто</span>
               </h1>
               
-              <p className="text-lg md:text-xl text-[rgb(var(--text-muted))] leading-relaxed max-w-xl">
-                Узнайте за <strong className="text-[rgb(var(--text-default))] font-semibold">2 минуты</strong>, нужен ли вам Честный ЗНАК и что делать
+              <p className="text-lg md:text-xl text-[rgb(var(--grey-700))] leading-relaxed max-w-xl font-medium">
+                Узнайте за <strong className="text-[rgb(var(--black))] font-bold bg-[rgb(var(--brand-yellow-100))] px-2 py-0.5 rounded">2 минуты</strong>, нужен ли вам Честный ЗНАК и что делать
               </p>
               
-              <div className="flex flex-wrap gap-4 pt-2">
+              <div className="flex flex-wrap gap-4 pt-4">
                 <Button
                   onClick={() => navigate('/check')}
-                  className="btn-gradient rounded-xl px-7 py-4 text-base font-semibold h-auto shadow-lg hover:shadow-2xl"
+                  className="btn-gradient rounded-2xl px-8 py-4 text-base font-bold h-auto shadow-lg hover:shadow-2xl"
                   data-testid="hero-primary-cta"
                 >
                   Проверить товар →
                 </Button>
                 <Button
                   onClick={() => navigate('/contact')}
-                  className="rounded-xl bg-white/80 backdrop-blur-sm text-[rgb(var(--brand-blue-700))] px-7 py-4 text-base font-semibold h-auto border-2 border-[rgb(var(--brand-blue-200))] hover:bg-white hover:border-[rgb(var(--brand-blue-300))] shadow-md hover:shadow-lg"
+                  className="rounded-2xl bg-white backdrop-blur-sm text-[rgb(var(--black))] px-8 py-4 text-base font-bold h-auto border-2 border-[rgb(var(--grey-300))] hover:bg-[rgb(var(--grey-100))] hover:border-[rgb(var(--grey-400))] shadow-md hover:shadow-lg"
                   data-testid="hero-secondary-cta"
                 >
                   Оставить заявку
