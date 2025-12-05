@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { RadioGroup, RadioGroupItem } from '../components/ui/radio-group';
 import { Label } from '../components/ui/label';
-import { CheckCircle, XCircle, ArrowLeft, ArrowRight, Package, FlaskConical, Check, Search, X } from 'lucide-react';
+import { CheckCircle, XCircle, ArrowLeft, ArrowRight, Package, FlaskConical, Check, Search, X, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import Stepper from '../components/Stepper';
 
@@ -280,7 +280,96 @@ const CheckProductPage = () => {
               </div>
             </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-[300px,1fr] gap-8">
+          {/* Mobile: Accordion Layout */}
+          <div className="lg:hidden space-y-3" data-testid="category-accordion-mobile">
+              {categories.map((group) => (
+                <div key={group.id} className="rounded-2xl border-2 border-[rgb(var(--grey-200))] overflow-hidden bg-white">
+                  {/* Category Header - Clickable */}
+                  <button
+                    onClick={() => handleCategorySelect(group)}
+                    className={`w-full text-left px-4 py-4 transition-all flex items-center justify-between gap-3 ${
+                      selectedCategory === group.id
+                        ? 'bg-gradient-to-r from-[rgb(var(--brand-yellow-500))] to-[rgb(var(--brand-yellow-600))] text-[rgb(var(--black))]'
+                        : 'bg-white text-[rgb(var(--grey-700))] hover:bg-[rgb(var(--brand-yellow-50))]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-lg ${
+                        selectedCategory === group.id
+                          ? 'bg-white/30'
+                          : 'bg-[rgb(var(--brand-yellow-100))]'
+                      }`}>
+                        {group.status === 'experiment' ? (
+                          <FlaskConical size={20} className={selectedCategory === group.id ? 'text-black' : 'text-amber-600'} />
+                        ) : (
+                          <Package size={20} className={selectedCategory === group.id ? 'text-black' : 'text-[rgb(var(--brand-yellow-600))]'} />
+                        )}
+                      </div>
+                      <div>
+                        <div className="font-bold text-sm">{group.name}</div>
+                        <div className={`text-xs ${selectedCategory === group.id ? 'text-black/70' : 'text-gray-500'}`}>
+                          {group.subcategories?.length} товаров
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {group.status === 'experiment' && (
+                        <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${
+                          selectedCategory === group.id
+                            ? 'bg-white/30 text-black'
+                            : 'bg-amber-100 text-amber-700'
+                        }`}>
+                          Эксп.
+                        </span>
+                      )}
+                      <ChevronDown
+                        size={20}
+                        className={`transition-transform duration-300 ${
+                          selectedCategory === group.id ? 'rotate-180' : ''
+                        }`}
+                      />
+                    </div>
+                  </button>
+
+                  {/* Subcategories - Expandable */}
+                  {selectedCategory === group.id && (
+                    <div className="p-4 bg-[rgb(var(--grey-50))] border-t-2 border-[rgb(var(--brand-yellow-200))]">
+                      <div className="grid grid-cols-1 gap-3">
+                        {group.subcategories?.map((sub) => (
+                          <button
+                            key={sub.id}
+                            onClick={() => setSelectedSubcategory(sub.id)}
+                            className={`relative bg-white rounded-xl p-4 border-2 transition-all text-left ${
+                              selectedSubcategory === sub.id
+                                ? 'border-[rgb(var(--brand-yellow-500))] bg-[rgb(var(--brand-yellow-50))] shadow-md'
+                                : 'border-gray-200 hover:border-[rgb(var(--brand-yellow-300))]'
+                            }`}
+                          >
+                            {selectedSubcategory === sub.id && (
+                              <div className="absolute -top-2 -right-2 w-6 h-6 bg-[rgb(var(--brand-yellow-500))] rounded-full flex items-center justify-center shadow-md">
+                                <Check size={14} className="text-black" />
+                              </div>
+                            )}
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium text-sm text-gray-900 line-clamp-2">{sub.name}</div>
+                              </div>
+                              <div className="flex-shrink-0 text-right">
+                                <div className="text-[10px] text-gray-400 uppercase">ТН ВЭД</div>
+                                <div className="font-mono text-xs font-bold text-[rgb(var(--brand-yellow-700))]">{sub.tnved}</div>
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop: Two Column Layout */}
+            <div className="hidden lg:grid grid-cols-[300px,1fr] gap-8">
             {/* Left: Category Menu */}
             <aside className="space-y-2 max-h-[70vh] overflow-y-auto pr-2" data-testid="category-menu">
               {categories.map((group) => {
