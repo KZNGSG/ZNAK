@@ -261,6 +261,20 @@ main {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+/* AI Card Pulse Animation */
+@keyframes ai-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 2px rgb(var(--brand-yellow-500)), var(--shadow-layer), 0 0 40px rgba(255,218,7,0.3);
+  }
+  50% {
+    box-shadow: 0 0 0 3px rgb(var(--brand-yellow-400)), var(--shadow-layer), 0 0 50px rgba(255,218,7,0.5);
+  }
+}
+
+.ai-card-pulse {
+  animation: ai-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
 /* Logo Data Matrix style - Yellow Theme */
 .logo-dot {
   display: inline-block;
