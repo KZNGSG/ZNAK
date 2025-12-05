@@ -22,6 +22,11 @@ const HomePage = () => {
       icon: Shield,
       title: 'Надёжно',
       description: 'Актуальные данные из официальных источников'
+    },
+    {
+      icon: Package,
+      title: 'Всё включено',
+      description: 'Проверка, оборудование, импорт — всё в одном месте'
     }
   ];
 
