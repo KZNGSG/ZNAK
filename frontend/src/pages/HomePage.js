@@ -164,10 +164,10 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Benefits Section - Enhanced */}
-      <section className="py-16 bg-white" data-testid="benefits-section">
+      {/* Benefits Section - Yellow Theme */}
+      <section className="py-20 bg-white" data-testid="benefits-section">
         <div className="mx-auto max-w-[1200px] px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {benefits.map((benefit, index) => {
               const Icon = benefit.icon;
               return (
@@ -176,22 +176,22 @@ const HomePage = () => {
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: index * 0.15 }}
-                  className="group relative bg-white rounded-2xl p-6 border-2 border-[rgb(var(--border-1))] card-hover overflow-hidden"
+                  className="group relative bg-white rounded-2xl p-7 border-2 border-[rgb(var(--grey-300))] card-hover overflow-hidden"
                   data-testid="info-card"
                   style={{ boxShadow: 'var(--shadow-layer)' }}
                 >
-                  {/* Gradient overlay on hover */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-[rgb(var(--brand-blue-50))] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  {/* Yellow gradient overlay on hover */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-[rgb(var(--brand-yellow-50))] via-[rgb(var(--brand-yellow-100))] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-400" />
                   
-                  <div className="relative flex items-start gap-4">
-                    <div className="icon-wrapper icon-wrapper-blue p-4 rounded-2xl shadow-md">
-                      <Icon size={28} strokeWidth={2} />
+                  <div className="relative flex items-start gap-5">
+                    <div className="icon-wrapper icon-wrapper-yellow p-4 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                      <Icon size={32} strokeWidth={2.5} />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-xl font-bold text-[rgb(var(--text-strong))] mb-2 group-hover:text-[rgb(var(--brand-blue-700))] transition-colors">
+                      <h3 className="text-xl font-bold text-[rgb(var(--black))] mb-2 group-hover:text-[rgb(var(--grey-900))] transition-colors">
                         {benefit.title}
                       </h3>
-                      <p className="text-base text-[rgb(var(--text-muted))] leading-relaxed">
+                      <p className="text-base text-[rgb(var(--grey-600))] leading-relaxed font-medium">
                         {benefit.description}
                       </p>
                     </div>
