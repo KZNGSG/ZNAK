@@ -202,45 +202,60 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Features Section - New Cards */}
-      <section className="py-12 bg-white" data-testid="features-section">
+      {/* Features Section - Premium Cards */}
+      <section className="py-16 bg-gradient-to-b from-white to-[rgb(var(--grey-50))]" data-testid="features-section">
         <div className="mx-auto max-w-[1200px] px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl sm:text-3xl font-bold text-[rgb(var(--black))] mb-2">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl font-bold text-[rgb(var(--black))] mb-3">
               Полезные инструменты
             </h2>
-            <p className="text-base text-[rgb(var(--grey-600))] font-medium">
+            <p className="text-lg text-[rgb(var(--grey-600))] font-medium">
               Всё для работы с маркировкой в одном месте
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.map((feature, index) => {
               const Icon = feature.icon;
               return (
                 <motion.div
                   key={index}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  transition={{ duration: 0.6, delay: index * 0.12 }}
                   onClick={() => navigate(feature.path)}
-                  className="group relative bg-white rounded-2xl p-5 border-2 border-[rgb(var(--grey-200))] cursor-pointer hover:border-[rgb(var(--brand-yellow-400))] hover:shadow-lg transition-all duration-300"
+                  className="group relative bg-white rounded-3xl p-7 cursor-pointer transition-all duration-400 overflow-hidden"
+                  style={{
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.08)',
+                  }}
+                  whileHover={{
+                    y: -8,
+                    boxShadow: '0 20px 40px rgba(255,218,7,0.2), 0 8px 16px rgba(0,0,0,0.1)'
+                  }}
                 >
-                  <div className="flex items-start gap-4">
-                    <div className="p-3 rounded-xl bg-[rgb(var(--brand-yellow-100))] group-hover:bg-[rgb(var(--brand-yellow-200))] transition-colors">
-                      <Icon size={24} className="text-[rgb(var(--grey-800))]" strokeWidth={2} />
+                  {/* Gradient overlay on hover */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-[rgb(var(--brand-yellow-50))] via-transparent to-[rgb(var(--brand-yellow-100))] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+                  {/* Content */}
+                  <div className="relative flex flex-col items-center text-center">
+                    {/* Icon container */}
+                    <div className="mb-5 p-5 rounded-2xl bg-gradient-to-br from-[rgb(var(--brand-yellow-100))] to-[rgb(var(--brand-yellow-200))] group-hover:from-[rgb(var(--brand-yellow-200))] group-hover:to-[rgb(var(--brand-yellow-300))] transition-all duration-400 shadow-sm group-hover:shadow-lg group-hover:scale-110">
+                      <Icon size={32} className="text-[rgb(var(--grey-800))]" strokeWidth={1.8} />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-base font-bold text-[rgb(var(--black))] mb-1 group-hover:text-[rgb(var(--grey-800))]">
-                        {feature.title}
-                      </h3>
-                      <p className="text-sm text-[rgb(var(--grey-500))] leading-snug">
-                        {feature.description}
-                      </p>
+
+                    {/* Text */}
+                    <h3 className="text-lg font-bold text-[rgb(var(--black))] mb-2 group-hover:text-[rgb(var(--grey-900))] transition-colors">
+                      {feature.title}
+                    </h3>
+                    <p className="text-sm text-[rgb(var(--grey-500))] leading-relaxed mb-4">
+                      {feature.description}
+                    </p>
+
+                    {/* Button */}
+                    <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[rgb(var(--grey-100))] group-hover:bg-gradient-to-r group-hover:from-[rgb(var(--brand-yellow-400))] group-hover:to-[rgb(var(--brand-yellow-500))] text-[rgb(var(--grey-600))] group-hover:text-[rgb(var(--black))] font-semibold text-sm transition-all duration-300 group-hover:shadow-md">
+                      <span>Открыть</span>
+                      <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
                     </div>
-                  </div>
-                  <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <span className="text-[rgb(var(--brand-yellow-600))] font-bold">→</span>
                   </div>
                 </motion.div>
               );
