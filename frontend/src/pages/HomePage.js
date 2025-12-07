@@ -270,9 +270,9 @@ const HomePage = () => {
                     </p>
                     
                     {!isComingSoon && (
-                      <div className="flex items-center gap-2 text-[rgb(var(--brand-yellow-600))] font-bold text-sm group-hover:gap-3 transition-all">
+                      <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-[rgb(var(--brand-yellow-400))] to-[rgb(var(--brand-yellow-500))] text-[rgb(var(--black))] font-bold text-sm shadow-md group-hover:shadow-lg group-hover:from-[rgb(var(--brand-yellow-500))] group-hover:to-[rgb(var(--brand-yellow-600))] transition-all duration-300">
                         <span>Перейти</span>
-                        <span className="text-lg">→</span>
+                        <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
                       </div>
                     )}
                   </div>
