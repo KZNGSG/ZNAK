@@ -1,32 +1,45 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
-import { BadgeCheck, Rocket, ShieldCheck, Layers, ScanLine, Ship, Settings, Bot } from 'lucide-react';
+import { BadgeCheck, Rocket, ShieldCheck, Layers, ScanLine, Ship, Settings, Bot, ClipboardList, QrCode, BookOpen, UserCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const HomePage = () => {
   const navigate = useNavigate();
 
+  // Компактные бейджи преимуществ
   const benefits = [
+    { icon: BadgeCheck, title: 'Понятно' },
+    { icon: Rocket, title: 'Быстро' },
+    { icon: ShieldCheck, title: 'Надёжно' },
+    { icon: Layers, title: 'Всё включено' }
+  ];
+
+  // Новые карточки функций
+  const features = [
     {
-      icon: BadgeCheck,
-      title: 'Понятно',
-      description: 'Объясняем человеческим языком'
+      icon: ClipboardList,
+      title: 'Чек-лист подключения',
+      description: 'Пошаговая инструкция для регистрации в Честном ЗНАКе',
+      path: '/checklist'
     },
     {
-      icon: Rocket,
-      title: 'Быстро',
-      description: 'Ответ за 2 минуты вместо часов'
+      icon: QrCode,
+      title: 'Проверка кода маркировки',
+      description: 'Отсканируйте или введите код для проверки подлинности',
+      path: '/scanner'
     },
     {
-      icon: ShieldCheck,
-      title: 'Надёжно',
-      description: 'Актуальные данные из официальных источников'
+      icon: BookOpen,
+      title: 'База знаний',
+      description: 'Статьи, инструкции и ответы на частые вопросы',
+      path: '/knowledge'
     },
     {
-      icon: Layers,
-      title: 'Всё включено',
-      description: 'Проверка, оборудование, импорт — всё в одном месте'
+      icon: UserCircle,
+      title: 'Личный кабинет',
+      description: 'Сохранённые проверки и персональные рекомендации',
+      path: '/account'
     }
   ];
 
@@ -166,37 +179,68 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Benefits Section - Yellow Theme */}
-      <section className="py-20 bg-white" data-testid="benefits-section">
+      {/* Benefits Badges - Compact */}
+      <section className="py-8 bg-white" data-testid="benefits-section">
         <div className="mx-auto max-w-[1200px] px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="flex flex-wrap justify-center gap-3 sm:gap-4">
             {benefits.map((benefit, index) => {
               const Icon = benefit.icon;
               return (
                 <motion.div
                   key={index}
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.15 }}
-                  className="group relative bg-white rounded-2xl p-7 border-2 border-[rgb(var(--grey-300))] card-hover overflow-hidden"
-                  data-testid="info-card"
-                  style={{ boxShadow: 'var(--shadow-layer)' }}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.4, delay: index * 0.1 }}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[rgb(var(--brand-yellow-100))] border border-[rgb(var(--brand-yellow-300))]"
                 >
-                  {/* Yellow gradient overlay on hover */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-[rgb(var(--brand-yellow-50))] via-[rgb(var(--brand-yellow-100))] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-400" />
-                  
-                  <div className="relative flex items-start gap-5">
-                    <div className="icon-wrapper icon-wrapper-yellow p-4 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                      <Icon size={32} strokeWidth={2.5} />
+                  <Icon size={18} className="text-[rgb(var(--brand-yellow-700))]" strokeWidth={2.5} />
+                  <span className="text-sm font-bold text-[rgb(var(--grey-900))]">{benefit.title}</span>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section - New Cards */}
+      <section className="py-12 bg-white" data-testid="features-section">
+        <div className="mx-auto max-w-[1200px] px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl sm:text-3xl font-bold text-[rgb(var(--black))] mb-2">
+              Полезные инструменты
+            </h2>
+            <p className="text-base text-[rgb(var(--grey-600))] font-medium">
+              Всё для работы с маркировкой в одном месте
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {features.map((feature, index) => {
+              const Icon = feature.icon;
+              return (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  onClick={() => navigate(feature.path)}
+                  className="group relative bg-white rounded-2xl p-5 border-2 border-[rgb(var(--grey-200))] cursor-pointer hover:border-[rgb(var(--brand-yellow-400))] hover:shadow-lg transition-all duration-300"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 rounded-xl bg-[rgb(var(--brand-yellow-100))] group-hover:bg-[rgb(var(--brand-yellow-200))] transition-colors">
+                      <Icon size={24} className="text-[rgb(var(--grey-800))]" strokeWidth={2} />
                     </div>
-                    <div className="flex-1">
-                      <h3 className="text-xl font-bold text-[rgb(var(--black))] mb-2 group-hover:text-[rgb(var(--grey-900))] transition-colors">
-                        {benefit.title}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-base font-bold text-[rgb(var(--black))] mb-1 group-hover:text-[rgb(var(--grey-800))]">
+                        {feature.title}
                       </h3>
-                      <p className="text-base text-[rgb(var(--grey-600))] leading-relaxed font-medium">
-                        {benefit.description}
+                      <p className="text-sm text-[rgb(var(--grey-500))] leading-snug">
+                        {feature.description}
                       </p>
                     </div>
+                  </div>
+                  <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="text-[rgb(var(--brand-yellow-600))] font-bold">→</span>
                   </div>
                 </motion.div>
               );
