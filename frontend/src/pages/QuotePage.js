@@ -1140,14 +1140,16 @@ const QuotePage = () => {
                   Состав услуг
                 </h3>
                 <div className="space-y-2">
-                  {quoteResult.services_breakdown.map((service, idx) => (
+                  {quoteResult.services_breakdown?.map((service, idx) => (
                     <div key={idx} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
                       <div>
                         <div className="font-medium text-gray-900">{service.name}</div>
-                        <div className="text-sm text-gray-500">{service.quantity} {service.unit} × {service.price.toLocaleString()} ₽</div>
+                        <div className="text-sm text-gray-500">
+                          {service.quantity?.toLocaleString()} {service.unit} × {formatPrice(service.price)}
+                        </div>
                       </div>
                       <div className="font-bold text-gray-900">
-                        {service.subtotal.toLocaleString()} ₽
+                        {formatPrice(service.subtotal)}
                       </div>
                     </div>
                   ))}
@@ -1162,7 +1164,7 @@ const QuotePage = () => {
                     <div className="text-sm text-gray-500">Действительно до: {quoteResult.valid_until}</div>
                   </div>
                   <div className="text-3xl font-bold text-[rgb(var(--brand-yellow-700))]">
-                    {quoteResult.total_amount.toLocaleString()} ₽
+                    {formatPrice(quoteResult.total_amount)}
                   </div>
                 </div>
               </div>
