@@ -709,19 +709,19 @@ const CheckProductPage = () => {
                   key={result.productInfo.id}
                   className={`bg-white rounded-2xl border-2 overflow-hidden shadow-lg ${
                     result.requires_marking
-                      ? 'border-rose-200'
+                      ? 'border-emerald-200'
                       : result.status === 'experiment'
                         ? 'border-amber-200'
-                        : 'border-emerald-200'
+                        : 'border-gray-200'
                   }`}
                 >
                   {/* Card Header */}
                   <div className={`px-6 py-4 flex items-center gap-4 ${
                     result.requires_marking
-                      ? 'bg-gradient-to-r from-rose-500 to-rose-600 text-white'
+                      ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white'
                       : result.status === 'experiment'
                         ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-black'
-                        : 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white'
+                        : 'bg-gradient-to-r from-gray-400 to-gray-500 text-white'
                   }`}>
                     <div className={`p-2 rounded-xl ${
                       result.requires_marking
@@ -731,11 +731,11 @@ const CheckProductPage = () => {
                           : 'bg-white/20'
                     }`}>
                       {result.requires_marking ? (
-                        <XCircle size={24} />
+                        <CheckCircle size={24} />
                       ) : result.status === 'experiment' ? (
                         <FlaskConical size={24} />
                       ) : (
-                        <CheckCircle size={24} />
+                        <XCircle size={24} />
                       )}
                     </div>
                     <div className="flex-1">
@@ -752,17 +752,17 @@ const CheckProductPage = () => {
                   <div className="p-6">
                     <div className={`rounded-xl p-4 mb-4 ${
                       result.requires_marking
-                        ? 'bg-rose-50'
+                        ? 'bg-emerald-50'
                         : result.status === 'experiment'
                           ? 'bg-amber-50'
-                          : 'bg-emerald-50'
+                          : 'bg-gray-50'
                     }`}>
                       <div className={`font-semibold mb-2 ${
                         result.requires_marking
-                          ? 'text-rose-700'
+                          ? 'text-emerald-700'
                           : result.status === 'experiment'
                             ? 'text-amber-700'
-                            : 'text-emerald-700'
+                            : 'text-gray-700'
                       }`}>
                         {result.requires_marking
                           ? 'Требуется маркировка'
