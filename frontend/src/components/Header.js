@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { CheckCircle, FileCheck, Package, Wrench, Mail } from 'lucide-react';
+import { CheckCircle, ClipboardList, Wrench, Mail } from 'lucide-react';
 
 const Header = () => {
   const location = useLocation();
@@ -41,16 +41,16 @@ const Header = () => {
               Проверить
             </Link>
             <Link
-              to="/import"
+              to="/checklist"
               className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-bold transition-all ${
-                isActive('/import') 
-                  ? 'bg-gradient-to-r from-[rgb(var(--brand-yellow-500))] to-[rgb(var(--brand-yellow-600))] text-[rgb(var(--black))] shadow-lg' 
+                isActive('/checklist')
+                  ? 'bg-gradient-to-r from-[rgb(var(--brand-yellow-500))] to-[rgb(var(--brand-yellow-600))] text-[rgb(var(--black))] shadow-lg'
                   : 'text-[rgb(var(--grey-700))] hover:bg-[rgb(var(--brand-yellow-50))] hover:text-[rgb(var(--black))]'
               }`}
-              data-testid="nav-import"
+              data-testid="nav-checklist"
             >
-              <Package size={20} strokeWidth={2.5} />
-              Импорт
+              <ClipboardList size={20} strokeWidth={2.5} />
+              Чек-лист
             </Link>
             <Link
               to="/equipment"
