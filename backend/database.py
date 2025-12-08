@@ -603,6 +603,22 @@ class CallbackDB:
                 results.append(item)
             return results
 
+    @staticmethod
+    def update_status(callback_id: int, status: str):
+        """Обновить статус заявки"""
+        with get_db() as conn:
+            cursor = conn.cursor()
+            if status in ['processed', 'completed']:
+                cursor.execute(
+                    'UPDATE callbacks SET status = ?, processed_at = CURRENT_TIMESTAMP WHERE id = ?',
+                    (status, callback_id)
+                )
+            else:
+                cursor.execute(
+                    'UPDATE callbacks SET status = ? WHERE id = ?',
+                    (status, callback_id)
+                )
+
 
 # Инициализация БД при импорте модуля
 init_database()

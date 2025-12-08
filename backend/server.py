@@ -20,11 +20,11 @@ from document_generator import generate_contract_pdf, generate_quote_pdf
 # Импорт авторизации и БД
 from auth import (
     UserRegister, UserLogin, register_user, login_user,
-    get_current_user, require_auth, require_admin
+    get_current_user, require_auth, require_admin, require_superadmin
 )
 from database import (
-    CompanyDB, QuoteDB, ContractDB, CallbackDB,
-    get_next_contract_number
+    CompanyDB, QuoteDB, ContractDB, CallbackDB, UserDB,
+    get_next_contract_number, get_db
 )
 
 # Load environment variables first
@@ -2115,20 +2115,111 @@ async def api_create_callback(
 # ======================== АДМИНКА ========================
 
 @app.get("/api/admin/callbacks")
-async def api_admin_get_callbacks(
-    status: Optional[str] = None,
+async def api_admin_get_callbacks(user: Dict = Depends(require_admin)):
+    """Получить все заявки на звонок (админка)"""
+    callbacks = CallbackDB.get_all()
+    return callbacks
+
+
+@app.put("/api/admin/callbacks/{callback_id}")
+async def api_admin_update_callback(
+    callback_id: int,
+    data: Dict,
     user: Dict = Depends(require_admin)
 ):
-    """Получить все заявки на звонок (админка)"""
-    callbacks = CallbackDB.get_all(status)
-    return {"callbacks": callbacks}
+    """Обновить статус заявки"""
+    status = data.get("status")
+    if status:
+        CallbackDB.update_status(callback_id, status)
+    return {"success": True}
+
+
+@app.get("/api/admin/users")
+async def api_admin_get_users(user: Dict = Depends(require_admin)):
+    """Получить всех пользователей (админка)"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT id, email, role, is_active, email_verified, created_at FROM users ORDER BY created_at DESC')
+        rows = cursor.fetchall()
+        return [dict(row) for row in rows]
+
+
+@app.post("/api/admin/users")
+async def api_admin_create_user(
+    data: Dict,
+    user: Dict = Depends(require_superadmin)
+):
+    """Создать нового пользователя (только для суперадмина)"""
+    email = data.get("email")
+    password = data.get("password")
+    role = data.get("role", "client")
+
+    if not email or not password:
+        raise HTTPException(status_code=400, detail="Email и пароль обязательны")
+
+    if role not in ["client", "admin", "superadmin"]:
+        raise HTTPException(status_code=400, detail="Недопустимая роль")
+
+    existing = UserDB.get_by_email(email)
+    if existing:
+        raise HTTPException(status_code=400, detail="Email уже зарегистрирован")
+
+    user_id = UserDB.create(email, password, role)
+    return {"id": user_id, "email": email, "role": role}
+
+
+@app.put("/api/admin/users/{user_id}")
+async def api_admin_update_user(
+    user_id: int,
+    data: Dict,
+    current_user: Dict = Depends(require_superadmin)
+):
+    """Обновить пользователя (только для суперадмина)"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        updates = []
+        values = []
+
+        if "role" in data:
+            if data["role"] not in ["client", "admin", "superadmin"]:
+                raise HTTPException(status_code=400, detail="Недопустимая роль")
+            updates.append("role = ?")
+            values.append(data["role"])
+
+        if "is_active" in data:
+            updates.append("is_active = ?")
+            values.append(1 if data["is_active"] else 0)
+
+        if updates:
+            values.append(user_id)
+            cursor.execute(
+                f'UPDATE users SET {", ".join(updates)} WHERE id = ?',
+                values
+            )
+
+    return {"success": True}
+
+
+@app.delete("/api/admin/users/{user_id}")
+async def api_admin_delete_user(
+    user_id: int,
+    current_user: Dict = Depends(require_superadmin)
+):
+    """Удалить пользователя (только для суперадмина)"""
+    if user_id == current_user["id"]:
+        raise HTTPException(status_code=400, detail="Нельзя удалить самого себя")
+
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM users WHERE id = ?', (user_id,))
+
+    return {"success": True}
 
 
 @app.get("/api/admin/stats")
 async def api_admin_get_stats(user: Dict = Depends(require_admin)):
     """Получить статистику (админка)"""
-    from database import get_db
-
     with get_db() as conn:
         cursor = conn.cursor()
 
@@ -2136,28 +2227,33 @@ async def api_admin_get_stats(user: Dict = Depends(require_admin)):
         cursor.execute('SELECT COUNT(*) as cnt FROM users')
         users_count = cursor.fetchone()['cnt']
 
-        # Количество КП
-        cursor.execute('SELECT COUNT(*) as cnt FROM quotes')
-        quotes_count = cursor.fetchone()['cnt']
+        # Количество компаний
+        cursor.execute('SELECT COUNT(*) as cnt FROM companies')
+        companies_count = cursor.fetchone()['cnt']
 
-        # Количество договоров
-        cursor.execute('SELECT COUNT(*) as cnt FROM contracts')
-        contracts_count = cursor.fetchone()['cnt']
+        # Всего заявок
+        cursor.execute('SELECT COUNT(*) as cnt FROM callbacks')
+        total_callbacks = cursor.fetchone()['cnt']
 
-        # Количество заявок
-        cursor.execute('SELECT COUNT(*) as cnt FROM callbacks WHERE status = "new"')
+        # Количество новых заявок
+        cursor.execute("SELECT COUNT(*) as cnt FROM callbacks WHERE status = 'new'")
         new_callbacks = cursor.fetchone()['cnt']
 
-        # Сумма договоров
-        cursor.execute('SELECT COALESCE(SUM(total_amount), 0) as total FROM contracts')
-        total_amount = cursor.fetchone()['total']
+        # Последние 5 заявок
+        cursor.execute('''
+            SELECT id, contact_name as name, contact_phone as phone, status, created_at
+            FROM callbacks
+            ORDER BY created_at DESC
+            LIMIT 5
+        ''')
+        recent_callbacks = [dict(row) for row in cursor.fetchall()]
 
     return {
-        "users_count": users_count,
-        "quotes_count": quotes_count,
-        "contracts_count": contracts_count,
-        "new_callbacks": new_callbacks,
-        "total_contracts_amount": total_amount
+        "total_users": users_count,
+        "total_companies": companies_count,
+        "total_callbacks": total_callbacks,
+        "pending_callbacks": new_callbacks,
+        "recent_callbacks": recent_callbacks
     }
 
 
