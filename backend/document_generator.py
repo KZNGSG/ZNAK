@@ -589,11 +589,28 @@ def generate_contract_pdf(
 
     # Подписи под спецификацией
     story.append(Spacer(1, 1*cm))
-    signs_table = Table([
-        [Paragraph("<b>Исполнитель:</b><br/><br/>_________________ / Турбин А.А. /", styles['Requisites']),
-         Paragraph("<b>Заказчик:</b><br/><br/>_________________ / ____________ /", styles['Requisites'])]
-    ], colWidths=[9*cm, 9*cm])
-    story.append(signs_table)
+    story.append(Table([
+        [Paragraph("<b>Исполнитель:</b>", styles['Requisites']),
+         Paragraph("<b>Заказчик:</b>", styles['Requisites'])]
+    ], colWidths=[9*cm, 9*cm]))
+
+    # Подпись исполнителя в приложении
+    if os.path.exists(SIGNATURE_PATH):
+        story.append(Table([
+            [Image(SIGNATURE_PATH, width=4*cm, height=1.5*cm), ""]
+        ], colWidths=[9*cm, 9*cm]))
+
+    story.append(Table([
+        [Paragraph("_________________ / Турбин А.А. /", styles['Requisites']),
+         Paragraph("_________________ / ____________ /", styles['Requisites'])]
+    ], colWidths=[9*cm, 9*cm]))
+
+    # Печать в приложении
+    if os.path.exists(STAMP_PATH):
+        story.append(Spacer(1, 0.3*cm))
+        story.append(Table([
+            [Image(STAMP_PATH, width=3*cm, height=3*cm), Paragraph("М.П.", styles['Requisites'])]
+        ], colWidths=[9*cm, 9*cm]))
 
     # Собираем PDF
     doc.build(story)
