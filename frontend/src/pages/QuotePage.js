@@ -55,6 +55,10 @@ const QuotePage = () => {
   const [services, setServices] = useState([]);
   const [serviceCategories, setServiceCategories] = useState({});
   const [selectedServices, setSelectedServices] = useState([]);
+  // Количества для тарифных услуг (калькулятор)
+  const [tieredQuantities, setTieredQuantities] = useState({});
+  // Активные тарифные категории (включены/выключены)
+  const [activeTieredCategories, setActiveTieredCategories] = useState({});
 
   // Step 4: Contact info
   const [contactData, setContactData] = useState({
@@ -258,6 +262,86 @@ const QuotePage = () => {
       return orderA - orderB;
     });
   }, [servicesByCategory, serviceCategories]);
+
+  // Находим подходящий тариф по количеству для категории
+  const findTierForQuantity = (categoryId, quantity) => {
+    const tiers = servicesByCategory[categoryId] || [];
+    const qty = parseInt(quantity) || 0;
+
+    // Ищем тариф, в диапазон которого попадает количество
+    for (const tier of tiers) {
+      if (tier.min_qty && tier.max_qty) {
+        if (qty >= tier.min_qty && qty <= tier.max_qty) {
+          return tier;
+        }
+      }
+    }
+    // Если не нашли — возвращаем первый тариф (минимальный)
+    return tiers.find(t => t.min_qty) || tiers[0];
+  };
+
+  // Рассчитать итог для тарифной категории
+  const calculateTieredTotal = (categoryId) => {
+    const qty = tieredQuantities[categoryId] || 0;
+    if (qty <= 0) return { tier: null, total: 0, pricePerUnit: 0 };
+
+    const tier = findTierForQuantity(categoryId, qty);
+    if (!tier) return { tier: null, total: 0, pricePerUnit: 0 };
+
+    return {
+      tier,
+      total: tier.price * qty,
+      pricePerUnit: tier.price,
+      quantity: qty
+    };
+  };
+
+  // Переключение тарифной категории (вкл/выкл)
+  const toggleTieredCategory = (categoryId) => {
+    setActiveTieredCategories(prev => {
+      const newState = { ...prev, [categoryId]: !prev[categoryId] };
+
+      // Если выключаем — удаляем из selectedServices
+      if (!newState[categoryId]) {
+        setSelectedServices(ss => ss.filter(s => s.category !== categoryId));
+        setTieredQuantities(tq => ({ ...tq, [categoryId]: 0 }));
+      } else {
+        // Если включаем — ставим начальное количество 1
+        setTieredQuantities(tq => ({ ...tq, [categoryId]: tq[categoryId] || 1 }));
+      }
+
+      return newState;
+    });
+  };
+
+  // Обновить количество для тарифной категории
+  const updateTieredQuantity = (categoryId, value) => {
+    const qty = Math.max(0, parseInt(value) || 0);
+    setTieredQuantities(prev => ({ ...prev, [categoryId]: qty }));
+
+    // Обновляем selectedServices с правильным тарифом
+    if (qty > 0 && activeTieredCategories[categoryId]) {
+      const tier = findTierForQuantity(categoryId, qty);
+      if (tier) {
+        setSelectedServices(prev => {
+          // Удаляем старые записи этой категории
+          const filtered = prev.filter(s => s.category !== categoryId);
+          // Добавляем новую с правильным тарифом
+          return [...filtered, { ...tier, quantity: qty }];
+        });
+      }
+    } else {
+      // Удаляем из selectedServices если qty = 0
+      setSelectedServices(prev => prev.filter(s => s.category !== categoryId));
+    }
+  };
+
+  // Форматирование цены
+  const formatPrice = (price) => {
+    if (price === 0) return 'Бесплатно';
+    if (price < 10) return `${price.toFixed(2)} ₽`;
+    return `${price.toLocaleString()} ₽`;
+  };
 
   // Navigation
   const canProceed = () => {
@@ -622,7 +706,136 @@ const QuotePage = () => {
                 {sortedCategoryEntries.map(([categoryId, categoryServices]) => {
                   const category = serviceCategories[categoryId];
                   const Icon = categoryIcons[categoryId] || Package;
+                  const isTiered = category?.tiered === true;
 
+                  // Для тарифных категорий — калькулятор
+                  if (isTiered) {
+                    const isActive = activeTieredCategories[categoryId];
+                    const qty = tieredQuantities[categoryId] || 0;
+                    const calc = calculateTieredTotal(categoryId);
+                    const firstService = categoryServices[0];
+
+                    return (
+                      <div key={categoryId} className={`bg-white rounded-2xl border-2 overflow-hidden transition-all ${isActive ? 'border-emerald-400 shadow-lg' : 'border-gray-200'}`}>
+                        {/* Header с переключателем */}
+                        <div
+                          className={`px-6 py-4 border-b cursor-pointer transition-colors ${isActive ? 'bg-emerald-50 border-emerald-200' : 'bg-gradient-to-r from-gray-50 to-gray-100 border-gray-200'}`}
+                          onClick={() => toggleTieredCategory(categoryId)}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <Checkbox
+                                checked={isActive}
+                                onCheckedChange={() => toggleTieredCategory(categoryId)}
+                                className="pointer-events-none"
+                              />
+                              <div className={`p-2 rounded-lg ${isActive ? 'bg-emerald-200' : 'bg-[rgb(var(--brand-yellow-100))]'}`}>
+                                <Icon size={20} className={isActive ? 'text-emerald-700' : 'text-[rgb(var(--brand-yellow-700))]'} />
+                              </div>
+                              <div>
+                                <h3 className="font-bold text-gray-900">{category?.name || categoryId}</h3>
+                                <p className="text-sm text-gray-500">{firstService?.description}</p>
+                              </div>
+                            </div>
+                            {isActive && calc.tier && (
+                              <div className="text-right">
+                                <div className="font-bold text-emerald-600">{formatPrice(calc.total)}</div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Калькулятор (раскрывается при активации) */}
+                        <AnimatePresence>
+                          {isActive && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              className="overflow-hidden"
+                            >
+                              <div className="p-6 space-y-4">
+                                {/* Поле ввода количества */}
+                                <div>
+                                  <Label className="text-sm font-semibold text-gray-700 mb-2 block">
+                                    Введите количество:
+                                  </Label>
+                                  <div className="flex items-center gap-3">
+                                    <Input
+                                      type="number"
+                                      value={qty || ''}
+                                      onChange={(e) => updateTieredQuantity(categoryId, e.target.value)}
+                                      placeholder="0"
+                                      className="w-32 text-lg font-semibold text-center"
+                                      min="1"
+                                    />
+                                    <span className="text-gray-500">шт</span>
+                                  </div>
+                                </div>
+
+                                {/* Результат расчёта */}
+                                {qty > 0 && calc.tier && (
+                                  <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-200">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <CheckCircle size={18} className="text-emerald-600" />
+                                      <span className="font-semibold text-emerald-800">Применён тариф: {calc.tier.tier}</span>
+                                    </div>
+                                    <div className="text-sm text-gray-600">
+                                      Цена за единицу: <span className="font-semibold">{formatPrice(calc.pricePerUnit)}</span>
+                                    </div>
+                                    <div className="text-lg font-bold text-emerald-700 mt-2">
+                                      Итого: {formatPrice(calc.total)}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Таблица всех тарифов */}
+                                <div>
+                                  <div className="text-sm font-medium text-gray-600 mb-2 flex items-center gap-2">
+                                    <ChevronDown size={14} />
+                                    Все тарифы:
+                                  </div>
+                                  <div className="bg-gray-50 rounded-lg overflow-hidden">
+                                    <table className="w-full text-sm">
+                                      <thead>
+                                        <tr className="bg-gray-100 text-gray-600">
+                                          <th className="px-3 py-2 text-left">Количество</th>
+                                          <th className="px-3 py-2 text-right">Цена за шт</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {categoryServices.map((tier) => {
+                                          const isCurrentTier = calc.tier?.id === tier.id;
+                                          return (
+                                            <tr
+                                              key={tier.id}
+                                              className={`border-t border-gray-200 ${isCurrentTier ? 'bg-emerald-100 font-semibold' : ''}`}
+                                            >
+                                              <td className="px-3 py-2">
+                                                {tier.tier}
+                                                {isCurrentTier && (
+                                                  <span className="ml-2 text-emerald-600">✓</span>
+                                                )}
+                                              </td>
+                                              <td className="px-3 py-2 text-right">
+                                                {formatPrice(tier.price)}
+                                              </td>
+                                            </tr>
+                                          );
+                                        })}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    );
+                  }
+
+                  // Для обычных категорий — чекбоксы
                   return (
                     <div key={categoryId} className="bg-white rounded-2xl border-2 border-gray-200 overflow-hidden">
                       <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
@@ -637,11 +850,6 @@ const QuotePage = () => {
                         {categoryServices.map((service) => {
                           const isSelected = selectedServices.some(s => s.id === service.id);
                           const isFree = service.price === 0;
-                          const priceFormatted = isFree
-                            ? 'Бесплатно'
-                            : (service.price < 10
-                              ? `${service.price.toFixed(2)} ₽`
-                              : `${service.price.toLocaleString()} ₽`);
 
                           return (
                             <div
@@ -659,16 +867,11 @@ const QuotePage = () => {
                                   <Label htmlFor={service.id} className="cursor-pointer">
                                     <div className="font-semibold text-gray-900">{service.name}</div>
                                     <div className="text-sm text-gray-500 mt-1">{service.description}</div>
-                                    {service.tier && (
-                                      <div className="inline-block mt-2 px-2 py-0.5 rounded bg-[rgb(var(--brand-yellow-100))] text-xs font-medium text-[rgb(var(--brand-yellow-800))]">
-                                        Тариф: {service.tier}
-                                      </div>
-                                    )}
                                   </Label>
                                 </div>
                                 <div className="text-right">
                                   <div className={`font-bold ${isFree ? 'text-emerald-600' : 'text-[rgb(var(--brand-yellow-700))]'}`}>
-                                    {priceFormatted}
+                                    {formatPrice(service.price)}
                                   </div>
                                   {!isFree && <div className="text-xs text-gray-500">/ {service.unit}</div>}
                                 </div>
@@ -703,46 +906,64 @@ const QuotePage = () => {
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {selectedServices.map((service) => (
-                          <div key={service.id} className="bg-gray-50 rounded-xl p-3">
-                            <div className="flex items-start justify-between gap-2 mb-2">
-                              <div className="text-sm font-medium text-gray-900 line-clamp-2">
-                                {service.name}
-                              </div>
-                              <button
-                                onClick={() => removeService(service.id)}
-                                className="p-1 rounded hover:bg-red-100 text-red-500"
-                              >
-                                <X size={14} />
-                              </button>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
+                        {selectedServices.map((service) => {
+                          const isTieredService = serviceCategories[service.category]?.tiered;
+
+                          return (
+                            <div key={service.id} className="bg-gray-50 rounded-xl p-3">
+                              <div className="flex items-start justify-between gap-2 mb-2">
+                                <div className="text-sm font-medium text-gray-900 line-clamp-2">
+                                  {service.name}
+                                  {service.tier && (
+                                    <span className="ml-1 text-xs text-gray-500">({service.tier})</span>
+                                  )}
+                                </div>
                                 <button
-                                  onClick={() => updateServiceQuantity(service.id, -1)}
-                                  className="p-1 rounded-lg bg-gray-200 hover:bg-gray-300"
+                                  onClick={() => {
+                                    if (isTieredService) {
+                                      toggleTieredCategory(service.category);
+                                    } else {
+                                      removeService(service.id);
+                                    }
+                                  }}
+                                  className="p-1 rounded hover:bg-red-100 text-red-500"
                                 >
-                                  <Minus size={14} />
-                                </button>
-                                <input
-                                  type="number"
-                                  value={service.quantity}
-                                  onChange={(e) => setServiceQuantity(service.id, e.target.value)}
-                                  className="w-12 text-center text-sm font-semibold border rounded-lg py-1"
-                                  min="1"
-                                />
-                                <button
-                                  onClick={() => updateServiceQuantity(service.id, 1)}
-                                  className="p-1 rounded-lg bg-gray-200 hover:bg-gray-300"
-                                >
-                                  <Plus size={14} />
+                                  <X size={14} />
                                 </button>
                               </div>
-                              <div className="text-sm font-bold">
-                                {(service.price * service.quantity) < 10
-                                  ? `${(service.price * service.quantity).toFixed(2)} ₽`
-                                  : `${(service.price * service.quantity).toLocaleString()} ₽`}
-                              </div>
+                              <div className="flex items-center justify-between">
+                                {isTieredService ? (
+                                  // Для тарифных — показываем количество без кнопок (изменяется в калькуляторе)
+                                  <div className="text-xs text-gray-500">
+                                    {service.quantity.toLocaleString()} × {formatPrice(service.price)}
+                                  </div>
+                                ) : (
+                                  // Для обычных — кнопки +/-
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      onClick={() => updateServiceQuantity(service.id, -1)}
+                                      className="p-1 rounded-lg bg-gray-200 hover:bg-gray-300"
+                                    >
+                                      <Minus size={14} />
+                                    </button>
+                                    <input
+                                      type="number"
+                                      value={service.quantity}
+                                      onChange={(e) => setServiceQuantity(service.id, e.target.value)}
+                                      className="w-12 text-center text-sm font-semibold border rounded-lg py-1"
+                                      min="1"
+                                    />
+                                    <button
+                                      onClick={() => updateServiceQuantity(service.id, 1)}
+                                      className="p-1 rounded-lg bg-gray-200 hover:bg-gray-300"
+                                    >
+                                      <Plus size={14} />
+                                    </button>
+                                  </div>
+                                )}
+                                <div className="text-sm font-bold">
+                                  {formatPrice(service.price * service.quantity)}
+                                </div>
                             </div>
                           </div>
                         ))}
