@@ -68,8 +68,8 @@ const HomePage = () => {
     {
       icon: FileText,
       title: 'Получить КП',
-      description: 'Запросите коммерческое предложение на подключение к маркировке',
-      path: '/contact',
+      description: 'Интерактивное коммерческое предложение с автозаполнением по ИНН',
+      path: '/quote',
       disabled: false
     }
   ];

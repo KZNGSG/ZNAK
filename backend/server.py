@@ -97,6 +97,58 @@ class ContactRequest(BaseModel):
             raise ValueError('Необходимо согласие на обработку данных')
         return v
 
+# ======================== COMPANY LOOKUP ========================
+
+class CompanyInfo(BaseModel):
+    inn: str
+    kpp: Optional[str] = None
+    ogrn: Optional[str] = None
+    name: str
+    name_short: Optional[str] = None
+    name_full: Optional[str] = None
+    opf: Optional[str] = None  # Организационно-правовая форма
+    type: str  # LEGAL или INDIVIDUAL
+    address: Optional[str] = None
+    management_name: Optional[str] = None
+    management_post: Optional[str] = None
+    status: Optional[str] = None  # ACTIVE, LIQUIDATED, etc.
+
+class INNLookupRequest(BaseModel):
+    inn: str
+
+# ======================== QUOTE (КП) SYSTEM ========================
+
+class QuoteService(BaseModel):
+    id: str
+    name: str
+    description: str
+    price: int
+    unit: str  # "шт", "услуга", "месяц"
+    category: str
+    quantity: int = 1
+
+class QuoteProduct(BaseModel):
+    id: str
+    name: str
+    tnved: str
+    category: str
+
+class QuoteRequest(BaseModel):
+    company: CompanyInfo
+    products: List[QuoteProduct]
+    services: List[QuoteService]
+    contact_name: str
+    contact_phone: str
+    contact_email: Optional[str] = None
+
+class QuoteResponse(BaseModel):
+    quote_id: str
+    company_name: str
+    total_amount: int
+    services_breakdown: List[Dict]
+    created_at: str
+    valid_until: str
+
 # ======================== FULL PRODUCT DATABASE (299 items) ========================
 
 CATEGORIES_DATA = [
@@ -746,6 +798,202 @@ EQUIPMENT_DATABASE = {
     "software": {"name": "Программа учёта", "purpose": "Интеграция с Честным ЗНАКом, учёт движения товаров", "price_min": 0, "price_max": 50000}
 }
 
+# ======================== ПРАЙС-ЛИСТ УСЛУГ ========================
+
+SERVICES_PRICELIST = [
+    # Регистрация и подключение
+    {
+        "id": "reg_chz",
+        "name": "Регистрация в Честном ЗНАКе",
+        "description": "Полное сопровождение регистрации компании в системе маркировки",
+        "price": 5000,
+        "unit": "услуга",
+        "category": "registration"
+    },
+    {
+        "id": "ukep",
+        "name": "Получение УКЭП",
+        "description": "Помощь в получении усиленной квалифицированной электронной подписи",
+        "price": 3500,
+        "unit": "шт",
+        "category": "registration"
+    },
+    {
+        "id": "edo_setup",
+        "name": "Настройка ЭДО",
+        "description": "Подключение и настройка электронного документооборота",
+        "price": 7000,
+        "unit": "услуга",
+        "category": "registration"
+    },
+    # Маркировка товаров
+    {
+        "id": "marking_card",
+        "name": "Создание карточки товара",
+        "description": "Заполнение карточки товара в системе Честный ЗНАК по шаблону",
+        "price": 250,
+        "unit": "шт",
+        "category": "marking"
+    },
+    {
+        "id": "marking_codes_100",
+        "name": "Заказ кодов маркировки (до 100 шт)",
+        "description": "Заказ и получение кодов DataMatrix для нанесения на товар",
+        "price": 1500,
+        "unit": "партия",
+        "category": "marking"
+    },
+    {
+        "id": "marking_codes_1000",
+        "name": "Заказ кодов маркировки (до 1000 шт)",
+        "description": "Заказ и получение кодов DataMatrix для нанесения на товар",
+        "price": 5000,
+        "unit": "партия",
+        "category": "marking"
+    },
+    {
+        "id": "marking_codes_10000",
+        "name": "Заказ кодов маркировки (до 10 000 шт)",
+        "description": "Заказ и получение кодов DataMatrix для нанесения на товар",
+        "price": 15000,
+        "unit": "партия",
+        "category": "marking"
+    },
+    {
+        "id": "label_print",
+        "name": "Печать этикеток",
+        "description": "Печать этикеток с DataMatrix кодами на профессиональном оборудовании",
+        "price": 3,
+        "unit": "шт",
+        "category": "marking"
+    },
+    {
+        "id": "marking_apply",
+        "name": "Нанесение маркировки",
+        "description": "Физическое нанесение этикеток на товар",
+        "price": 5,
+        "unit": "шт",
+        "category": "marking"
+    },
+    # Ввод в оборот
+    {
+        "id": "intro_production",
+        "name": "Ввод в оборот (производство)",
+        "description": "Ввод товаров в оборот через систему ЧЗ для производителей",
+        "price": 10,
+        "unit": "шт",
+        "category": "turnover"
+    },
+    {
+        "id": "intro_import",
+        "name": "Ввод в оборот (импорт)",
+        "description": "Ввод импортных товаров в оборот с оформлением документов",
+        "price": 15,
+        "unit": "шт",
+        "category": "turnover"
+    },
+    {
+        "id": "intro_remains",
+        "name": "Ввод в оборот (остатки)",
+        "description": "Маркировка и ввод в оборот товарных остатков",
+        "price": 8,
+        "unit": "шт",
+        "category": "turnover"
+    },
+    # Оборудование
+    {
+        "id": "printer_basic",
+        "name": "Принтер этикеток (базовый)",
+        "description": "Термотрансферный принтер для печати до 500 этикеток/день",
+        "price": 18000,
+        "unit": "шт",
+        "category": "equipment"
+    },
+    {
+        "id": "printer_pro",
+        "name": "Принтер этикеток (профи)",
+        "description": "Промышленный принтер для печати до 5000 этикеток/день",
+        "price": 45000,
+        "unit": "шт",
+        "category": "equipment"
+    },
+    {
+        "id": "scanner_2d",
+        "name": "2D сканер штрих-кодов",
+        "description": "Сканер для считывания DataMatrix кодов маркировки",
+        "price": 8500,
+        "unit": "шт",
+        "category": "equipment"
+    },
+    {
+        "id": "tsd_device",
+        "name": "Терминал сбора данных (ТСД)",
+        "description": "Мобильное устройство для работы с маркировкой на складе",
+        "price": 35000,
+        "unit": "шт",
+        "category": "equipment"
+    },
+    # Сопровождение
+    {
+        "id": "support_month",
+        "name": "Техподдержка (месяц)",
+        "description": "Консультации и помощь по вопросам маркировки",
+        "price": 5000,
+        "unit": "месяц",
+        "category": "support"
+    },
+    {
+        "id": "support_year",
+        "name": "Техподдержка (год)",
+        "description": "Годовое сопровождение со скидкой",
+        "price": 48000,
+        "unit": "год",
+        "category": "support"
+    },
+    {
+        "id": "training",
+        "name": "Обучение персонала",
+        "description": "Обучение работе с системой маркировки (до 5 человек)",
+        "price": 15000,
+        "unit": "услуга",
+        "category": "support"
+    },
+    {
+        "id": "audit",
+        "name": "Аудит готовности",
+        "description": "Проверка готовности бизнеса к маркировке с рекомендациями",
+        "price": 10000,
+        "unit": "услуга",
+        "category": "support"
+    },
+    # Импорт
+    {
+        "id": "import_consult",
+        "name": "Консультация по импорту",
+        "description": "Разработка схемы маркировки импортных товаров",
+        "price": 8000,
+        "unit": "услуга",
+        "category": "import"
+    },
+    {
+        "id": "import_full",
+        "name": "Сопровождение импорта под ключ",
+        "description": "Полное сопровождение маркировки импортной партии",
+        "price": 25000,
+        "unit": "партия",
+        "category": "import"
+    },
+]
+
+SERVICE_CATEGORIES = {
+    "registration": {"name": "Регистрация и подключение", "icon": "clipboard-check"},
+    "marking": {"name": "Маркировка товаров", "icon": "qr-code"},
+    "turnover": {"name": "Ввод в оборот", "icon": "arrow-right-circle"},
+    "equipment": {"name": "Оборудование", "icon": "printer"},
+    "support": {"name": "Сопровождение", "icon": "headphones"},
+    "import": {"name": "Импорт", "icon": "ship"},
+}
+
 # ======================== EMAIL FUNCTIONS ========================
 
 def send_email(to_email: str, subject: str, body: str) -> bool:
@@ -945,6 +1193,357 @@ async def send_contact(request: ContactRequest, background_tasks: BackgroundTask
         "status": "success",
         "message": "Ваша заявка принята! Мы свяжемся с вами в ближайшее время."
     }
+
+# ======================== DADATA COMPANY LOOKUP ========================
+
+DADATA_API_KEY = os.getenv('DADATA_API_KEY', '')
+DADATA_SECRET_KEY = os.getenv('DADATA_SECRET_KEY', '')
+
+@app.post("/api/company/suggest")
+async def suggest_company(request: INNLookupRequest):
+    """
+    Поиск компании по ИНН или ОГРН через DaData Suggestions API.
+    Возвращает до 10 подсказок с реквизитами для договора и счёта.
+    Работает как автокомплит - начинает искать с 3 символов.
+    """
+    query = request.inn.strip()
+
+    if not query:
+        raise HTTPException(status_code=400, detail="ИНН или ОГРН не указан")
+
+    # Минимум 3 символа для поиска
+    if len(query) < 3:
+        return {"suggestions": []}
+
+    # Если DaData не настроена, возвращаем тестовые данные
+    if not DADATA_API_KEY:
+        logger.warning("DaData API key not configured, returning mock data")
+        # Генерируем тестовые подсказки на основе введённого запроса
+        mock_suggestions = []
+        base_inns = [
+            ("7707083893", "ПАО Сбербанк", "117997, г Москва, ул Вавилова, д 19"),
+            ("7736050003", "ПАО Газпром", "117997, г Москва, ул Наметкина, д 16"),
+            ("7703399903", "ООО Яндекс", "119021, г Москва, ул Льва Толстого, д 16"),
+            ("7710140679", "ПАО Ростелеком", "191167, г Санкт-Петербург, наб Синопская, д 14"),
+            ("7702070139", "ПАО МТС", "109147, г Москва, ул Марксистская, д 4"),
+            ("7743013902", "ПАО Магнит", "350072, г Краснодар, ул Солнечная, д 15/5"),
+            ("7825706086", "ООО Лента", "197374, г Санкт-Петербург, ул Савушкина, д 112"),
+            ("7714617793", "ООО Озон", "123112, г Москва, Пресненская наб, д 10"),
+            ("7704340310", "ООО Вайлдберриз", "142181, Московская обл, г Подольск"),
+            ("5047228659", "ООО Мегамаркет", "140000, Московская обл, г Люберцы"),
+        ]
+
+        for inn, name, address in base_inns:
+            if query in inn or query.lower() in name.lower():
+                mock_suggestions.append({
+                    "inn": inn,
+                    "kpp": inn[:4] + "01001" if len(inn) == 10 else None,
+                    "ogrn": "102" + inn + "95"[:13-len(inn)] if len(inn) == 10 else "30" + inn,
+                    "name": name,
+                    "name_short": name,
+                    "name_full": name,
+                    "opf": name.split()[0],
+                    "type": "LEGAL" if len(inn) == 10 else "INDIVIDUAL",
+                    "address": address,
+                    "management_name": "Иванов Иван Иванович",
+                    "management_post": "Генеральный директор",
+                    "status": "ACTIVE"
+                })
+                if len(mock_suggestions) >= 10:
+                    break
+
+        # Если ничего не нашли, добавляем тестовую компанию
+        if not mock_suggestions:
+            mock_suggestions.append({
+                "inn": query + "0" * (10 - len(query)) if len(query) < 10 else query[:10],
+                "kpp": "770701001",
+                "ogrn": "1027700132195",
+                "name": f"ООО «Компания {query}»",
+                "name_short": f"ООО «Компания {query}»",
+                "name_full": f"Общество с ограниченной ответственностью «Компания {query}»",
+                "opf": "ООО",
+                "type": "LEGAL",
+                "address": "123456, г. Москва, ул. Тестовая, д. 1",
+                "management_name": "Иванов Иван Иванович",
+                "management_post": "Генеральный директор",
+                "status": "ACTIVE"
+            })
+
+        return {"suggestions": mock_suggestions}
+
+    try:
+        async with httpx.AsyncClient() as client:
+            # Используем Suggestions API (автокомплит), а не findById
+            response = await client.post(
+                "https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/party",
+                headers={
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "Authorization": f"Token {DADATA_API_KEY}"
+                },
+                json={
+                    "query": query,
+                    "count": 10,
+                    "status": ["ACTIVE"]  # Только действующие компании
+                },
+                timeout=10.0
+            )
+
+            if response.status_code != 200:
+                logger.error(f"DaData error: {response.status_code} - {response.text}")
+                raise HTTPException(status_code=502, detail="Ошибка сервиса DaData")
+
+            data = response.json()
+            suggestions = []
+
+            for item in data.get("suggestions", []):
+                d = item.get("data", {})
+                name_data = d.get("name", {})
+                address_data = d.get("address", {})
+                management = d.get("management", {})
+                state = d.get("state", {})
+                opf = d.get("opf", {})
+
+                suggestion = {
+                    "inn": d.get("inn"),
+                    "kpp": d.get("kpp"),
+                    "ogrn": d.get("ogrn"),
+                    "name": item.get("value"),
+                    "name_short": name_data.get("short_with_opf"),
+                    "name_full": name_data.get("full_with_opf"),
+                    "opf": opf.get("short"),
+                    "type": d.get("type"),  # LEGAL или INDIVIDUAL
+                    "address": address_data.get("unrestricted_value") or address_data.get("value"),
+                    "management_name": management.get("name"),
+                    "management_post": management.get("post"),
+                    "status": state.get("status")  # ACTIVE, LIQUIDATED, etc.
+                }
+                suggestions.append(suggestion)
+
+            return {"suggestions": suggestions}
+
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="Сервис DaData не отвечает")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"DaData lookup error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Ошибка при поиске компании")
+
+# ======================== QUOTE (КП) ENDPOINTS ========================
+
+@app.get("/api/services/list")
+async def get_services_list():
+    """Получить прайс-лист услуг"""
+    return {
+        "services": SERVICES_PRICELIST,
+        "categories": SERVICE_CATEGORIES
+    }
+
+@app.post("/api/quote/create")
+async def create_quote(request: QuoteRequest, background_tasks: BackgroundTasks):
+    """
+    Создать коммерческое предложение.
+    Рассчитывает итоговую сумму и отправляет КП на email.
+    """
+    from datetime import datetime, timedelta
+
+    # Генерируем номер КП
+    quote_id = f"КП-{datetime.now().strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
+
+    # Рассчитываем итог по услугам
+    services_breakdown = []
+    total_amount = 0
+
+    for service in request.services:
+        subtotal = service.price * service.quantity
+        total_amount += subtotal
+        services_breakdown.append({
+            "id": service.id,
+            "name": service.name,
+            "price": service.price,
+            "quantity": service.quantity,
+            "unit": service.unit,
+            "subtotal": subtotal
+        })
+
+    # Дата создания и срок действия
+    created_at = datetime.now()
+    valid_until = created_at + timedelta(days=14)  # КП действует 14 дней
+
+    quote_data = {
+        "quote_id": quote_id,
+        "company": request.company.dict(),
+        "products": [p.dict() for p in request.products],
+        "services_breakdown": services_breakdown,
+        "total_amount": total_amount,
+        "contact": {
+            "name": request.contact_name,
+            "phone": request.contact_phone,
+            "email": request.contact_email
+        },
+        "created_at": created_at.isoformat(),
+        "valid_until": valid_until.strftime("%d.%m.%Y")
+    }
+
+    # Отправляем КП на email в фоне
+    if request.contact_email:
+        email_body = format_quote_email(quote_data)
+        background_tasks.add_task(
+            send_email,
+            request.contact_email,
+            f"Коммерческое предложение {quote_id} от Про.Маркируй",
+            email_body
+        )
+
+    # Также отправляем уведомление менеджеру
+    manager_email = os.getenv('CONTACT_TO_EMAIL', 'info@promarkirui.ru')
+    manager_body = format_quote_notification(quote_data)
+    background_tasks.add_task(
+        send_email,
+        manager_email,
+        f"Новая заявка на КП: {quote_id}",
+        manager_body
+    )
+
+    return {
+        "status": "success",
+        "quote_id": quote_id,
+        "company_name": request.company.name,
+        "total_amount": total_amount,
+        "services_breakdown": services_breakdown,
+        "created_at": created_at.strftime("%d.%m.%Y %H:%M"),
+        "valid_until": valid_until.strftime("%d.%m.%Y"),
+        "message": "КП успешно сформировано!"
+    }
+
+def format_quote_email(quote_data: dict) -> str:
+    """Форматирует КП для отправки клиенту"""
+    services_rows = ""
+    for idx, s in enumerate(quote_data["services_breakdown"], 1):
+        services_rows += f"""
+        <tr>
+            <td style="padding: 12px; border-bottom: 1px solid #eee;">{idx}</td>
+            <td style="padding: 12px; border-bottom: 1px solid #eee;">{s['name']}</td>
+            <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">{s['quantity']} {s['unit']}</td>
+            <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right;">{s['price']:,} ₽</td>
+            <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right; font-weight: bold;">{s['subtotal']:,} ₽</td>
+        </tr>
+        """
+
+    company = quote_data["company"]
+
+    return f"""
+    <html>
+    <body style="font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #FFDA07 0%, #F5C300 100%); padding: 30px; border-radius: 16px 16px 0 0;">
+            <h1 style="margin: 0; color: #000; font-size: 28px;">Коммерческое предложение</h1>
+            <p style="margin: 10px 0 0; color: #333; font-size: 16px;">№ {quote_data['quote_id']}</p>
+        </div>
+
+        <div style="background: #fff; padding: 30px; border: 1px solid #eee; border-top: none;">
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 30px;">
+                <h3 style="margin: 0 0 15px; color: #333;">Реквизиты заказчика</h3>
+                <table style="width: 100%;">
+                    <tr>
+                        <td style="padding: 5px 0; color: #666; width: 150px;">Компания:</td>
+                        <td style="padding: 5px 0; font-weight: 600;">{company['name']}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 5px 0; color: #666;">ИНН:</td>
+                        <td style="padding: 5px 0;">{company['inn']}</td>
+                    </tr>
+                    {'<tr><td style="padding: 5px 0; color: #666;">КПП:</td><td style="padding: 5px 0;">' + company.get('kpp', '') + '</td></tr>' if company.get('kpp') else ''}
+                    <tr>
+                        <td style="padding: 5px 0; color: #666;">Адрес:</td>
+                        <td style="padding: 5px 0;">{company.get('address', '—')}</td>
+                    </tr>
+                </table>
+            </div>
+
+            <h3 style="color: #333; margin-bottom: 15px;">Состав услуг</h3>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                <thead>
+                    <tr style="background: #f8f9fa;">
+                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #FFDA07;">№</th>
+                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #FFDA07;">Наименование</th>
+                        <th style="padding: 12px; text-align: center; border-bottom: 2px solid #FFDA07;">Кол-во</th>
+                        <th style="padding: 12px; text-align: right; border-bottom: 2px solid #FFDA07;">Цена</th>
+                        <th style="padding: 12px; text-align: right; border-bottom: 2px solid #FFDA07;">Сумма</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {services_rows}
+                </tbody>
+                <tfoot>
+                    <tr style="background: linear-gradient(135deg, #FFDA07 0%, #F5C300 100%);">
+                        <td colspan="4" style="padding: 15px; font-weight: bold; font-size: 18px;">ИТОГО:</td>
+                        <td style="padding: 15px; text-align: right; font-weight: bold; font-size: 18px;">{quote_data['total_amount']:,} ₽</td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <div style="background: #fff3cd; padding: 15px; border-radius: 8px; border-left: 4px solid #FFDA07; margin-bottom: 20px;">
+                <strong>Предложение действительно до:</strong> {quote_data['valid_until']}
+            </div>
+
+            <div style="text-align: center; padding: 20px;">
+                <a href="https://promarkirui.ru/contact" style="display: inline-block; background: linear-gradient(135deg, #FFDA07 0%, #F5C300 100%); color: #000; padding: 15px 40px; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 16px;">
+                    Оформить заказ
+                </a>
+            </div>
+        </div>
+
+        <div style="background: #1f2937; padding: 20px; border-radius: 0 0 16px 16px; text-align: center;">
+            <p style="margin: 0; color: #9ca3af; font-size: 14px;">
+                Про.Маркируй — сервис подключения к системе маркировки Честный ЗНАК<br>
+                <a href="https://promarkirui.ru" style="color: #FFDA07;">promarkirui.ru</a> | info@promarkirui.ru
+            </p>
+        </div>
+    </body>
+    </html>
+    """
+
+def format_quote_notification(quote_data: dict) -> str:
+    """Форматирует уведомление о новом КП для менеджера"""
+    company = quote_data["company"]
+    contact = quote_data["contact"]
+
+    services_list = ""
+    for s in quote_data["services_breakdown"]:
+        services_list += f"• {s['name']} × {s['quantity']} = {s['subtotal']:,} ₽\n"
+
+    return f"""
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <h2 style="color: #1E3A8A;">🎯 Новая заявка на КП #{quote_data['quote_id']}</h2>
+
+        <h3>Компания:</h3>
+        <ul>
+            <li><strong>{company['name']}</strong></li>
+            <li>ИНН: {company['inn']}</li>
+            <li>Адрес: {company.get('address', '—')}</li>
+        </ul>
+
+        <h3>Контактное лицо:</h3>
+        <ul>
+            <li>Имя: {contact['name']}</li>
+            <li>Телефон: <a href="tel:{contact['phone']}">{contact['phone']}</a></li>
+            <li>Email: {contact.get('email', '—')}</li>
+        </ul>
+
+        <h3>Услуги:</h3>
+        <pre style="background: #f5f5f5; padding: 15px; border-radius: 8px;">{services_list}</pre>
+
+        <h2 style="color: #059669;">💰 Итого: {quote_data['total_amount']:,} ₽</h2>
+
+        <p style="color: #666; font-size: 12px;">
+            Создано: {quote_data['created_at']}<br>
+            Действует до: {quote_data['valid_until']}
+        </p>
+    </body>
+    </html>
+    """
 
 # ======================== AI CHAT (OpenAI ChatKit) ========================
 

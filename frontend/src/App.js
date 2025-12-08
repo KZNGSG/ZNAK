@@ -14,6 +14,7 @@ import ChecklistPage from './pages/ChecklistPage';
 import ScannerPage from './pages/ScannerPage';
 import KnowledgePage from './pages/KnowledgePage';
 import AccountPage from './pages/AccountPage';
+import QuotePage from './pages/QuotePage';
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
             <Route path="/import" element={<ImportPage />} />
             <Route path="/equipment" element={<EquipmentPage />} />
             <Route path="/contact" element={<ContactPage />} />
+            <Route path="/quote" element={<QuotePage />} />
             <Route path="/consultation" element={<ConsultationPage />} />
             <Route path="/checklist" element={<ChecklistPage />} />
             <Route path="/scanner" element={<ScannerPage />} />

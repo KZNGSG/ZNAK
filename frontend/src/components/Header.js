@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { CheckCircle, ClipboardList, Wrench, Mail } from 'lucide-react';
+import { CheckCircle, ClipboardList, Wrench, Mail, FileText } from 'lucide-react';
 import CitySelector from './CitySelector';
 
 const Header = () => {
@@ -50,16 +50,16 @@ const Header = () => {
               Проверить
             </Link>
             <Link
-              to="/checklist"
+              to="/quote"
               className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-bold transition-all ${
-                isActive('/checklist')
+                isActive('/quote')
                   ? 'bg-gradient-to-r from-[rgb(var(--brand-yellow-500))] to-[rgb(var(--brand-yellow-600))] text-[rgb(var(--black))] shadow-lg'
                   : 'text-[rgb(var(--grey-700))] hover:bg-[rgb(var(--brand-yellow-50))] hover:text-[rgb(var(--black))]'
               }`}
-              data-testid="nav-checklist"
+              data-testid="nav-quote"
             >
-              <ClipboardList size={20} strokeWidth={2.5} />
-              Чек-лист
+              <FileText size={20} strokeWidth={2.5} />
+              Получить КП
             </Link>
             <Link
               to="/equipment"
