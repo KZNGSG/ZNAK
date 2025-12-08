@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
-import { BadgeCheck, Rocket, ShieldCheck, Layers, ScanLine, Ship, Settings, FileText, ClipboardList, QrCode, BookOpen, UserCircle } from 'lucide-react';
+import { BadgeCheck, Rocket, ShieldCheck, Layers, ScanLine, Ship, Settings, FileText, ClipboardList, UserCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const HomePage = () => {
@@ -15,25 +15,13 @@ const HomePage = () => {
     { icon: Layers, title: 'Всё включено' }
   ];
 
-  // Новые карточки функций
+  // Карточки функций
   const features = [
     {
       icon: ClipboardList,
       title: 'Чек-лист подключения',
       description: 'Пошаговая инструкция для регистрации в Честном ЗНАКе',
       path: '/checklist'
-    },
-    {
-      icon: QrCode,
-      title: 'Проверка кода маркировки',
-      description: 'Отсканируйте или введите код для проверки подлинности',
-      path: '/scanner'
-    },
-    {
-      icon: BookOpen,
-      title: 'База знаний',
-      description: 'Статьи, инструкции и ответы на частые вопросы',
-      path: '/knowledge'
     },
     {
       icon: UserCircle,
@@ -212,7 +200,7 @@ const HomePage = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-2xl mx-auto">
             {features.map((feature, index) => {
               const Icon = feature.icon;
               return (

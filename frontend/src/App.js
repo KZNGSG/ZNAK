@@ -11,8 +11,6 @@ import EquipmentPage from './pages/EquipmentPage';
 import ContactPage from './pages/ContactPage';
 import ConsultationPage from './pages/ConsultationPage';
 import ChecklistPage from './pages/ChecklistPage';
-import ScannerPage from './pages/ScannerPage';
-import KnowledgePage from './pages/KnowledgePage';
 import AccountPage from './pages/AccountPage';
 
 function App() {
@@ -30,8 +28,6 @@ function App() {
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/consultation" element={<ConsultationPage />} />
             <Route path="/checklist" element={<ChecklistPage />} />
-            <Route path="/scanner" element={<ScannerPage />} />
-            <Route path="/knowledge" element={<KnowledgePage />} />
             <Route path="/account" element={<AccountPage />} />
           </Routes>
         </main>
