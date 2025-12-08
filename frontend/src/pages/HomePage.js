@@ -102,41 +102,6 @@ const HomePage = () => {
               </div>
             </motion.div>
 
-            {/* Right: Enhanced decorative pattern - Yellow theme */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.7, delay: 0.3 }}
-              className="hidden lg:flex relative min-h-[480px] items-center justify-center"
-            >
-              <div className="relative w-full h-full flex items-center justify-center">
-                {/* Enhanced Data Matrix pattern - Yellow */}
-                <div className="grid grid-cols-8 gap-3 p-6">
-                  {[...Array(64)].map((_, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, scale: 0, rotate: 0 }}
-                      animate={{ 
-                        opacity: Math.random() > 0.3 ? 0.9 : 0.25, 
-                        scale: 1,
-                        rotate: Math.random() * 8 - 4
-                      }}
-                      transition={{ duration: 0.6, delay: i * 0.015 }}
-                      className={`w-11 h-11 rounded-xl shadow-md ${
-                        i % 3 === 0 
-                          ? 'bg-gradient-to-br from-[#FFDA07] to-[#F5C300]' 
-                          : i % 3 === 1 
-                          ? 'bg-gradient-to-br from-[#1F2937] to-[#374151]' 
-                          : 'bg-gradient-to-br from-gray-300 to-gray-400'
-                      }`}
-                      style={{
-                        boxShadow: i % 3 === 0 ? '0 4px 12px rgba(255,218,7,0.4)' : '0 2px 6px rgba(0,0,0,0.1)'
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-            </motion.div>
           </div>
         </div>
       </section>
