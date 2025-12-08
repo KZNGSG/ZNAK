@@ -489,19 +489,13 @@ def generate_contract_pdf(
     БИК: {EXECUTOR_INFO['bank_bik']}<br/>
     К/с: {EXECUTOR_INFO['bank_corr']}<br/>
     Тел: {EXECUTOR_INFO['phone']}<br/>
-    Email: {EXECUTOR_INFO['email']}<br/><br/>
-    _________________ / Турбин А.А. /<br/>
-    <font size="7">(подпись)</font><br/><br/>
-    М.П.
+    Email: {EXECUTOR_INFO['email']}
     """
 
     client_reqs = f"""<b>ЗАКАЗЧИК:</b><br/><br/>
     {client_name}<br/>
     ИНН: {client_inn}{f'<br/>КПП: {client_kpp}' if client_kpp else ''}<br/>
-    Адрес: {client_info.get('address', '_________________')}<br/><br/><br/><br/><br/><br/><br/><br/>
-    _________________ / {client_manager_name} /<br/>
-    <font size="7">(подпись)</font><br/><br/>
-    М.П.
+    Адрес: {client_info.get('address', '_________________')}
     """
 
     reqs_table = Table([
@@ -516,6 +510,31 @@ def generate_contract_pdf(
     ]))
 
     story.append(reqs_table)
+    story.append(Spacer(1, 0.5*cm))
+
+    # Блок подписей с картинками
+    # Подпись исполнителя
+    if os.path.exists(SIGNATURE_PATH):
+        story.append(Table([
+            [Image(SIGNATURE_PATH, width=4*cm, height=1.5*cm), ""]
+        ], colWidths=[9*cm, 9*cm]))
+
+    story.append(Table([
+        [Paragraph("_________________ / Турбин А.А. /", styles['Requisites']),
+         Paragraph("_________________ / ____________ /", styles['Requisites'])]
+    ], colWidths=[9*cm, 9*cm]))
+
+    # Печать исполнителя
+    if os.path.exists(STAMP_PATH):
+        story.append(Spacer(1, 0.3*cm))
+        story.append(Table([
+            [Image(STAMP_PATH, width=3*cm, height=3*cm), Paragraph("М.П.", styles['Requisites'])]
+        ], colWidths=[9*cm, 9*cm]))
+    else:
+        story.append(Table([
+            [Paragraph("М.П.", styles['Requisites']),
+             Paragraph("М.П.", styles['Requisites'])]
+        ], colWidths=[9*cm, 9*cm]))
 
     # === ПРИЛОЖЕНИЕ 1 ===
     story.append(PageBreak())
