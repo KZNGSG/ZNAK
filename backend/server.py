@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional, List, Dict
@@ -13,6 +13,13 @@ import uuid
 
 # Load environment variables first
 load_dotenv()
+
+# Import auth and database modules
+from database import UserDB, ContactDB, StatsDB, init_database
+from auth import (
+    create_access_token, authenticate_user, get_current_user,
+    require_auth, require_admin, require_superadmin
+)
 
 app = FastAPI(title="Про.Маркируй API")
 
@@ -1094,6 +1101,265 @@ async def ai_chat(request: ChatRequest):
     except Exception as e:
         logger.error(f"AI chat error: {str(e)}")
         raise HTTPException(status_code=500, detail="AI service error")
+
+# ======================== AUTH MODELS ========================
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+class RegisterRequest(BaseModel):
+    email: str
+    password: str
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    company_name: Optional[str] = None
+    inn: Optional[str] = None
+    city: Optional[str] = None
+
+class UserUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    company_name: Optional[str] = None
+    inn: Optional[str] = None
+    city: Optional[str] = None
+    role: Optional[str] = None
+
+class ContactUpdateRequest(BaseModel):
+    status: str
+    notes: Optional[str] = None
+    assigned_to: Optional[int] = None
+
+# ======================== AUTH ENDPOINTS ========================
+
+@app.post("/api/auth/login")
+async def login(request: LoginRequest):
+    """Вход в систему"""
+    user = authenticate_user(request.email, request.password)
+    if not user:
+        raise HTTPException(status_code=401, detail="Неверный email или пароль")
+
+    token = create_access_token(user['id'], user['email'], user['role'])
+
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": user
+    }
+
+@app.post("/api/auth/register")
+async def register(request: RegisterRequest):
+    """Регистрация нового пользователя"""
+    # Проверяем, не занят ли email
+    existing = UserDB.get_by_email(request.email)
+    if existing:
+        raise HTTPException(status_code=400, detail="Пользователь с таким email уже существует")
+
+    # Создаём пользователя
+    user_id = UserDB.create(
+        email=request.email,
+        password=request.password,
+        role='client',
+        name=request.name,
+        phone=request.phone,
+        company_name=request.company_name,
+        inn=request.inn,
+        city=request.city
+    )
+
+    user = UserDB.get_by_id(user_id)
+    token = create_access_token(user['id'], user['email'], user['role'])
+
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": {
+            'id': user['id'],
+            'email': user['email'],
+            'role': user['role'],
+            'name': user.get('name'),
+            'phone': user.get('phone')
+        }
+    }
+
+@app.get("/api/auth/me")
+async def get_me(current_user: dict = Depends(require_auth)):
+    """Получить информацию о текущем пользователе"""
+    user = UserDB.get_by_id(current_user['id'])
+    return {
+        'id': user['id'],
+        'email': user['email'],
+        'role': user['role'],
+        'name': user.get('name'),
+        'phone': user.get('phone'),
+        'company_name': user.get('company_name'),
+        'inn': user.get('inn'),
+        'city': user.get('city'),
+        'email_verified': user.get('email_verified'),
+        'created_at': user.get('created_at')
+    }
+
+# ======================== ADMIN ENDPOINTS ========================
+
+@app.get("/api/admin/stats")
+async def get_admin_stats(current_user: dict = Depends(require_admin)):
+    """Получить статистику для админ-панели"""
+    return StatsDB.get_dashboard_stats()
+
+@app.get("/api/admin/users")
+async def get_admin_users(
+    limit: int = 50,
+    offset: int = 0,
+    role: Optional[str] = None,
+    search: Optional[str] = None,
+    current_user: dict = Depends(require_admin)
+):
+    """Получить список пользователей"""
+    users = UserDB.get_all(limit=limit, offset=offset, role=role, search=search)
+    total = UserDB.count(role=role, search=search)
+
+    return {
+        "users": users,
+        "total": total,
+        "limit": limit,
+        "offset": offset
+    }
+
+@app.get("/api/admin/users/{user_id}")
+async def get_admin_user(user_id: int, current_user: dict = Depends(require_admin)):
+    """Получить пользователя по ID"""
+    user = UserDB.get_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+
+    # Убираем пароль из ответа
+    user_data = dict(user)
+    user_data.pop('password_hash', None)
+    user_data.pop('verification_token', None)
+    user_data.pop('reset_token', None)
+
+    return user_data
+
+@app.put("/api/admin/users/{user_id}")
+async def update_admin_user(
+    user_id: int,
+    request: UserUpdateRequest,
+    current_user: dict = Depends(require_admin)
+):
+    """Обновить пользователя"""
+    # Только superadmin может менять роли
+    if request.role and current_user['role'] != 'superadmin':
+        raise HTTPException(status_code=403, detail="Только суперадмин может менять роли")
+
+    user = UserDB.get_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+
+    updated = UserDB.update(
+        user_id,
+        name=request.name,
+        phone=request.phone,
+        company_name=request.company_name,
+        inn=request.inn,
+        city=request.city,
+        role=request.role
+    )
+
+    return {"success": updated}
+
+@app.delete("/api/admin/users/{user_id}")
+async def delete_admin_user(user_id: int, current_user: dict = Depends(require_superadmin)):
+    """Удалить пользователя (только superadmin)"""
+    if user_id == current_user['id']:
+        raise HTTPException(status_code=400, detail="Нельзя удалить самого себя")
+
+    user = UserDB.get_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+
+    deleted = UserDB.delete(user_id)
+    return {"success": deleted}
+
+@app.get("/api/admin/contacts")
+async def get_admin_contacts(
+    limit: int = 50,
+    offset: int = 0,
+    status: Optional[str] = None,
+    search: Optional[str] = None,
+    current_user: dict = Depends(require_admin)
+):
+    """Получить список заявок"""
+    contacts = ContactDB.get_all(limit=limit, offset=offset, status=status, search=search)
+    total = ContactDB.count(status=status, search=search)
+
+    return {
+        "contacts": contacts,
+        "total": total,
+        "limit": limit,
+        "offset": offset
+    }
+
+@app.get("/api/admin/contacts/{contact_id}")
+async def get_admin_contact(contact_id: int, current_user: dict = Depends(require_admin)):
+    """Получить заявку по ID"""
+    contact = ContactDB.get_by_id(contact_id)
+    if not contact:
+        raise HTTPException(status_code=404, detail="Заявка не найдена")
+    return contact
+
+@app.put("/api/admin/contacts/{contact_id}")
+async def update_admin_contact(
+    contact_id: int,
+    request: ContactUpdateRequest,
+    current_user: dict = Depends(require_admin)
+):
+    """Обновить статус заявки"""
+    contact = ContactDB.get_by_id(contact_id)
+    if not contact:
+        raise HTTPException(status_code=404, detail="Заявка не найдена")
+
+    updated = ContactDB.update_status(
+        contact_id,
+        status=request.status,
+        notes=request.notes,
+        assigned_to=request.assigned_to or current_user['id']
+    )
+
+    return {"success": updated}
+
+# Обновляем endpoint контактной формы для сохранения в БД
+@app.post("/api/contact/submit")
+async def submit_contact(request: ContactRequest, background_tasks: BackgroundTasks):
+    """Отправить контактную форму и сохранить в БД"""
+
+    # Сохраняем в БД
+    contact_id = ContactDB.create(
+        name=request.name,
+        phone=request.phone,
+        email=request.email,
+        request_type=request.request_type,
+        comment=request.comment
+    )
+
+    # Отправляем email в фоне
+    contact_email = os.getenv('CONTACT_TO_EMAIL', 'info@promarkirui.ru')
+    subject = f"Новая заявка #{contact_id}: {request.request_type}"
+    body = format_contact_email(request)
+    background_tasks.add_task(send_email, contact_email, subject, body)
+
+    return {
+        "status": "success",
+        "contact_id": contact_id,
+        "message": "Ваша заявка принята! Мы свяжемся с вами в ближайшее время."
+    }
+
+# ======================== STARTUP ========================
+
+@app.on_event("startup")
+async def startup_event():
+    """Инициализация при старте"""
+    init_database()
+    logger.info("Database initialized")
 
 if __name__ == "__main__":
     import uvicorn
