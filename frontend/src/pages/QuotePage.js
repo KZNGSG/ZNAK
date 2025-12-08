@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Checkbox } from '../components/ui/checkbox';
@@ -33,8 +33,14 @@ const categoryIcons = {
 
 const QuotePage = () => {
   const navigate = useNavigate();
-  const [step, setStep] = useState(1);
+  const location = useLocation();
+
+  // Получаем товары из CheckProductPage если они переданы
+  const productsFromCheck = location.state?.products || [];
+
+  const [step, setStep] = useState(productsFromCheck.length > 0 ? 1 : 1);
   const [loading, setLoading] = useState(false);
+  const [hasProductsFromCheck, setHasProductsFromCheck] = useState(productsFromCheck.length > 0);
 
   // Step 1: Company data
   const [innQuery, setInnQuery] = useState('');
@@ -79,6 +85,26 @@ const QuotePage = () => {
   useEffect(() => {
     fetchCategories();
     fetchServices();
+  }, []);
+
+  // Инициализация товаров из CheckProductPage
+  useEffect(() => {
+    if (productsFromCheck.length > 0) {
+      // Преобразуем формат товаров из CheckProductPage в формат QuotePage
+      const mappedProducts = productsFromCheck.map(result => ({
+        id: result.productInfo?.id || result.subcategory,
+        name: result.productInfo?.name || result.subcategory_name || 'Товар',
+        tnved: result.tnved || result.productInfo?.tnved || '',
+        categoryId: result.productInfo?.categoryId || result.category,
+        categoryName: result.productInfo?.categoryName || result.category,
+        status: result.status || result.productInfo?.status,
+        source: result.productInfo?.source || [],
+        volume: result.productInfo?.volume || '',
+        requires_marking: result.requires_marking
+      }));
+      setSelectedProducts(mappedProducts);
+      toast.success(`Добавлено ${mappedProducts.length} товар(ов) из проверки`);
+    }
   }, []);
 
   // Click outside to close suggestions
