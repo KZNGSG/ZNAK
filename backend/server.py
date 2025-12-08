@@ -107,7 +107,7 @@ class CompanyInfo(BaseModel):
     name_short: Optional[str] = None
     name_full: Optional[str] = None
     opf: Optional[str] = None  # Организационно-правовая форма
-    type: str  # LEGAL или INDIVIDUAL
+    type: Optional[str] = None  # LEGAL или INDIVIDUAL
     address: Optional[str] = None
     management_name: Optional[str] = None
     management_post: Optional[str] = None
@@ -121,8 +121,8 @@ class INNLookupRequest(BaseModel):
 class QuoteService(BaseModel):
     id: str
     name: str
-    description: str
-    price: int
+    description: Optional[str] = None
+    price: float  # Может быть дробным (1.62 ₽)
     unit: str  # "шт", "услуга", "месяц"
     category: str
     quantity: int = 1
