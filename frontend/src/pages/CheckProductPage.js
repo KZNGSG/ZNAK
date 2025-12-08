@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { RadioGroup, RadioGroupItem } from '../components/ui/radio-group';
+import { Checkbox } from '../components/ui/checkbox';
 import { Label } from '../components/ui/label';
 import {
   CheckCircle, XCircle, ArrowLeft, ArrowRight, Package, FlaskConical,
@@ -130,7 +131,7 @@ const CheckProductPage = () => {
       categoryId: categoryId,
       categoryName: categories.find(c => c.id === categoryId)?.name || '',
       status: categoryStatus,
-      source: '',
+      source: [],  // массив для множественного выбора
       volume: ''
     };
 
@@ -150,6 +151,18 @@ const CheckProductPage = () => {
     ));
   };
 
+  // Toggle source selection (multiple choice)
+  const toggleSource = (productId, sourceValue) => {
+    setSelectedProducts(prev => prev.map(p => {
+      if (p.id !== productId) return p;
+      const currentSources = p.source || [];
+      const newSources = currentSources.includes(sourceValue)
+        ? currentSources.filter(s => s !== sourceValue)
+        : [...currentSources, sourceValue];
+      return { ...p, source: newSources };
+    }));
+  };
+
   // Check if product is selected
   const isProductSelected = (subcategoryId) => {
     return selectedProducts.some(p => p.id === subcategoryId);
@@ -163,7 +176,7 @@ const CheckProductPage = () => {
       }
       setStep(2);
     } else if (step === 2) {
-      const incomplete = selectedProducts.find(p => !p.source || !p.volume);
+      const incomplete = selectedProducts.find(p => !p.source || p.source.length === 0 || !p.volume);
       if (incomplete) {
         toast.error(`Заполните данные для всех товаров`);
         return;
@@ -592,31 +605,31 @@ const CheckProductPage = () => {
 
                   {/* Product Details Form */}
                   <div className="p-6 grid md:grid-cols-2 gap-6">
-                    {/* Source */}
+                    {/* Source - Multiple selection */}
                     <div>
-                      <Label className="text-sm font-semibold text-gray-700 mb-3 block">
+                      <Label className="text-sm font-semibold text-gray-700 mb-1 block">
                         Откуда у вас этот товар?
                       </Label>
-                      <RadioGroup
-                        value={product.source}
-                        onValueChange={(value) => updateProductDetails(product.id, 'source', value)}
-                      >
-                        <div className="space-y-2">
-                          {[
-                            { value: 'produce', label: 'Произвожу сам в России' },
-                            { value: 'import', label: 'Импортирую из-за рубежа' },
-                            { value: 'buy_rf', label: 'Покупаю у российского поставщика' },
-                            { value: 'old_stock', label: 'Продаю остатки' }
-                          ].map((opt) => (
-                            <div key={opt.value} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50">
-                              <RadioGroupItem value={opt.value} id={`${product.id}-${opt.value}`} />
-                              <Label htmlFor={`${product.id}-${opt.value}`} className="cursor-pointer text-sm flex-1">
-                                {opt.label}
-                              </Label>
-                            </div>
-                          ))}
-                        </div>
-                      </RadioGroup>
+                      <p className="text-xs text-gray-500 mb-3">Можно выбрать несколько вариантов</p>
+                      <div className="space-y-2">
+                        {[
+                          { value: 'produce', label: 'Произвожу сам в России' },
+                          { value: 'import', label: 'Импортирую из-за рубежа' },
+                          { value: 'buy_rf', label: 'Покупаю у российского поставщика' },
+                          { value: 'old_stock', label: 'Продаю остатки' }
+                        ].map((opt) => (
+                          <div key={opt.value} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50">
+                            <Checkbox
+                              id={`${product.id}-${opt.value}`}
+                              checked={product.source?.includes(opt.value)}
+                              onCheckedChange={() => toggleSource(product.id, opt.value)}
+                            />
+                            <Label htmlFor={`${product.id}-${opt.value}`} className="cursor-pointer text-sm flex-1">
+                              {opt.label}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
                     </div>
 
                     {/* Volume */}
@@ -649,11 +662,11 @@ const CheckProductPage = () => {
 
                   {/* Completion indicator */}
                   <div className={`px-6 py-3 text-sm flex items-center gap-2 ${
-                    product.source && product.volume
+                    product.source?.length > 0 && product.volume
                       ? 'bg-emerald-50 text-emerald-700'
                       : 'bg-amber-50 text-amber-700'
                   }`}>
-                    {product.source && product.volume ? (
+                    {product.source?.length > 0 && product.volume ? (
                       <>
                         <CheckCircle size={16} />
                         <span>Данные заполнены</span>
@@ -778,12 +791,12 @@ const CheckProductPage = () => {
                       <div>
                         <div className="text-gray-500 mb-1">Источник</div>
                         <div className="font-medium">
-                          {{
+                          {(result.productInfo.source || []).map(s => ({
                             'produce': 'Производство в РФ',
                             'import': 'Импорт',
                             'buy_rf': 'Закупка в РФ',
                             'old_stock': 'Остатки'
-                          }[result.productInfo.source]}
+                          }[s])).filter(Boolean).join(', ') || '—'}
                         </div>
                       </div>
                       <div>
