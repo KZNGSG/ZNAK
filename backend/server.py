@@ -307,20 +307,44 @@ CATEGORIES_DATA = [
         "name": "Напитки",
         "status": "mandatory",
         "subcategories": [
+            # Вода
             {"id": "water_mineral_gas", "name": "Вода минеральная (газированная)", "tnved": "2201101100"},
             {"id": "water_mineral_still", "name": "Вода минеральная (негазированная)", "tnved": "2201101900"},
             {"id": "water_mineral_other", "name": "Вода минеральная прочая", "tnved": "2201109000"},
             {"id": "water_drinking", "name": "Вода питьевая", "tnved": "2201900000"},
+            # Безалкогольные
             {"id": "soft_drinks_sweet", "name": "Безалкогольные напитки (сладкие)", "tnved": "2202100000"},
             {"id": "soft_drinks_milk", "name": "Безалкогольные напитки (с молоком)", "tnved": "2202991100"},
+            {"id": "soft_drinks_plant", "name": "Напитки на растительном сырье", "tnved": "2202991100"},
             {"id": "soft_drinks_other", "name": "Безалкогольные напитки прочие", "tnved": "2202991800"},
+            {"id": "energy_drink", "name": "Энергетические напитки", "tnved": "2202991700"},
+            # Соки (с 1.09.2023)
+            {"id": "juice_orange", "name": "Сок апельсиновый", "tnved": "2009120000"},
+            {"id": "juice_grape", "name": "Сок виноградный", "tnved": "2009610000"},
+            {"id": "juice_apple", "name": "Сок яблочный", "tnved": "2009710000"},
+            {"id": "juice_tomato", "name": "Сок томатный", "tnved": "2009501000"},
+            {"id": "juice_pineapple", "name": "Сок ананасовый", "tnved": "2009410000"},
+            {"id": "juice_mixed", "name": "Соки смешанные", "tnved": "2009900000"},
+            {"id": "juice_vegetable", "name": "Соки овощные", "tnved": "2009909700"},
+            {"id": "nectar", "name": "Нектары", "tnved": "2009890000"},
+            # Морсы и компоты (с 1.09.2023)
+            {"id": "mors_berry", "name": "Морсы ягодные", "tnved": "2009890000"},
+            {"id": "mors_fruit", "name": "Морсы фруктовые", "tnved": "2009890000"},
+            {"id": "compote_fruit", "name": "Компоты фруктовые", "tnved": "2007991000"},
+            {"id": "compote_berry", "name": "Компоты ягодные", "tnved": "2008991900"},
+            # Квас
             {"id": "kvass", "name": "Квас", "tnved": "2206005901"},
+            {"id": "kvass_bread", "name": "Квас хлебный", "tnved": "2202100000"},
+            # Пиво (с 1.03.2023)
             {"id": "beer_malt", "name": "Пиво солодовое", "tnved": "2203000100"},
             {"id": "beer_other", "name": "Пиво прочее", "tnved": "2203000900"},
             {"id": "beer_strong", "name": "Пиво (крепкое)", "tnved": "2203001000"},
             {"id": "beer_non_alc", "name": "Безалкогольное пиво", "tnved": "2202910000"},
+            {"id": "beer_craft", "name": "Пиво крафтовое", "tnved": "2203000100"},
+            # Сидр и прочие
             {"id": "cider_apple", "name": "Сидр яблочный", "tnved": "2206003100"},
             {"id": "cider_pear", "name": "Сидр грушевый (перри)", "tnved": "2206003901"},
+            {"id": "cider_other", "name": "Сидр прочий", "tnved": "2206008100"},
             {"id": "mead", "name": "Медовуха", "tnved": "2206005100"},
             {"id": "fermented_other", "name": "Напитки брожения прочие", "tnved": "2206008100"},
         ]
@@ -401,9 +425,20 @@ CATEGORIES_DATA = [
             {"id": "diapers_adult", "name": "Подгузники для взрослых", "tnved": "9619008901"},
             {"id": "pads_urological", "name": "Прокладки урологические", "tnved": "9619008909"},
             {"id": "ortho_shoes", "name": "Ортопедическая обувь", "tnved": "9021101000"},
+            {"id": "ortho_insoles", "name": "Стельки ортопедические", "tnved": "9021101000"},
             {"id": "stents", "name": "Стенты коронарные", "tnved": "9021909001"},
             {"id": "gloves_medical_rubber", "name": "Перчатки медицинские (резиновые)", "tnved": "4015120001"},
             {"id": "gloves_medical_plastic", "name": "Перчатки медицинские (пластик)", "tnved": "3926200000"},
+            {"id": "gloves_medical_nitrile", "name": "Перчатки медицинские (нитрил)", "tnved": "4015120009"},
+            {"id": "gloves_medical_latex", "name": "Перчатки медицинские (латекс)", "tnved": "4015190000"},
+            # Добавлено с 1.09.2023
+            {"id": "hearing_aid", "name": "Слуховые аппараты", "tnved": "9021400000"},
+            {"id": "ct_scanner", "name": "Компьютерные томографы", "tnved": "9022120000"},
+            {"id": "ct_scanner_dental", "name": "Томографы стоматологические", "tnved": "9022130000"},
+            {"id": "ct_scanner_other", "name": "Томографы прочие", "tnved": "9022140000"},
+            {"id": "air_purifier", "name": "Обеззараживатели воздуха", "tnved": "8421392008"},
+            {"id": "air_recirculator", "name": "Рециркуляторы бактерицидные", "tnved": "8421398006"},
+            {"id": "uv_lamp", "name": "Лампы бактерицидные", "tnved": "8539490000"},
         ]
     },
     {
@@ -513,39 +548,107 @@ CATEGORIES_DATA = [
             {"id": "bicycle_frame", "name": "Велосипедные рамы", "tnved": "8714911001"},
         ]
     },
-    # =============== EXPERIMENT CATEGORIES ===============
+    # =============== ОБЯЗАТЕЛЬНЫЕ С 2025 ГОДА ===============
     {
         "id": "construction",
         "name": "Стройматериалы",
-        "status": "experiment",
+        "status": "mandatory",  # с 1.09.2025
         "subcategories": [
             {"id": "gypsum", "name": "Гипс", "tnved": "2520100000"},
-            {"id": "cement", "name": "Цемент", "tnved": "2523210000"},
+            {"id": "cement_clinker", "name": "Цементный клинкер", "tnved": "2523100000"},
+            {"id": "cement_portland", "name": "Цемент портландцемент", "tnved": "2523210000"},
+            {"id": "cement_other", "name": "Цемент прочий", "tnved": "2523290000"},
+            {"id": "cement_alumina", "name": "Цемент глинозёмистый", "tnved": "2523300000"},
             {"id": "foam", "name": "Пена монтажная", "tnved": "3214101001"},
             {"id": "putty", "name": "Шпатлёвка", "tnved": "3214109000"},
-            {"id": "construction_mix", "name": "Смеси строительные", "tnved": "3214101009"},
+            {"id": "construction_mix", "name": "Смеси строительные сухие", "tnved": "3816000000"},
+            {"id": "sealant", "name": "Герметики", "tnved": "3214101009"},
+            {"id": "mortar", "name": "Растворы и бетоны", "tnved": "3824509000"},
         ]
     },
     {
         "id": "auto_chemistry",
-        "name": "Автохимия",
-        "status": "experiment",
+        "name": "Смазочные материалы и автожидкости",
+        "status": "mandatory",  # с 1.03.2025
         "subcategories": [
             {"id": "motor_oil", "name": "Моторные масла", "tnved": "2710198200"},
-            {"id": "lubricant", "name": "Масла смазочные", "tnved": "2710198800"},
+            {"id": "lubricant", "name": "Масла смазочные прочие", "tnved": "2710198800"},
+            {"id": "lubricant_synthetic", "name": "Смазки синтетические", "tnved": "3403191000"},
+            {"id": "lubricant_other", "name": "Смазочные материалы прочие", "tnved": "3403199000"},
+            {"id": "lubricant_prep", "name": "Смазочные препараты", "tnved": "3403990000"},
             {"id": "antifreeze", "name": "Антифризы", "tnved": "3820000000"},
             {"id": "brake_fluid", "name": "Тормозные жидкости", "tnved": "3819000000"},
         ]
     },
     {
-        "id": "electronics",
-        "name": "Электроника",
-        "status": "experiment",
+        "id": "toys",
+        "name": "Игрушки",
+        "status": "mandatory",  # с 1.09.2025
+        "subcategories": [
+            {"id": "toys_wheeled", "name": "Игрушки на колёсах", "tnved": "9503001009"},
+            {"id": "dolls", "name": "Куклы", "tnved": "9503002100"},
+            {"id": "toy_trains", "name": "Игрушечные поезда", "tnved": "9503003000"},
+            {"id": "construction_sets", "name": "Конструкторы", "tnved": "9503003500"},
+            {"id": "soft_toys", "name": "Мягкие игрушки", "tnved": "9503004100"},
+            {"id": "toy_instruments", "name": "Музыкальные игрушки", "tnved": "9503005000"},
+            {"id": "puzzles", "name": "Пазлы", "tnved": "9503006000"},
+            {"id": "toys_other", "name": "Игрушки прочие", "tnved": "9503009000"},
+            {"id": "board_games", "name": "Настольные игры", "tnved": "9504400000"},
+            {"id": "video_games", "name": "Видеоигровые приставки", "tnved": "9504901000"},
+        ]
+    },
+    {
+        "id": "sweets",
+        "name": "Сладости и кондитерские изделия",
+        "status": "mandatory",  # с 31.05.2025
+        "subcategories": [
+            {"id": "gum", "name": "Жевательная резинка", "tnved": "1704101000"},
+            {"id": "candy", "name": "Конфеты", "tnved": "1704901000"},
+            {"id": "caramel", "name": "Карамель", "tnved": "1704905100"},
+            {"id": "dragee", "name": "Драже", "tnved": "1704907100"},
+            {"id": "toffee", "name": "Ирис", "tnved": "1704908200"},
+            {"id": "chocolate_milk", "name": "Шоколад молочный", "tnved": "1806310000"},
+            {"id": "chocolate_filled", "name": "Шоколад с начинкой", "tnved": "1806321000"},
+            {"id": "chocolate_other", "name": "Шоколад прочий", "tnved": "1806907000"},
+            {"id": "cocoa_products", "name": "Изделия из какао", "tnved": "1806909000"},
+            {"id": "cookies", "name": "Печенье", "tnved": "1905311100"},
+            {"id": "waffles", "name": "Вафли", "tnved": "1905321100"},
+            {"id": "gingerbread", "name": "Пряники", "tnved": "1905901000"},
+        ]
+    },
+    {
+        "id": "sports_nutrition",
+        "name": "Спортивное питание",
+        "status": "mandatory",  # с 31.05.2025
+        "subcategories": [
+            {"id": "protein", "name": "Протеин", "tnved": "2106909801"},
+            {"id": "gainer", "name": "Гейнер", "tnved": "2106909803"},
+            {"id": "bcaa", "name": "BCAA аминокислоты", "tnved": "2106909808"},
+            {"id": "creatine", "name": "Креатин", "tnved": "2106905800"},
+            {"id": "pre_workout", "name": "Предтренировочные комплексы", "tnved": "2106909300"},
+            {"id": "sports_bars", "name": "Спортивные батончики", "tnved": "1704905500"},
+            {"id": "isotonic", "name": "Изотоники", "tnved": "2202991800"},
+        ]
+    },
+    {
+        "id": "radioelectronics",
+        "name": "Радиоэлектронная продукция",
+        "status": "mandatory",  # с 28.11.2025
         "subcategories": [
             {"id": "smartphone", "name": "Смартфоны", "tnved": "8517130000"},
             {"id": "laptop", "name": "Ноутбуки", "tnved": "8471300000"},
+            {"id": "tablet", "name": "Планшеты", "tnved": "8471410000"},
+            {"id": "tv", "name": "Телевизоры", "tnved": "8528720000"},
+            {"id": "monitor", "name": "Мониторы", "tnved": "8528520000"},
+            {"id": "router", "name": "Роутеры", "tnved": "8517620000"},
+            {"id": "printer", "name": "Принтеры", "tnved": "8443321000"},
+            {"id": "keyboard", "name": "Клавиатуры", "tnved": "8471608000"},
+            {"id": "mouse", "name": "Компьютерные мыши", "tnved": "8471609000"},
+            {"id": "headphones", "name": "Наушники", "tnved": "8518300001"},
+            {"id": "speakers", "name": "Колонки", "tnved": "8518220000"},
         ]
     },
+    # =============== ЭКСПЕРИМЕНТЫ ===============
     {
         "id": "fiber_optic",
         "name": "Оптоволокно",
@@ -553,33 +656,6 @@ CATEGORIES_DATA = [
         "subcategories": [
             {"id": "fiber_cable", "name": "Кабели оптоволоконные", "tnved": "8544700000"},
             {"id": "fiber_optic", "name": "Волокна оптические", "tnved": "9001109001"},
-        ]
-    },
-    {
-        "id": "toys",
-        "name": "Игрушки",
-        "status": "experiment",
-        "subcategories": [
-            {"id": "toys_wheeled", "name": "Игрушки на колёсах", "tnved": "9503001001"},
-            {"id": "dolls", "name": "Куклы", "tnved": "9503002100"},
-            {"id": "toy_trains", "name": "Игрушечные поезда", "tnved": "9503003000"},
-            {"id": "construction_sets", "name": "Конструкторы", "tnved": "9503003500"},
-            {"id": "soft_toys", "name": "Мягкие игрушки", "tnved": "9503004100"},
-            {"id": "board_games", "name": "Настольные игры", "tnved": "9504400000"},
-        ]
-    },
-    {
-        "id": "sweets",
-        "name": "Сладости",
-        "status": "experiment",
-        "subcategories": [
-            {"id": "gum", "name": "Жевательная резинка", "tnved": "1704101000"},
-            {"id": "candy", "name": "Конфеты", "tnved": "1704901000"},
-            {"id": "caramel", "name": "Карамель", "tnved": "1704905100"},
-            {"id": "chocolate_milk", "name": "Шоколад молочный", "tnved": "1806310000"},
-            {"id": "chocolate_filled", "name": "Шоколад с начинкой", "tnved": "1806321000"},
-            {"id": "cookies", "name": "Печенье", "tnved": "1905311100"},
-            {"id": "waffles", "name": "Вафли", "tnved": "1905321100"},
         ]
     },
     {
