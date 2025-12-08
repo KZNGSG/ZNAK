@@ -103,6 +103,35 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  // Повторная отправка письма подтверждения
+  const resendVerification = async () => {
+    if (!token) {
+      throw new Error('Требуется авторизация');
+    }
+
+    const response = await fetch(`${API_URL}/api/auth/resend-verification`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.detail || 'Ошибка отправки письма');
+    }
+
+    return data;
+  };
+
+  // Обновить статус верификации email
+  const setEmailVerified = (verified) => {
+    if (user) {
+      setUser({ ...user, email_verified: verified });
+    }
+  };
+
   // Fetch с авторизацией
   const authFetch = async (url, options = {}) => {
     const headers = {
@@ -121,9 +150,12 @@ export const AuthProvider = ({ children }) => {
     token,
     loading,
     isAuthenticated: !!user,
+    emailVerified: user?.email_verified || false,
     register,
     login,
     logout,
+    resendVerification,
+    setEmailVerified,
     authFetch
   };
 

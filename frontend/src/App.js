@@ -18,6 +18,7 @@ import AccountPage from './pages/AccountPage';
 import QuotePage from './pages/QuotePage';
 import LoginPage from './pages/LoginPage';
 import CabinetPage from './pages/CabinetPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
 
 function App() {
   return (
@@ -41,6 +42,7 @@ function App() {
               <Route path="/account" element={<AccountPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/cabinet" element={<CabinetPage />} />
+              <Route path="/verify-email" element={<VerifyEmailPage />} />
             </Routes>
           </main>
           <Footer />

@@ -2027,6 +2027,20 @@ async def api_get_me(user: Dict = Depends(require_auth)):
     return user
 
 
+@app.get("/api/auth/verify-email")
+async def api_verify_email(token: str):
+    """Подтверждение email по токену из письма"""
+    from auth import verify_email
+    return verify_email(token)
+
+
+@app.post("/api/auth/resend-verification")
+async def api_resend_verification(user: Dict = Depends(require_auth)):
+    """Повторная отправка письма подтверждения"""
+    from auth import resend_verification_email
+    return resend_verification_email(user["id"], user["email"])
+
+
 # ======================== ЛИЧНЫЙ КАБИНЕТ ========================
 
 @app.get("/api/cabinet/quotes")

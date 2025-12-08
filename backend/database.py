@@ -49,10 +49,30 @@ def init_database():
                 password_hash TEXT NOT NULL,
                 role TEXT DEFAULT 'client',  -- client, admin, superadmin
                 is_active BOOLEAN DEFAULT 1,
+                email_verified BOOLEAN DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+
+        # Таблица токенов верификации email
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS email_verifications (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                token TEXT UNIQUE NOT NULL,
+                expires_at TIMESTAMP NOT NULL,
+                used BOOLEAN DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        ''')
+
+        # Добавляем колонку email_verified если её нет (для существующих БД)
+        try:
+            cursor.execute('ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT 0')
+        except sqlite3.OperationalError:
+            pass  # Колонка уже существует
 
         # Таблица компаний (клиентов)
         cursor.execute('''
@@ -451,6 +471,88 @@ class ContractDB:
                 del item['services_json']
                 results.append(item)
             return results
+
+
+class EmailVerificationDB:
+    """Операции с верификацией email"""
+
+    @staticmethod
+    def create_token(user_id: int, token: str, expires_hours: int = 24) -> int:
+        """Создать токен верификации"""
+        from datetime import timedelta
+        expires_at = datetime.now() + timedelta(hours=expires_hours)
+
+        with get_db() as conn:
+            cursor = conn.cursor()
+            # Удаляем старые неиспользованные токены для этого пользователя
+            cursor.execute(
+                'DELETE FROM email_verifications WHERE user_id = ? AND used = 0',
+                (user_id,)
+            )
+            # Создаём новый токен
+            cursor.execute(
+                '''INSERT INTO email_verifications (user_id, token, expires_at)
+                   VALUES (?, ?, ?)''',
+                (user_id, token, expires_at)
+            )
+            return cursor.lastrowid
+
+    @staticmethod
+    def verify_token(token: str) -> Optional[Dict]:
+        """
+        Проверить токен и пометить email как подтверждённый.
+        Возвращает данные пользователя если успешно, None если токен невалидный.
+        """
+        with get_db() as conn:
+            cursor = conn.cursor()
+
+            # Находим токен
+            cursor.execute('''
+                SELECT ev.*, u.email, u.id as user_id
+                FROM email_verifications ev
+                JOIN users u ON ev.user_id = u.id
+                WHERE ev.token = ? AND ev.used = 0
+            ''', (token,))
+            row = cursor.fetchone()
+
+            if not row:
+                return None
+
+            verification = dict(row)
+
+            # Проверяем срок действия
+            expires_at = datetime.fromisoformat(verification['expires_at'])
+            if datetime.now() > expires_at:
+                return None
+
+            # Помечаем токен как использованный
+            cursor.execute(
+                'UPDATE email_verifications SET used = 1 WHERE id = ?',
+                (verification['id'],)
+            )
+
+            # Помечаем email как подтверждённый
+            cursor.execute(
+                'UPDATE users SET email_verified = 1 WHERE id = ?',
+                (verification['user_id'],)
+            )
+
+            return {
+                'user_id': verification['user_id'],
+                'email': verification['email']
+            }
+
+    @staticmethod
+    def is_verified(user_id: int) -> bool:
+        """Проверить, подтверждён ли email пользователя"""
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                'SELECT email_verified FROM users WHERE id = ?',
+                (user_id,)
+            )
+            row = cursor.fetchone()
+            return bool(row and row['email_verified'])
 
 
 class CallbackDB:

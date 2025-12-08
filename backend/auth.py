@@ -13,7 +13,8 @@ from fastapi import HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr
 
-from database import UserDB, verify_password
+from database import UserDB, EmailVerificationDB, verify_password
+from email_service import generate_verification_token, send_verification_email
 
 # Секретный ключ для JWT (в проде брать из .env)
 SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'promarkirui-super-secret-key-change-in-production')
@@ -182,7 +183,16 @@ def register_user(email: str, password: str) -> Dict:
     user_id = UserDB.create(email, password)
     user = UserDB.get_by_id(user_id)
 
-    # Генерируем токен
+    # Генерируем токен верификации и отправляем email
+    verification_token = generate_verification_token()
+    EmailVerificationDB.create_token(user_id, verification_token)
+
+    # Отправляем письмо подтверждения (async в фоне)
+    email_sent = send_verification_email(email, verification_token)
+    if not email_sent:
+        print(f"Warning: Failed to send verification email to {email}")
+
+    # Генерируем JWT токен
     token = create_access_token(user["id"], user["email"], user["role"])
 
     return {
@@ -191,8 +201,10 @@ def register_user(email: str, password: str) -> Dict:
         "user": {
             "id": user["id"],
             "email": user["email"],
-            "role": user["role"]
-        }
+            "role": user["role"],
+            "email_verified": False
+        },
+        "message": "Письмо с подтверждением отправлено на вашу почту"
     }
 
 
@@ -221,8 +233,54 @@ def login_user(email: str, password: str) -> Dict:
         "user": {
             "id": user["id"],
             "email": user["email"],
-            "role": user["role"]
+            "role": user["role"],
+            "email_verified": bool(user.get('email_verified', False))
         }
+    }
+
+
+def verify_email(token: str) -> Dict:
+    """Подтвердить email по токену"""
+    result = EmailVerificationDB.verify_token(token)
+
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Недействительная или истёкшая ссылка подтверждения"
+        )
+
+    return {
+        "success": True,
+        "message": "Email успешно подтверждён",
+        "email": result['email']
+    }
+
+
+def resend_verification_email(user_id: int, email: str) -> Dict:
+    """Повторно отправить письмо подтверждения"""
+    # Проверяем, не подтверждён ли уже email
+    if EmailVerificationDB.is_verified(user_id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email уже подтверждён"
+        )
+
+    # Генерируем новый токен
+    verification_token = generate_verification_token()
+    EmailVerificationDB.create_token(user_id, verification_token)
+
+    # Отправляем письмо
+    email_sent = send_verification_email(email, verification_token)
+
+    if not email_sent:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Не удалось отправить письмо. Попробуйте позже."
+        )
+
+    return {
+        "success": True,
+        "message": "Письмо с подтверждением отправлено"
     }
 
 
