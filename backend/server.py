@@ -12,6 +12,7 @@ import logging
 import httpx
 import uuid
 from datetime import datetime
+from urllib.parse import quote as url_quote
 
 # Импорт генератора документов
 from document_generator import generate_contract_pdf, generate_quote_pdf
@@ -1903,16 +1904,17 @@ async def generate_contract(request: ContractGenerateRequest):
             total_amount=total_amount
         )
 
-        # Формируем имя файла
+        # Формируем имя файла (URL-кодируем для заголовка)
         contract_date = datetime.now()
-        contract_number = f"ДОГ-{contract_date.strftime('%d%m%y')}-001"
-        filename = f"Договор_{contract_number}_{request.company.inn}.pdf"
+        contract_number = f"DOG-{contract_date.strftime('%d%m%y')}-001"
+        filename = f"Contract_{contract_number}_{request.company.inn}.pdf"
+        filename_encoded = url_quote(filename)
 
         return Response(
             content=pdf_bytes,
             media_type="application/pdf",
             headers={
-                "Content-Disposition": f"attachment; filename*=UTF-8''{filename}"
+                "Content-Disposition": f"attachment; filename=\"{filename}\"; filename*=UTF-8''{filename_encoded}"
             }
         )
 
