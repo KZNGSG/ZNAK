@@ -9,7 +9,7 @@ import {
   Plus, Minus, Trash2, FileText, CreditCard, Receipt, Download,
   Mail, Phone, User, MapPin, Loader2, AlertCircle, Sparkles,
   ClipboardCheck, QrCode, ArrowRightCircle, Printer, Headphones, Ship,
-  Check, X, ChevronDown, ShoppingCart
+  Check, X, ChevronDown, ShoppingCart, Settings, Tag, Send, Barcode, GraduationCap
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -17,14 +17,18 @@ import Stepper from '../components/Stepper';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
-// Иконки для категорий услуг
+// Иконки для категорий услуг (обновлённые под новый прайс-лист)
 const categoryIcons = {
+  setup: Settings,
   registration: ClipboardCheck,
-  marking: QrCode,
+  gtin: Tag,
+  codes: QrCode,
   turnover: ArrowRightCircle,
+  upd: FileText,
+  edo: Send,
   equipment: Printer,
-  support: Headphones,
-  import: Ship,
+  kiz: Barcode,
+  training: GraduationCap,
 };
 
 const QuotePage = () => {
@@ -230,7 +234,7 @@ const QuotePage = () => {
     return selectedServices.reduce((sum, s) => sum + (s.price * s.quantity), 0);
   }, [selectedServices]);
 
-  // Services grouped by category
+  // Services grouped by category, sorted by order
   const servicesByCategory = useMemo(() => {
     const grouped = {};
     services.forEach(service => {
@@ -239,8 +243,21 @@ const QuotePage = () => {
       }
       grouped[service.category].push(service);
     });
+    // Sort services within each category by order
+    Object.keys(grouped).forEach(cat => {
+      grouped[cat].sort((a, b) => (a.order || 0) - (b.order || 0));
+    });
     return grouped;
   }, [services]);
+
+  // Get sorted category entries (by category order from serviceCategories)
+  const sortedCategoryEntries = useMemo(() => {
+    return Object.entries(servicesByCategory).sort(([catA], [catB]) => {
+      const orderA = serviceCategories[catA]?.order || 999;
+      const orderB = serviceCategories[catB]?.order || 999;
+      return orderA - orderB;
+    });
+  }, [servicesByCategory, serviceCategories]);
 
   // Navigation
   const canProceed = () => {
@@ -602,7 +619,7 @@ const QuotePage = () => {
             <div className="grid lg:grid-cols-3 gap-6">
               {/* Services List */}
               <div className="lg:col-span-2 space-y-6">
-                {Object.entries(servicesByCategory).map(([categoryId, categoryServices]) => {
+                {sortedCategoryEntries.map(([categoryId, categoryServices]) => {
                   const category = serviceCategories[categoryId];
                   const Icon = categoryIcons[categoryId] || Package;
 
@@ -619,6 +636,13 @@ const QuotePage = () => {
                       <div className="divide-y divide-gray-100">
                         {categoryServices.map((service) => {
                           const isSelected = selectedServices.some(s => s.id === service.id);
+                          const isFree = service.price === 0;
+                          const priceFormatted = isFree
+                            ? 'Бесплатно'
+                            : (service.price < 10
+                              ? `${service.price.toFixed(2)} ₽`
+                              : `${service.price.toLocaleString()} ₽`);
+
                           return (
                             <div
                               key={service.id}
@@ -635,13 +659,18 @@ const QuotePage = () => {
                                   <Label htmlFor={service.id} className="cursor-pointer">
                                     <div className="font-semibold text-gray-900">{service.name}</div>
                                     <div className="text-sm text-gray-500 mt-1">{service.description}</div>
+                                    {service.tier && (
+                                      <div className="inline-block mt-2 px-2 py-0.5 rounded bg-[rgb(var(--brand-yellow-100))] text-xs font-medium text-[rgb(var(--brand-yellow-800))]">
+                                        Тариф: {service.tier}
+                                      </div>
+                                    )}
                                   </Label>
                                 </div>
                                 <div className="text-right">
-                                  <div className="font-bold text-[rgb(var(--brand-yellow-700))]">
-                                    {service.price.toLocaleString()} ₽
+                                  <div className={`font-bold ${isFree ? 'text-emerald-600' : 'text-[rgb(var(--brand-yellow-700))]'}`}>
+                                    {priceFormatted}
                                   </div>
-                                  <div className="text-xs text-gray-500">/ {service.unit}</div>
+                                  {!isFree && <div className="text-xs text-gray-500">/ {service.unit}</div>}
                                 </div>
                               </div>
                             </div>
@@ -710,7 +739,9 @@ const QuotePage = () => {
                                 </button>
                               </div>
                               <div className="text-sm font-bold">
-                                {(service.price * service.quantity).toLocaleString()} ₽
+                                {(service.price * service.quantity) < 10
+                                  ? `${(service.price * service.quantity).toFixed(2)} ₽`
+                                  : `${(service.price * service.quantity).toLocaleString()} ₽`}
                               </div>
                             </div>
                           </div>
@@ -724,7 +755,9 @@ const QuotePage = () => {
                       <div className="flex items-center justify-between mb-4">
                         <span className="text-lg font-bold text-gray-900">Итого:</span>
                         <span className="text-2xl font-bold text-[rgb(var(--brand-yellow-700))]">
-                          {totalAmount.toLocaleString()} ₽
+                          {totalAmount < 10
+                            ? `${totalAmount.toFixed(2)} ₽`
+                            : `${totalAmount.toLocaleString()} ₽`}
                         </span>
                       </div>
                     </div>
@@ -833,7 +866,9 @@ const QuotePage = () => {
                     <div className="flex justify-between text-lg">
                       <span className="font-bold">Итого:</span>
                       <span className="font-bold text-[rgb(var(--brand-yellow-700))]">
-                        {totalAmount.toLocaleString()} ₽
+                        {totalAmount < 10
+                          ? `${totalAmount.toFixed(2)} ₽`
+                          : `${totalAmount.toLocaleString()} ₽`}
                       </span>
                     </div>
                   </div>
