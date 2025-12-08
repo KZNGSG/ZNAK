@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel, EmailStr, field_validator
@@ -16,6 +16,16 @@ from urllib.parse import quote as url_quote
 
 # Импорт генератора документов
 from document_generator import generate_contract_pdf, generate_quote_pdf
+
+# Импорт авторизации и БД
+from auth import (
+    UserRegister, UserLogin, register_user, login_user,
+    get_current_user, require_auth, require_admin
+)
+from database import (
+    CompanyDB, QuoteDB, ContractDB, CallbackDB,
+    get_next_contract_number
+)
 
 # Load environment variables first
 load_dotenv()
@@ -1995,6 +2005,146 @@ async def generate_quote_pdf_endpoint(request: QuotePDFRequest):
     except Exception as e:
         logger.error(f"Quote PDF generation error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Ошибка генерации КП: {str(e)}")
+
+
+# ======================== АВТОРИЗАЦИЯ ========================
+
+@app.post("/api/auth/register")
+async def api_register(data: UserRegister):
+    """Регистрация нового пользователя"""
+    return register_user(data.email, data.password)
+
+
+@app.post("/api/auth/login")
+async def api_login(data: UserLogin):
+    """Вход в систему"""
+    return login_user(data.email, data.password)
+
+
+@app.get("/api/auth/me")
+async def api_get_me(user: Dict = Depends(require_auth)):
+    """Получить данные текущего пользователя"""
+    return user
+
+
+# ======================== ЛИЧНЫЙ КАБИНЕТ ========================
+
+@app.get("/api/cabinet/quotes")
+async def api_get_user_quotes(user: Dict = Depends(require_auth)):
+    """Получить все КП пользователя"""
+    quotes = QuoteDB.get_by_user(user["id"])
+    return {"quotes": quotes}
+
+
+@app.get("/api/cabinet/contracts")
+async def api_get_user_contracts(user: Dict = Depends(require_auth)):
+    """Получить все договоры пользователя"""
+    contracts = ContractDB.get_by_user(user["id"])
+    return {"contracts": contracts}
+
+
+@app.get("/api/cabinet/companies")
+async def api_get_user_companies(user: Dict = Depends(require_auth)):
+    """Получить все компании пользователя"""
+    companies = CompanyDB.get_by_user(user["id"])
+    return {"companies": companies}
+
+
+# ======================== ЗАЯВКИ НА ЗВОНОК ========================
+
+class CallbackRequest(BaseModel):
+    contact_name: str
+    contact_phone: str
+    contact_email: Optional[str] = None
+    company_inn: Optional[str] = None
+    company_name: Optional[str] = None
+    products: Optional[List[Dict]] = None
+    comment: Optional[str] = None
+
+
+@app.post("/api/callback/create")
+async def api_create_callback(
+    data: CallbackRequest,
+    background_tasks: BackgroundTasks,
+    user: Optional[Dict] = Depends(get_current_user)
+):
+    """Создать заявку на звонок"""
+    callback_data = {
+        "user_id": user["id"] if user else None,
+        "contact_name": data.contact_name,
+        "contact_phone": data.contact_phone,
+        "contact_email": data.contact_email,
+        "company_inn": data.company_inn,
+        "company_name": data.company_name,
+        "products": data.products or [],
+        "comment": data.comment
+    }
+
+    callback_id = CallbackDB.create(callback_data)
+
+    # Отправляем уведомление менеджеру
+    manager_email = os.getenv('CONTACT_TO_EMAIL', 'info@promarkirui.ru')
+    subject = f"Новая заявка на звонок #{callback_id}"
+    body = f"""
+    <h2>Новая заявка на звонок</h2>
+    <p><b>Имя:</b> {data.contact_name}</p>
+    <p><b>Телефон:</b> {data.contact_phone}</p>
+    <p><b>Email:</b> {data.contact_email or '—'}</p>
+    <p><b>Компания:</b> {data.company_name or '—'} (ИНН: {data.company_inn or '—'})</p>
+    <p><b>Комментарий:</b> {data.comment or '—'}</p>
+    """
+    background_tasks.add_task(send_email, manager_email, subject, body)
+
+    return {"status": "success", "callback_id": callback_id}
+
+
+# ======================== АДМИНКА ========================
+
+@app.get("/api/admin/callbacks")
+async def api_admin_get_callbacks(
+    status: Optional[str] = None,
+    user: Dict = Depends(require_admin)
+):
+    """Получить все заявки на звонок (админка)"""
+    callbacks = CallbackDB.get_all(status)
+    return {"callbacks": callbacks}
+
+
+@app.get("/api/admin/stats")
+async def api_admin_get_stats(user: Dict = Depends(require_admin)):
+    """Получить статистику (админка)"""
+    from database import get_db
+
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        # Количество пользователей
+        cursor.execute('SELECT COUNT(*) as cnt FROM users')
+        users_count = cursor.fetchone()['cnt']
+
+        # Количество КП
+        cursor.execute('SELECT COUNT(*) as cnt FROM quotes')
+        quotes_count = cursor.fetchone()['cnt']
+
+        # Количество договоров
+        cursor.execute('SELECT COUNT(*) as cnt FROM contracts')
+        contracts_count = cursor.fetchone()['cnt']
+
+        # Количество заявок
+        cursor.execute('SELECT COUNT(*) as cnt FROM callbacks WHERE status = "new"')
+        new_callbacks = cursor.fetchone()['cnt']
+
+        # Сумма договоров
+        cursor.execute('SELECT COALESCE(SUM(total_amount), 0) as total FROM contracts')
+        total_amount = cursor.fetchone()['total']
+
+    return {
+        "users_count": users_count,
+        "quotes_count": quotes_count,
+        "contracts_count": contracts_count,
+        "new_callbacks": new_callbacks,
+        "total_contracts_amount": total_amount
+    }
 
 
 if __name__ == "__main__":
