@@ -39,7 +39,7 @@ class CategoryGroup(BaseModel):
 class CheckProductRequest(BaseModel):
     category: str
     subcategory: str
-    source: str  # "produce", "import", "buy_rf", "old_stock"
+    source: List[str]  # ["produce", "import", "buy_rf", "old_stock"] - множественный выбор
     volume: str  # "<100", "100-1000", "1000-10000", ">10000"
 
 class CheckProductResponse(BaseModel):
