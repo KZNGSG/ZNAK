@@ -1,10 +1,12 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { CheckCircle, ClipboardList, Wrench, Mail, FileText } from 'lucide-react';
+import { CheckCircle, Wrench, Mail, FileText, User, LogIn } from 'lucide-react';
 import CitySelector from './CitySelector';
+import { useAuth } from '../context/AuthContext';
 
 const Header = () => {
   const location = useLocation();
+  const { user, isAuthenticated, loading } = useAuth();
 
   const isActive = (path) => location.pathname === path;
 
@@ -76,8 +78,8 @@ const Header = () => {
             <Link
               to="/contact"
               className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-bold transition-all ${
-                isActive('/contact') 
-                  ? 'bg-[rgb(var(--grey-900))] text-white shadow-lg' 
+                isActive('/contact')
+                  ? 'bg-[rgb(var(--grey-900))] text-white shadow-lg'
                   : 'text-[rgb(var(--grey-700))] hover:bg-[rgb(var(--grey-200))] hover:text-[rgb(var(--black))]'
               }`}
               data-testid="nav-contact"
@@ -85,6 +87,37 @@ const Header = () => {
               <Mail size={20} strokeWidth={2.5} />
               Контакт
             </Link>
+
+            {/* Auth Button */}
+            {!loading && (
+              isAuthenticated ? (
+                <Link
+                  to="/cabinet"
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ml-2 ${
+                    isActive('/cabinet')
+                      ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg'
+                      : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                  }`}
+                  data-testid="nav-cabinet"
+                >
+                  <User size={18} strokeWidth={2.5} />
+                  <span className="hidden lg:inline">{user?.email?.split('@')[0]}</span>
+                </Link>
+              ) : (
+                <Link
+                  to="/login"
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ml-2 ${
+                    isActive('/login')
+                      ? 'bg-[rgb(var(--grey-900))] text-white shadow-lg'
+                      : 'text-[rgb(var(--grey-700))] hover:bg-[rgb(var(--grey-100))]'
+                  }`}
+                  data-testid="nav-login"
+                >
+                  <LogIn size={18} strokeWidth={2.5} />
+                  Войти
+                </Link>
+              )
+            )}
           </nav>
         </div>
       </div>
