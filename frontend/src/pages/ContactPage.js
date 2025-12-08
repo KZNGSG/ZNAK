@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../components/ui/select';
-import { CheckCircle, Mail, Phone } from 'lucide-react';
+import { CheckCircle, Mail, Phone, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -114,6 +114,15 @@ const ContactPage = () => {
   return (
     <div className="py-12 bg-gradient-to-b from-slate-50 to-white min-h-screen">
       <div className="mx-auto max-w-[700px] px-4 sm:px-6 lg:px-8">
+        {/* Back Button */}
+        <button
+          onClick={() => navigate(-1)}
+          className="mb-6 flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+        >
+          <ArrowLeft size={18} />
+          <span>Назад</span>
+        </button>
+
         <div className="mb-8 text-center">
           <h1 className="text-3xl sm:text-4xl font-semibold text-primary mb-2">Оставьте заявку</h1>
           <p className="text-gray-600">Свяжемся с вами в течение 2 часов</p>
