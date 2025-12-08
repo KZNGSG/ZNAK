@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
 import { RadioGroup, RadioGroupItem } from '../components/ui/radio-group';
 import { Checkbox } from '../components/ui/checkbox';
 import { Label } from '../components/ui/label';
 import {
   CheckCircle, XCircle, ArrowLeft, ArrowRight, Package, FlaskConical,
   Check, Search, X, ChevronDown, Plus, Trash2, ShoppingCart,
-  FileText, AlertTriangle, Sparkles, Send, ClipboardList
+  FileText, AlertTriangle, Sparkles, Send, ClipboardList, Phone, User, Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Stepper from '../components/Stepper';
@@ -32,6 +33,11 @@ const CheckProductPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const searchRef = useRef(null);
+
+  // Callback modal state
+  const [showCallbackModal, setShowCallbackModal] = useState(false);
+  const [callbackData, setCallbackData] = useState({ name: '', phone: '' });
+  const [callbackLoading, setCallbackLoading] = useState(false);
 
   useEffect(() => {
     fetchCategories();
@@ -227,6 +233,54 @@ const CheckProductPage = () => {
       console.error(error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Handle callback request submission
+  const handleCallbackSubmit = async () => {
+    if (!callbackData.name.trim() || !callbackData.phone.trim()) {
+      toast.error('Заполните все поля');
+      return;
+    }
+
+    // Simple phone validation
+    const phoneClean = callbackData.phone.replace(/\D/g, '');
+    if (phoneClean.length < 10) {
+      toast.error('Введите корректный номер телефона');
+      return;
+    }
+
+    setCallbackLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/api/callback/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: callbackData.name.trim(),
+          phone: callbackData.phone.trim(),
+          products: results.map(r => ({
+            name: r.productInfo?.name,
+            tnved: r.tnved,
+            requires_marking: r.requires_marking,
+            status: r.status
+          })),
+          source: 'check_page'
+        })
+      });
+
+      if (response.ok) {
+        toast.success('Заявка на звонок отправлена! Мы перезвоним в ближайшее время.');
+        setShowCallbackModal(false);
+        setCallbackData({ name: '', phone: '' });
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || 'Ошибка отправки заявки');
+      }
+    } catch (error) {
+      console.error('Callback error:', error);
+      toast.error('Ошибка отправки заявки');
+    } finally {
+      setCallbackLoading(false);
     }
   };
 
@@ -830,11 +884,11 @@ const CheckProductPage = () => {
                     Оформить договор
                   </Button>
                   <Button
-                    onClick={() => navigate('/contact', { state: { products: results } })}
+                    onClick={() => setShowCallbackModal(true)}
                     variant="outline"
                     className="rounded-xl px-6 py-3 border-2 border-[rgb(var(--brand-yellow-500))] text-[rgb(var(--brand-yellow-700))] hover:bg-[rgb(var(--brand-yellow-100))] flex items-center gap-2"
                   >
-                    <Send size={18} />
+                    <Phone size={18} />
                     Заказать звонок
                   </Button>
                 </div>
@@ -873,6 +927,119 @@ const CheckProductPage = () => {
           )}
         </div>
       </div>
+
+      {/* Callback Modal */}
+      {showCallbackModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => !callbackLoading && setShowCallbackModal(false)}
+          />
+
+          {/* Modal Content */}
+          <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-[rgb(var(--brand-yellow-400))] to-[rgb(var(--brand-yellow-500))] px-6 py-5">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-white/20 rounded-xl">
+                  <Phone size={24} className="text-black" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-black">Заказать звонок</h3>
+                  <p className="text-sm text-black/70">Мы перезвоним в течение 15 минут</p>
+                </div>
+              </div>
+              {/* Close button */}
+              <button
+                onClick={() => !callbackLoading && setShowCallbackModal(false)}
+                className="absolute top-4 right-4 p-2 rounded-full hover:bg-white/20 transition-colors"
+                disabled={callbackLoading}
+              >
+                <X size={20} className="text-black" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-4">
+              {/* Products summary */}
+              {results.length > 0 && (
+                <div className="bg-gray-50 rounded-xl p-4 mb-4">
+                  <div className="text-sm text-gray-600 mb-2">Проверено товаров:</div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl font-bold text-gray-900">{results.length}</span>
+                    <div className="text-sm text-gray-500">
+                      {requiresMarkingCount > 0 && (
+                        <span className="text-emerald-600">{requiresMarkingCount} требуют маркировки</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Name field */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Ваше имя
+                </label>
+                <div className="relative">
+                  <User size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <Input
+                    type="text"
+                    value={callbackData.name}
+                    onChange={(e) => setCallbackData(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Как к вам обращаться?"
+                    className="pl-10"
+                    disabled={callbackLoading}
+                  />
+                </div>
+              </div>
+
+              {/* Phone field */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Телефон
+                </label>
+                <div className="relative">
+                  <Phone size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <Input
+                    type="tel"
+                    value={callbackData.phone}
+                    onChange={(e) => setCallbackData(prev => ({ ...prev, phone: e.target.value }))}
+                    placeholder="+7 (___) ___-__-__"
+                    className="pl-10"
+                    disabled={callbackLoading}
+                  />
+                </div>
+              </div>
+
+              {/* Submit button */}
+              <Button
+                onClick={handleCallbackSubmit}
+                disabled={callbackLoading}
+                className="w-full btn-gradient rounded-xl py-3 flex items-center justify-center gap-2"
+              >
+                {callbackLoading ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    Отправка...
+                  </>
+                ) : (
+                  <>
+                    <Send size={18} />
+                    Жду звонка
+                  </>
+                )}
+              </Button>
+
+              {/* Privacy note */}
+              <p className="text-xs text-center text-gray-500">
+                Нажимая кнопку, вы соглашаетесь на обработку персональных данных
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
