@@ -432,50 +432,35 @@ const CheckProductPage = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                   {selectedGroup?.subcategories?.map((sub) => {
                     const isSelected = isProductSelected(sub.id);
                     return (
                       <button
                         key={sub.id}
                         onClick={() => isSelected ? removeProduct(sub.id) : addProduct(sub, selectedGroup.id, selectedGroup.status)}
-                        className={`group relative bg-white rounded-2xl p-4 border-2 transition-all duration-200 text-left h-[140px] flex flex-col justify-between ${
+                        className={`group relative bg-white rounded-xl p-3 border-2 transition-all duration-200 text-left ${
                           isSelected
-                            ? 'border-emerald-500 bg-emerald-50 shadow-lg ring-2 ring-emerald-200'
-                            : 'border-gray-200 hover:border-[rgb(var(--brand-yellow-400))] hover:shadow-lg'
+                            ? 'border-emerald-500 bg-emerald-50 shadow-md ring-1 ring-emerald-200'
+                            : 'border-gray-200 hover:border-[rgb(var(--brand-yellow-400))] hover:shadow-md'
                         }`}
                       >
                         {isSelected && (
-                          <div className="absolute -top-2 -right-2 w-7 h-7 bg-emerald-500 rounded-full flex items-center justify-center shadow-md">
-                            <Check size={16} className="text-white" />
+                          <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center shadow-sm">
+                            <Check size={12} className="text-white" />
                           </div>
                         )}
 
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-sm leading-tight line-clamp-2 text-gray-800">
-                            {sub.name}
-                          </h3>
-                        </div>
+                        <h3 className="font-medium text-xs leading-tight line-clamp-2 text-gray-800 mb-2">
+                          {sub.name}
+                        </h3>
 
-                        <div className="mt-3 pt-3 border-t border-gray-100">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] uppercase text-gray-400">ТН ВЭД</span>
-                            <span className="font-mono text-xs font-bold text-gray-600">{sub.tnved}</span>
-                          </div>
-                        </div>
-
-                        <div className="mt-2 flex items-center justify-between">
-                          <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${
-                            selectedGroup?.status === 'experiment'
-                              ? 'bg-amber-50 text-amber-700'
-                              : 'bg-emerald-50 text-emerald-700'
-                          }`}>
-                            {selectedGroup?.status === 'experiment' ? 'Эксперимент' : 'Обязательная'}
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono text-[10px] font-bold text-[rgb(var(--brand-yellow-700))] bg-[rgb(var(--brand-yellow-50))] px-1.5 py-0.5 rounded">
+                            {sub.tnved}
                           </span>
                           {!isSelected && (
-                            <span className="text-xs text-[rgb(var(--brand-yellow-600))] opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                              <Plus size={14} /> Добавить
-                            </span>
+                            <Plus size={14} className="text-gray-400 group-hover:text-[rgb(var(--brand-yellow-600))] transition-colors" />
                           )}
                         </div>
                       </button>
@@ -516,33 +501,28 @@ const CheckProductPage = () => {
                   </button>
 
                   {selectedCategory === group.id && (
-                    <div className="p-4 bg-gray-50 border-t-2 border-[rgb(var(--brand-yellow-200))]">
-                      <div className="grid grid-cols-1 gap-3">
+                    <div className="p-3 bg-gray-50 border-t-2 border-[rgb(var(--brand-yellow-200))]">
+                      <div className="grid grid-cols-2 gap-2">
                         {group.subcategories?.map((sub) => {
                           const isSelected = isProductSelected(sub.id);
                           return (
                             <button
                               key={sub.id}
                               onClick={() => isSelected ? removeProduct(sub.id) : addProduct(sub, group.id, group.status)}
-                              className={`relative bg-white rounded-xl p-4 border-2 transition-all text-left ${
+                              className={`relative bg-white rounded-lg p-2.5 border-2 transition-all text-left ${
                                 isSelected
-                                  ? 'border-emerald-500 bg-emerald-50 shadow-md'
+                                  ? 'border-emerald-500 bg-emerald-50'
                                   : 'border-gray-200'
                               }`}
                             >
                               {isSelected && (
-                                <div className="absolute -top-2 -right-2 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center shadow-md">
-                                  <Check size={14} className="text-white" />
+                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center">
+                                  <Check size={10} className="text-white" />
                                 </div>
                               )}
-                              <div className="flex items-center justify-between gap-3">
-                                <div className="flex-1 min-w-0">
-                                  <div className="font-medium text-sm text-gray-900">{sub.name}</div>
-                                </div>
-                                <div className="flex-shrink-0 text-right">
-                                  <div className="text-[10px] text-gray-400 uppercase">ТН ВЭД</div>
-                                  <div className="font-mono text-xs font-bold">{sub.tnved}</div>
-                                </div>
+                              <div className="text-xs font-medium text-gray-900 line-clamp-2 mb-1.5">{sub.name}</div>
+                              <div className="font-mono text-[10px] font-bold text-[rgb(var(--brand-yellow-700))] bg-[rgb(var(--brand-yellow-50))] px-1.5 py-0.5 rounded inline-block">
+                                {sub.tnved}
                               </div>
                             </button>
                           );
@@ -835,26 +815,27 @@ const CheckProductPage = () => {
                 </div>
                 <div className="flex-1 text-center md:text-left">
                   <h3 className="text-xl font-bold text-gray-900 mb-2">
-                    Получите подробный план внедрения
+                    Нужна помощь с маркировкой?
                   </h3>
                   <p className="text-gray-600">
-                    Наши эксперты подготовят индивидуальный план маркировки для всех ваших {results.length} товаров с расчётом стоимости и сроков
+                    Мы поможем внедрить маркировку для ваших {results.length} товаров — от регистрации до первой отгрузки
                   </p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Button
-                    onClick={() => navigate('/contact')}
+                    onClick={() => navigate('/quote', { state: { products: results } })}
                     className="btn-gradient rounded-xl px-6 py-3 flex items-center gap-2"
                   >
-                    <Send size={18} />
-                    Получить план
+                    <FileText size={18} />
+                    Оформить договор
                   </Button>
                   <Button
-                    onClick={() => navigate('/contact')}
+                    onClick={() => navigate('/contact', { state: { products: results } })}
                     variant="outline"
-                    className="rounded-xl px-6 py-3 border-2 border-[rgb(var(--brand-yellow-500))] text-[rgb(var(--brand-yellow-700))] hover:bg-[rgb(var(--brand-yellow-100))]"
+                    className="rounded-xl px-6 py-3 border-2 border-[rgb(var(--brand-yellow-500))] text-[rgb(var(--brand-yellow-700))] hover:bg-[rgb(var(--brand-yellow-100))] flex items-center gap-2"
                   >
-                    Заказать под ключ
+                    <Send size={18} />
+                    Заказать звонок
                   </Button>
                 </div>
               </div>
