@@ -964,9 +964,10 @@ const QuotePage = () => {
                                 <div className="text-sm font-bold">
                                   {formatPrice(service.price * service.quantity)}
                                 </div>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>
