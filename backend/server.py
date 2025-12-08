@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional, List, Dict
 import os
@@ -10,6 +11,10 @@ from email.mime.multipart import MIMEMultipart
 import logging
 import httpx
 import uuid
+from datetime import datetime
+
+# Импорт генератора документов
+from document_generator import generate_contract_pdf, generate_quote_pdf
 
 # Load environment variables first
 load_dotenv()
@@ -1845,6 +1850,150 @@ async def ai_chat(request: ChatRequest):
     except Exception as e:
         logger.error(f"AI chat error: {str(e)}")
         raise HTTPException(status_code=500, detail="AI service error")
+
+# ======================== ГЕНЕРАЦИЯ ДОКУМЕНТОВ ========================
+
+class ContractGenerateRequest(BaseModel):
+    """Запрос на генерацию договора"""
+    company: CompanyInfo
+    services: List[QuoteService]
+    contact_name: str
+    contact_phone: str
+    contact_email: Optional[str] = None
+
+
+@app.post("/api/contract/generate")
+async def generate_contract(request: ContractGenerateRequest):
+    """
+    Генерирует PDF договора.
+    Возвращает PDF файл для скачивания.
+    """
+    try:
+        # Подготавливаем данные клиента
+        client_info = {
+            "name": request.company.name,
+            "name_short": request.company.name_short or request.company.name,
+            "inn": request.company.inn,
+            "kpp": request.company.kpp or "",
+            "ogrn": request.company.ogrn or "",
+            "address": request.company.address or "",
+            "manager_name": request.company.management_name or request.contact_name,
+            "manager_post": request.company.management_post or "Директор",
+            "basis": "Устава" if request.company.type == "LEGAL" else "ОГРНИП",
+        }
+
+        # Подготавливаем услуги
+        services_list = []
+        total_amount = 0
+        for s in request.services:
+            subtotal = s.price * s.quantity
+            total_amount += subtotal
+            services_list.append({
+                "name": s.name,
+                "quantity": s.quantity,
+                "unit": s.unit,
+                "price": s.price,
+                "subtotal": subtotal
+            })
+
+        # Генерируем PDF
+        pdf_bytes = generate_contract_pdf(
+            client_info=client_info,
+            services=services_list,
+            total_amount=total_amount
+        )
+
+        # Формируем имя файла
+        contract_date = datetime.now()
+        contract_number = f"ДОГ-{contract_date.strftime('%d%m%y')}-001"
+        filename = f"Договор_{contract_number}_{request.company.inn}.pdf"
+
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"attachment; filename*=UTF-8''{filename}"
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Contract generation error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Ошибка генерации договора: {str(e)}")
+
+
+class QuotePDFRequest(BaseModel):
+    """Запрос на генерацию PDF коммерческого предложения"""
+    quote_id: str
+    company: CompanyInfo
+    services: List[QuoteService]
+    contact_name: str
+    contact_phone: str
+    contact_email: Optional[str] = None
+    valid_until: Optional[str] = None
+
+
+@app.post("/api/quote/pdf")
+async def generate_quote_pdf_endpoint(request: QuotePDFRequest):
+    """
+    Генерирует PDF коммерческого предложения.
+    Возвращает PDF файл для скачивания.
+    """
+    try:
+        # Подготавливаем данные клиента
+        client_info = {
+            "name": request.company.name,
+            "name_short": request.company.name_short or request.company.name,
+            "inn": request.company.inn,
+            "kpp": request.company.kpp or "",
+            "address": request.company.address or "",
+        }
+
+        # Подготавливаем контактные данные
+        contact_info = {
+            "name": request.contact_name,
+            "phone": request.contact_phone,
+            "email": request.contact_email or "",
+        }
+
+        # Подготавливаем услуги
+        services_list = []
+        total_amount = 0
+        for s in request.services:
+            subtotal = s.price * s.quantity
+            total_amount += subtotal
+            services_list.append({
+                "name": s.name,
+                "quantity": s.quantity,
+                "unit": s.unit,
+                "price": s.price,
+                "subtotal": subtotal
+            })
+
+        # Генерируем PDF
+        pdf_bytes = generate_quote_pdf(
+            client_info=client_info,
+            services=services_list,
+            total_amount=total_amount,
+            quote_id=request.quote_id,
+            contact_info=contact_info,
+            valid_until=request.valid_until
+        )
+
+        # Формируем имя файла
+        filename = f"KP_{request.quote_id}_{request.company.inn}.pdf"
+
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"attachment; filename*=UTF-8''{filename}"
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Quote PDF generation error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Ошибка генерации КП: {str(e)}")
+
 
 if __name__ == "__main__":
     import uvicorn

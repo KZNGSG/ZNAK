@@ -71,6 +71,10 @@ const QuotePage = () => {
   // Step 5: Quote result
   const [quoteResult, setQuoteResult] = useState(null);
 
+  // Download states
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [downloadingContract, setDownloadingContract] = useState(false);
+
   // Load categories and services on mount
   useEffect(() => {
     fetchCategories();
@@ -433,6 +437,110 @@ const QuotePage = () => {
   };
 
   const stepLabels = ['Компания', 'Товары', 'Услуги', 'Контакты', 'КП'];
+
+  // Скачать PDF коммерческого предложения
+  const downloadQuotePdf = async () => {
+    if (!quoteResult) return;
+    setDownloadingPdf(true);
+
+    try {
+      const response = await fetch(`${API_URL}/api/quote/pdf`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          quote_id: quoteResult.quote_id,
+          company: selectedCompany,
+          services: selectedServices.map(s => ({
+            id: s.id,
+            name: s.name,
+            description: s.description,
+            price: s.price,
+            unit: s.unit,
+            category: s.category,
+            quantity: s.quantity
+          })),
+          contact_name: contactData.name,
+          contact_phone: contactData.phone,
+          contact_email: contactData.email || null,
+          valid_until: quoteResult.valid_until
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Ошибка генерации PDF');
+      }
+
+      // Скачиваем файл
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `КП_${quoteResult.quote_id}_${selectedCompany.inn}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast.success('PDF скачан!');
+    } catch (error) {
+      console.error('PDF download error:', error);
+      toast.error(error.message || 'Ошибка скачивания PDF');
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
+  // Скачать договор
+  const downloadContract = async () => {
+    if (!selectedCompany) return;
+    setDownloadingContract(true);
+
+    try {
+      const response = await fetch(`${API_URL}/api/contract/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          company: selectedCompany,
+          services: selectedServices.map(s => ({
+            id: s.id,
+            name: s.name,
+            description: s.description,
+            price: s.price,
+            unit: s.unit,
+            category: s.category,
+            quantity: s.quantity
+          })),
+          contact_name: contactData.name,
+          contact_phone: contactData.phone,
+          contact_email: contactData.email || null
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Ошибка генерации договора');
+      }
+
+      // Скачиваем файл
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Договор_${selectedCompany.inn}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast.success('Договор скачан!');
+    } catch (error) {
+      console.error('Contract download error:', error);
+      toast.error(error.message || 'Ошибка скачивания договора');
+    } finally {
+      setDownloadingContract(false);
+    }
+  };
 
   return (
     <div className="py-12 bg-gradient-to-b from-slate-50 to-white min-h-screen">
@@ -1171,14 +1279,32 @@ const QuotePage = () => {
 
               {/* Actions */}
               <div className="p-6">
-                <div className="grid sm:grid-cols-2 gap-4 mb-6">
+                <div className="grid sm:grid-cols-3 gap-4 mb-6">
                   <Button
-                    onClick={() => toast.info('Функция в разработке')}
+                    onClick={downloadQuotePdf}
+                    disabled={downloadingPdf}
                     variant="outline"
                     className="rounded-xl py-4 flex items-center justify-center gap-2 border-2"
                   >
-                    <Download size={20} />
-                    Скачать PDF
+                    {downloadingPdf ? (
+                      <Loader2 size={20} className="animate-spin" />
+                    ) : (
+                      <Download size={20} />
+                    )}
+                    Скачать КП
+                  </Button>
+                  <Button
+                    onClick={downloadContract}
+                    disabled={downloadingContract}
+                    variant="outline"
+                    className="rounded-xl py-4 flex items-center justify-center gap-2 border-2"
+                  >
+                    {downloadingContract ? (
+                      <Loader2 size={20} className="animate-spin" />
+                    ) : (
+                      <FileText size={20} />
+                    )}
+                    Скачать договор
                   </Button>
                   <Button
                     onClick={() => toast.info('Функция в разработке')}
