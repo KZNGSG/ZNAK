@@ -545,15 +545,16 @@ def generate_contract_pdf(
 
     services_table = Table(table_data, colWidths=[1*cm, 8*cm, 1.5*cm, 1.5*cm, 2.5*cm, 2.5*cm])
     services_table.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (-1, -1), FONT_NORMAL),
         ('BACKGROUND', (0, 0), (-1, 0), colors.Color(0.9, 0.9, 0.9)),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTNAME', (0, 0), (-1, 0), FONT_BOLD),
         ('FONTSIZE', (0, 0), (-1, -1), 9),
         ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
         ('ALIGN', (2, 1), (-1, -1), 'CENTER'),
         ('ALIGN', (4, 1), (5, -1), 'RIGHT'),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('GRID', (0, 0), (-1, -2), 0.5, colors.black),
-        ('FONTNAME', (4, -1), (5, -1), 'Helvetica-Bold'),
+        ('FONTNAME', (4, -1), (5, -1), FONT_BOLD),
         ('TOPPADDING', (0, 0), (-1, -1), 4),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
     ]))
@@ -676,15 +677,16 @@ def generate_quote_pdf(
 
     services_table = Table(table_data, colWidths=[1*cm, 9*cm, 2*cm, 2.5*cm, 2.5*cm])
     services_table.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (-1, -1), FONT_NORMAL),
         ('BACKGROUND', (0, 0), (-1, 0), colors.Color(1, 0.85, 0)),  # Жёлтый
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTNAME', (0, 0), (-1, 0), FONT_BOLD),
         ('FONTSIZE', (0, 0), (-1, -1), 9),
         ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
         ('ALIGN', (2, 1), (-1, -1), 'CENTER'),
         ('ALIGN', (3, 1), (4, -1), 'RIGHT'),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('GRID', (0, 0), (-1, -2), 0.5, colors.black),
-        ('FONTNAME', (3, -1), (4, -1), 'Helvetica-Bold'),
+        ('FONTNAME', (3, -1), (4, -1), FONT_BOLD),
         ('FONTSIZE', (3, -1), (4, -1), 11),
         ('TOPPADDING', (0, 0), (-1, -1), 6),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
