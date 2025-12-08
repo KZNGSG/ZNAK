@@ -21,6 +21,68 @@ from reportlab.platypus import (
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
+# ======================== РЕГИСТРАЦИЯ ШРИФТОВ ДЛЯ КИРИЛЛИЦЫ ========================
+
+# Пути к шрифтам DejaVuSans (поддерживают кириллицу)
+FONT_PATHS = [
+    '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+    '/usr/share/fonts/dejavu/DejaVuSans.ttf',
+    '/usr/share/fonts/TTF/DejaVuSans.ttf',
+]
+FONT_BOLD_PATHS = [
+    '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
+    '/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf',
+    '/usr/share/fonts/TTF/DejaVuSans-Bold.ttf',
+]
+
+# Регистрируем шрифты
+def register_fonts():
+    """Регистрирует шрифты для поддержки кириллицы"""
+    from reportlab.pdfbase.pdfmetrics import registerFontFamily
+
+    font_registered = False
+    bold_registered = False
+
+    # Регистрируем обычный шрифт
+    for path in FONT_PATHS:
+        if os.path.exists(path):
+            try:
+                pdfmetrics.registerFont(TTFont('DejaVuSans', path))
+                font_registered = True
+                break
+            except:
+                continue
+
+    # Регистрируем жирный шрифт
+    for path in FONT_BOLD_PATHS:
+        if os.path.exists(path):
+            try:
+                pdfmetrics.registerFont(TTFont('DejaVuSans-Bold', path))
+                bold_registered = True
+                break
+            except:
+                continue
+
+    # Если не нашли DejaVuSans, используем стандартные шрифты
+    if not font_registered:
+        print("Warning: DejaVuSans font not found, using Helvetica (may have issues with Cyrillic)")
+        return 'Helvetica', 'Helvetica-Bold'
+
+    # Регистрируем семейство шрифтов для работы <b> тегов
+    if font_registered and bold_registered:
+        registerFontFamily(
+            'DejaVuSans',
+            normal='DejaVuSans',
+            bold='DejaVuSans-Bold',
+            italic='DejaVuSans',
+            boldItalic='DejaVuSans-Bold'
+        )
+
+    return 'DejaVuSans', 'DejaVuSans-Bold'
+
+# Регистрируем шрифты при импорте модуля
+FONT_NORMAL, FONT_BOLD = register_fonts()
+
 # ======================== РЕКВИЗИТЫ ИСПОЛНИТЕЛЯ ========================
 
 EXECUTOR_INFO = {
@@ -141,7 +203,7 @@ def get_styles():
     # Основной текст
     styles.add(ParagraphStyle(
         name='Normal_RU',
-        fontName='Helvetica',
+        fontName=FONT_NORMAL,
         fontSize=10,
         leading=14,
         alignment=TA_JUSTIFY,
@@ -150,7 +212,7 @@ def get_styles():
     # Заголовок документа
     styles.add(ParagraphStyle(
         name='DocTitle',
-        fontName='Helvetica-Bold',
+        fontName=FONT_BOLD,
         fontSize=14,
         leading=18,
         alignment=TA_CENTER,
@@ -160,7 +222,7 @@ def get_styles():
     # Подзаголовок
     styles.add(ParagraphStyle(
         name='DocSubtitle',
-        fontName='Helvetica',
+        fontName=FONT_NORMAL,
         fontSize=10,
         leading=14,
         alignment=TA_CENTER,
@@ -170,7 +232,7 @@ def get_styles():
     # Заголовок раздела
     styles.add(ParagraphStyle(
         name='SectionTitle',
-        fontName='Helvetica-Bold',
+        fontName=FONT_BOLD,
         fontSize=11,
         leading=14,
         alignment=TA_CENTER,
@@ -181,7 +243,7 @@ def get_styles():
     # Текст договора
     styles.add(ParagraphStyle(
         name='ContractText',
-        fontName='Helvetica',
+        fontName=FONT_NORMAL,
         fontSize=9,
         leading=12,
         alignment=TA_JUSTIFY,
@@ -191,7 +253,7 @@ def get_styles():
     # Мелкий текст
     styles.add(ParagraphStyle(
         name='Small',
-        fontName='Helvetica',
+        fontName=FONT_NORMAL,
         fontSize=8,
         leading=10,
     ))
@@ -199,7 +261,7 @@ def get_styles():
     # Реквизиты
     styles.add(ParagraphStyle(
         name='Requisites',
-        fontName='Helvetica',
+        fontName=FONT_NORMAL,
         fontSize=8,
         leading=10,
         alignment=TA_LEFT,
@@ -271,12 +333,19 @@ def generate_contract_pdf(
         styles['DocSubtitle']
     ))
 
-    # Город и дата
+    # Город и дата (таблица для выравнивания)
     date_str = format_date_russian(contract_date)
-    story.append(Paragraph(
-        f"{EXECUTOR_INFO['city']}<span style='float:right'>{date_str}</span>",
-        styles['Normal_RU']
-    ))
+    city_date_table = Table(
+        [[Paragraph(EXECUTOR_INFO['city'], styles['Normal_RU']),
+          Paragraph(date_str, styles['Normal_RU'])]],
+        colWidths=[9*cm, 9*cm]
+    )
+    city_date_table.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (0, 0), 'LEFT'),
+        ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+    ]))
+    story.append(city_date_table)
     story.append(Spacer(1, 0.5*cm))
 
     # === ПРЕАМБУЛА ===
