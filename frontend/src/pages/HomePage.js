@@ -102,6 +102,28 @@ const HomePage = () => {
               </div>
             </motion.div>
 
+            {/* Right: Video */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.7, delay: 0.3 }}
+              className="hidden lg:block"
+            >
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-white/50">
+                <iframe
+                  src="https://vk.com/video_ext.php?oid=-224327673&id=456239037&hd=2&autoplay=0&t=95"
+                  width="100%"
+                  height="360"
+                  allow="autoplay; encrypted-media; fullscreen; picture-in-picture; screen-wake-lock;"
+                  frameBorder="0"
+                  allowFullScreen
+                  title="Про маркировку товаров"
+                  className="w-full aspect-video"
+                  style={{ minHeight: '320px' }}
+                />
+              </div>
+            </motion.div>
+
           </div>
         </div>
       </section>
