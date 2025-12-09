@@ -780,22 +780,34 @@ def generate_quote_pdf(
 
     story.append(Spacer(1, 0.5*cm))
 
-    # Подпись руководителя (изображение)
+    # Подпись руководителя (изображение) - используем таблицу для выравнивания влево
     if os.path.exists(SIGNATURE_PATH):
         try:
-            sig_img = Image(SIGNATURE_PATH, width=4*cm, height=1.5*cm)
-            story.append(sig_img)
+            sig_table = Table([
+                [Image(SIGNATURE_PATH, width=4*cm, height=1.5*cm)]
+            ], colWidths=[17*cm])
+            sig_table.setStyle(TableStyle([
+                ('ALIGN', (0, 0), (0, 0), 'LEFT'),
+                ('LEFTPADDING', (0, 0), (0, 0), 0),
+            ]))
+            story.append(sig_table)
         except:
             pass
 
     story.append(Paragraph("_________________ / Турбин А.А. /", styles['Normal_RU']))
 
-    # Печать
+    # Печать - используем таблицу для выравнивания влево
     if os.path.exists(STAMP_PATH):
         story.append(Spacer(1, 0.3*cm))
         try:
-            stamp_img = Image(STAMP_PATH, width=3*cm, height=3*cm)
-            story.append(stamp_img)
+            stamp_table = Table([
+                [Image(STAMP_PATH, width=3*cm, height=3*cm)]
+            ], colWidths=[17*cm])
+            stamp_table.setStyle(TableStyle([
+                ('ALIGN', (0, 0), (0, 0), 'LEFT'),
+                ('LEFTPADDING', (0, 0), (0, 0), 0),
+            ]))
+            story.append(stamp_table)
         except:
             pass
 
