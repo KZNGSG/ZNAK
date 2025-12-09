@@ -863,13 +863,13 @@ SERVICE_CATEGORIES = {
 
 def send_email(to_email: str, subject: str, body: str) -> bool:
     """Send email via SMTP with Beget configuration"""
-    # Beget SMTP defaults (порт 2525 - альтернативный для Beget)
+    # Beget SMTP defaults (порт 465 SSL - работает стабильно)
     smtp_host = os.getenv('SMTP_HOST', 'smtp.beget.com')
-    smtp_port = os.getenv('SMTP_PORT', '2525')
+    smtp_port = os.getenv('SMTP_PORT', '465')
     smtp_user = os.getenv('SMTP_USER', 'info@promarkirui.ru')
     smtp_pass = os.getenv('SMTP_PASS', '&UDnQCJUE757')
     smtp_from = os.getenv('SMTP_FROM', smtp_user)
-    smtp_use_tls = os.getenv('SMTP_USE_TLS', 'true').lower() == 'true'
+    smtp_use_tls = os.getenv('SMTP_USE_TLS', 'false').lower() == 'true'  # false = use SSL
 
     # Log email attempt
     logger.info(f"Sending email to {to_email}, subject: {subject}")
