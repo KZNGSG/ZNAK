@@ -9,7 +9,7 @@ import {
   CheckCircle, XCircle, ArrowLeft, ArrowRight, Package, FlaskConical,
   Check, Search, X, ChevronDown, ChevronRight, Plus, Trash2, ShoppingCart,
   FileText, AlertTriangle, Sparkles, Send, ClipboardList, Phone, User, Loader2,
-  Utensils, Pill, SprayCan, Box, Car, HardHat, Cpu, Rocket
+  Utensils, Pill, SprayCan, Box, Car, HardHat, Cpu, Rocket, Database, BarChart3
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Stepper from '../components/Stepper';
@@ -59,9 +59,25 @@ const CheckProductPage = () => {
   const [searchLoading, setSearchLoading] = useState(false);
   const searchTimeoutRef = useRef(null);
 
+  // TNVED statistics state
+  const [tnvedStats, setTnvedStats] = useState({ total: 0, mandatory: 0, experimental: 0, not_required: 0 });
+
   useEffect(() => {
     fetchCategories();
+    fetchTnvedStats();
   }, []);
+
+  const fetchTnvedStats = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/tnved/stats`);
+      if (response.ok) {
+        const data = await response.json();
+        setTnvedStats(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch TNVED stats:', error);
+    }
+  };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -392,9 +408,35 @@ const CheckProductPage = () => {
   return (
     <div className="py-12 bg-gradient-to-b from-slate-50 to-white min-h-screen">
       <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="text-3xl sm:text-4xl font-semibold text-primary mb-2">Проверка товаров</h1>
-          <p className="text-gray-600">Узнайте, подлежат ли ваши товары обязательной маркировке</p>
+        <div className="mb-8 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-semibold text-primary mb-2">Проверка товаров</h1>
+            <p className="text-gray-600">Узнайте, подлежат ли ваши товары обязательной маркировке</p>
+          </div>
+
+          {/* Statistics Panel */}
+          <div className="bg-white rounded-2xl border-2 border-gray-200 shadow-lg overflow-hidden flex-shrink-0 lg:w-auto">
+            <div className="bg-gradient-to-r from-indigo-500 to-purple-600 px-4 py-2 flex items-center gap-2">
+              <Database size={16} className="text-white" />
+              <span className="text-white font-semibold text-sm">База ТН ВЭД</span>
+            </div>
+            <div className="p-3 flex gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-gray-900">{tnvedStats.total.toLocaleString()}</div>
+                <div className="text-xs text-gray-500">Всего кодов</div>
+              </div>
+              <div className="w-px bg-gray-200"></div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-emerald-600">{tnvedStats.mandatory.toLocaleString()}</div>
+                <div className="text-xs text-gray-500">Обязательных</div>
+              </div>
+              <div className="w-px bg-gray-200"></div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-amber-500">{tnvedStats.experimental.toLocaleString()}</div>
+                <div className="text-xs text-gray-500">Эксперимент</div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <Stepper current={step} total={3} steps={stepLabels} />
@@ -651,6 +693,13 @@ const CheckProductPage = () => {
                                 {product.name}
                               </h3>
 
+                              {/* Marking Status Badge */}
+                              {product.marking_status && (
+                                <div className="mb-2">
+                                  {getMarkingStatusBadge(product.marking_status)}
+                                </div>
+                              )}
+
                               <div className="flex items-center justify-between">
                                 <span className="font-mono text-[10px] font-bold text-[rgb(var(--brand-yellow-700))] bg-[rgb(var(--brand-yellow-50))] px-1.5 py-0.5 rounded">
                                   {product.tnved}
@@ -775,6 +824,12 @@ const CheckProductPage = () => {
                                       </div>
                                     )}
                                     <div className="text-xs font-medium text-gray-900 line-clamp-2 mb-1.5">{product.name}</div>
+                                    {/* Marking Status Badge - Mobile */}
+                                    {product.marking_status && (
+                                      <div className="mb-1.5">
+                                        {getMarkingStatusBadge(product.marking_status)}
+                                      </div>
+                                    )}
                                     <div className="font-mono text-[10px] font-bold text-[rgb(var(--brand-yellow-700))] bg-[rgb(var(--brand-yellow-50))] px-1.5 py-0.5 rounded inline-block">
                                       {product.tnved}
                                     </div>
