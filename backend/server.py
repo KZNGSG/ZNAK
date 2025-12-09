@@ -2257,6 +2257,73 @@ async def api_admin_get_stats(user: Dict = Depends(require_admin)):
     }
 
 
+# ======================== ТЕСТ ТН ВЭД ========================
+
+# Загружаем базу ТН ВЭД из JSON при старте
+_tnved_data = None
+
+def get_tnved_data():
+    """Загрузить данные ТН ВЭД из JSON"""
+    global _tnved_data
+    if _tnved_data is None:
+        import json
+        json_path = os.path.join(os.path.dirname(__file__), 'data', 'tnved.json')
+        try:
+            with open(json_path, 'r', encoding='utf-8') as f:
+                _tnved_data = json.load(f)
+            logger.info(f"Loaded {len(_tnved_data)} TNVED codes from JSON")
+        except FileNotFoundError:
+            logger.warning("TNVED JSON not found, returning empty list")
+            _tnved_data = []
+    return _tnved_data
+
+
+@app.get("/api/tnved/search")
+async def api_tnved_search(q: str = "", limit: int = 50):
+    """Поиск по базе ТН ВЭД"""
+    if not q or len(q) < 2:
+        return {"results": [], "query": q}
+
+    data = get_tnved_data()
+    q_lower = q.lower()
+    q_digits = q.replace(' ', '')
+
+    results = []
+    for item in data:
+        # Поиск по коду
+        if q_digits.isdigit():
+            if item['code'].startswith(q_digits):
+                results.append(item)
+        # Поиск по названию
+        elif q_lower in item['name'].lower():
+            results.append(item)
+
+        if len(results) >= limit:
+            break
+
+    return {"results": results, "query": q, "count": len(results)}
+
+
+@app.get("/api/tnved/stats")
+async def api_tnved_stats():
+    """Статистика базы ТН ВЭД"""
+    data = get_tnved_data()
+
+    if not data:
+        return {"loaded": False, "total": 0}
+
+    mandatory = len([d for d in data if d.get('requires_marking')])
+    experimental = len([d for d in data if d.get('is_experimental')])
+
+    return {
+        "loaded": True,
+        "total": len(data),
+        "mandatory": mandatory,
+        "experimental": experimental,
+        "not_required": len(data) - mandatory - experimental
+    }
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
