@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { CheckCircle, Wrench, Mail, FileText, User, LogIn } from 'lucide-react';
+import { CheckCircle, Wrench, Mail, User, LogIn } from 'lucide-react';
 import CitySelector from './CitySelector';
 import { useAuth } from '../context/AuthContext';
 
@@ -49,19 +49,7 @@ const Header = () => {
               data-testid="nav-check"
             >
               <CheckCircle size={20} strokeWidth={2.5} />
-              Проверить
-            </Link>
-            <Link
-              to="/quote"
-              className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-bold transition-all ${
-                isActive('/quote')
-                  ? 'bg-gradient-to-r from-[rgb(var(--brand-yellow-500))] to-[rgb(var(--brand-yellow-600))] text-[rgb(var(--black))] shadow-lg'
-                  : 'text-[rgb(var(--grey-700))] hover:bg-[rgb(var(--brand-yellow-50))] hover:text-[rgb(var(--black))]'
-              }`}
-              data-testid="nav-quote"
-            >
-              <FileText size={20} strokeWidth={2.5} />
-              Получить КП
+              Проверить товар
             </Link>
             <Link
               to="/equipment"

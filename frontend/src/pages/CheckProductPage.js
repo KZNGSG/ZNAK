@@ -1078,7 +1078,7 @@ const CheckProductPage = () => {
                     className="btn-gradient rounded-xl px-6 py-3 flex items-center gap-2"
                   >
                     <FileText size={18} />
-                    Оформить договор
+                    Получить КП
                   </Button>
                   <Button
                     onClick={() => setShowCallbackModal(true)}
