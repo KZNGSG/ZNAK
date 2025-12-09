@@ -55,6 +55,7 @@ class CategoryGroup(BaseModel):
 class CheckProductRequest(BaseModel):
     category: str
     subcategory: str
+    product: Optional[str] = None  # Product ID from CATEGORIES_DATA
     source: List[str]  # ["produce", "import", "buy_rf", "old_stock"] - множественный выбор
     volume: str  # "<100", "100-1000", "1000-10000", ">10000"
 
@@ -66,6 +67,8 @@ class CheckProductResponse(BaseModel):
     tnved: Optional[str] = None
     status: Optional[str] = None  # "mandatory" or "experiment"
     deadline: Optional[str] = None
+    mandatory_since: Optional[str] = None
+    timeline: Optional[Dict] = None  # Timeline info with who, requirements, etc.
     steps: List[str]
     message: str
 
@@ -177,16 +180,158 @@ CATEGORIES_DATA = [
         "subcategories": [
             {"id": "beer_alcohol", "name": "Пиво и слабоалкогольные напитки", "icon": "beer", "products": []},
             {"id": "dairy", "name": "Молочная продукция", "icon": "milk", "products": [
-                {"id": "dairy_0401", "name": "Молоко и сливки несгущенные", "tnved": "0401", "marking_status": "mandatory"},
-                {"id": "dairy_0402", "name": "Молоко и сливки сгущенные", "tnved": "0402", "marking_status": "mandatory"},
-                {"id": "dairy_0403", "name": "Пахта, йогурт, кефир", "tnved": "0403", "marking_status": "mandatory"},
-                {"id": "dairy_0404", "name": "Молочная сыворотка", "tnved": "0404", "marking_status": "mandatory"},
-                {"id": "dairy_0405", "name": "Сливочное масло", "tnved": "0405", "marking_status": "mandatory"},
-                {"id": "dairy_0406", "name": "Сыры и творог", "tnved": "0406", "marking_status": "mandatory"},
-                {"id": "dairy_210500", "name": "Мороженое", "tnved": "2105 00", "marking_status": "mandatory"},
-                {"id": "dairy_2202999100", "name": "Молочные напитки (до 0,2% жира)", "tnved": "2202 99 910 0", "marking_status": "mandatory"},
-                {"id": "dairy_2202999500", "name": "Молочные напитки (0,2-2% жира)", "tnved": "2202 99 950 0", "marking_status": "mandatory"},
-                {"id": "dairy_2202999900", "name": "Молочные напитки (от 2% жира)", "tnved": "2202 99 990 0", "marking_status": "mandatory"}
+                {
+                    "id": "dairy_0401", "name": "Молоко и сливки несгущенные", "tnved": "0401",
+                    "marking_status": "mandatory", "mandatory_since": "2021-12-01",
+                    "timeline": {
+                        "title": "Срок годности до 40 дней",
+                        "start_date": "1 декабря 2021",
+                        "who": ["Производители", "Импортёры", "Оптовики", "Розница"],
+                        "current_requirements": [
+                            "Регистрация в Честном ЗНАКе",
+                            "Нанесение кодов маркировки",
+                            "Передача данных при продаже на кассе",
+                            "Электронный документооборот (ЭДО)"
+                        ]
+                    }
+                },
+                {
+                    "id": "dairy_0402", "name": "Молоко и сливки сгущенные", "tnved": "0402",
+                    "marking_status": "mandatory", "mandatory_since": "2021-09-01",
+                    "timeline": {
+                        "title": "Срок годности более 40 дней",
+                        "start_date": "1 сентября 2021",
+                        "who": ["Производители", "Импортёры", "Оптовики", "Розница"],
+                        "current_requirements": [
+                            "Регистрация в Честном ЗНАКе",
+                            "Нанесение кодов маркировки",
+                            "Передача данных при продаже на кассе",
+                            "Электронный документооборот (ЭДО)"
+                        ]
+                    }
+                },
+                {
+                    "id": "dairy_0403", "name": "Пахта, йогурт, кефир", "tnved": "0403",
+                    "marking_status": "mandatory", "mandatory_since": "2021-12-01",
+                    "timeline": {
+                        "title": "Срок годности до 40 дней",
+                        "start_date": "1 декабря 2021",
+                        "who": ["Производители", "Импортёры", "Оптовики", "Розница"],
+                        "current_requirements": [
+                            "Регистрация в Честном ЗНАКе",
+                            "Нанесение кодов маркировки",
+                            "Передача данных при продаже на кассе",
+                            "Электронный документооборот (ЭДО)"
+                        ]
+                    }
+                },
+                {
+                    "id": "dairy_0404", "name": "Молочная сыворотка", "tnved": "0404",
+                    "marking_status": "mandatory", "mandatory_since": "2021-09-01",
+                    "timeline": {
+                        "title": "Срок годности более 40 дней",
+                        "start_date": "1 сентября 2021",
+                        "who": ["Производители", "Импортёры", "Оптовики", "Розница"],
+                        "current_requirements": [
+                            "Регистрация в Честном ЗНАКе",
+                            "Нанесение кодов маркировки",
+                            "Передача данных при продаже на кассе",
+                            "Электронный документооборот (ЭДО)"
+                        ]
+                    }
+                },
+                {
+                    "id": "dairy_0405", "name": "Сливочное масло", "tnved": "0405",
+                    "marking_status": "mandatory", "mandatory_since": "2021-09-01",
+                    "timeline": {
+                        "title": "Срок годности более 40 дней",
+                        "start_date": "1 сентября 2021",
+                        "who": ["Производители", "Импортёры", "Оптовики", "Розница"],
+                        "current_requirements": [
+                            "Регистрация в Честном ЗНАКе",
+                            "Нанесение кодов маркировки",
+                            "Передача данных при продаже на кассе",
+                            "Электронный документооборот (ЭДО)"
+                        ]
+                    }
+                },
+                {
+                    "id": "dairy_0406", "name": "Сыры и творог", "tnved": "0406",
+                    "marking_status": "mandatory", "mandatory_since": "2021-06-01",
+                    "timeline": {
+                        "title": "Сыры — первая категория",
+                        "start_date": "1 июня 2021",
+                        "who": ["Производители", "Импортёры", "Оптовики", "Розница", "Фермеры (с 1.09.2024)"],
+                        "current_requirements": [
+                            "Регистрация в Честном ЗНАКе",
+                            "Нанесение кодов маркировки",
+                            "Передача данных при продаже на кассе",
+                            "Разрешительный режим на кассах",
+                            "Электронный документооборот (ЭДО)"
+                        ]
+                    }
+                },
+                {
+                    "id": "dairy_210500", "name": "Мороженое", "tnved": "2105 00",
+                    "marking_status": "mandatory", "mandatory_since": "2021-06-01",
+                    "timeline": {
+                        "title": "Мороженое — первая категория",
+                        "start_date": "1 июня 2021",
+                        "who": ["Производители", "Импортёры", "Оптовики", "Розница", "Фермеры (с 1.09.2024)"],
+                        "current_requirements": [
+                            "Регистрация в Честном ЗНАКе",
+                            "Нанесение кодов маркировки",
+                            "Передача данных при продаже на кассе",
+                            "Разрешительный режим на кассах",
+                            "Электронный документооборот (ЭДО)"
+                        ]
+                    }
+                },
+                {
+                    "id": "dairy_2202999100", "name": "Молочные напитки (до 0,2% жира)", "tnved": "2202 99 910 0",
+                    "marking_status": "mandatory", "mandatory_since": "2021-12-01",
+                    "timeline": {
+                        "title": "Молочные напитки",
+                        "start_date": "1 декабря 2021",
+                        "who": ["Производители", "Импортёры", "Оптовики", "Розница"],
+                        "current_requirements": [
+                            "Регистрация в Честном ЗНАКе",
+                            "Нанесение кодов маркировки",
+                            "Передача данных при продаже на кассе",
+                            "Электронный документооборот (ЭДО)"
+                        ]
+                    }
+                },
+                {
+                    "id": "dairy_2202999500", "name": "Молочные напитки (0,2-2% жира)", "tnved": "2202 99 950 0",
+                    "marking_status": "mandatory", "mandatory_since": "2021-12-01",
+                    "timeline": {
+                        "title": "Молочные напитки",
+                        "start_date": "1 декабря 2021",
+                        "who": ["Производители", "Импортёры", "Оптовики", "Розница"],
+                        "current_requirements": [
+                            "Регистрация в Честном ЗНАКе",
+                            "Нанесение кодов маркировки",
+                            "Передача данных при продаже на кассе",
+                            "Электронный документооборот (ЭДО)"
+                        ]
+                    }
+                },
+                {
+                    "id": "dairy_2202999900", "name": "Молочные напитки (от 2% жира)", "tnved": "2202 99 990 0",
+                    "marking_status": "mandatory", "mandatory_since": "2021-12-01",
+                    "timeline": {
+                        "title": "Молочные напитки",
+                        "start_date": "1 декабря 2021",
+                        "who": ["Производители", "Импортёры", "Оптовики", "Розница"],
+                        "current_requirements": [
+                            "Регистрация в Честном ЗНАКе",
+                            "Нанесение кодов маркировки",
+                            "Передача данных при продаже на кассе",
+                            "Электронный документооборот (ЭДО)"
+                        ]
+                    }
+                }
             ]},
             {"id": "water", "name": "Упакованная вода", "icon": "droplet", "products": []},
             {"id": "tobacco", "name": "Табак", "icon": "cigarette", "products": []},
@@ -300,7 +445,10 @@ for category in CATEGORIES_DATA:
                 "subcategory_id": sub["id"],
                 "subcategory_name": sub["name"],
                 "name": product["name"],
-                "tnved": product["tnved"]
+                "tnved": product.get("tnved", ""),
+                "marking_status": product.get("marking_status", "not_required"),
+                "mandatory_since": product.get("mandatory_since"),
+                "timeline": product.get("timeline")
             }
 
 MARKING_STEPS = [
@@ -807,14 +955,22 @@ async def get_categories():
 async def assess_product(request: CheckProductRequest):
     """Assess if product requires marking"""
 
-    # Look up product in database
-    product = PRODUCTS_LOOKUP.get(request.subcategory)
+    # Look up product by product ID first, then by subcategory
+    product = None
+    if request.product:
+        product = PRODUCTS_LOOKUP.get(request.product)
 
     if product:
-        is_mandatory = product["category_status"] == "mandatory"
-        is_experiment = product["category_status"] == "experiment"
+        marking_status = product.get("marking_status", "not_required")
+        is_mandatory = marking_status == "mandatory"
+        is_experiment = marking_status == "experiment"
+        timeline = product.get("timeline")
+        mandatory_since = product.get("mandatory_since")
 
         if is_mandatory:
+            # Format deadline from timeline
+            deadline = f"с {timeline['start_date']}" if timeline else "Действует"
+
             return CheckProductResponse(
                 requires_marking=True,
                 category=request.category,
@@ -822,8 +978,10 @@ async def assess_product(request: CheckProductRequest):
                 subcategory_name=product["name"],
                 tnved=product["tnved"],
                 status="mandatory",
-                deadline="Действует",
-                steps=MARKING_STEPS,
+                deadline=deadline,
+                mandatory_since=mandatory_since,
+                timeline=timeline,
+                steps=timeline.get("current_requirements", MARKING_STEPS) if timeline else MARKING_STEPS,
                 message=f"Товар «{product['name']}» подлежит обязательной маркировке. Код ТН ВЭД: {product['tnved']}"
             )
         elif is_experiment:
@@ -835,6 +993,8 @@ async def assess_product(request: CheckProductRequest):
                 tnved=product["tnved"],
                 status="experiment",
                 deadline="Эксперимент",
+                mandatory_since=None,
+                timeline=timeline,
                 steps=EXPERIMENT_STEPS,
                 message=f"Товар «{product['name']}» участвует в эксперименте по маркировке. Код ТН ВЭД: {product['tnved']}. Обязательная маркировка пока не введена."
             )
@@ -846,6 +1006,8 @@ async def assess_product(request: CheckProductRequest):
         tnved=None,
         status=None,
         deadline=None,
+        mandatory_since=None,
+        timeline=None,
         steps=[],
         message="Информация о данном товаре не найдена в базе. Рекомендуем уточнить на сайте честныйзнак.рф"
     )
