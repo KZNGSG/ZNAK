@@ -778,6 +778,27 @@ def generate_quote_pdf(
     story.append(Paragraph("С уважением,", styles['Normal_RU']))
     story.append(Paragraph(f"<b>{EXECUTOR_INFO['name_short']}</b>", styles['Normal_RU']))
 
+    story.append(Spacer(1, 0.5*cm))
+
+    # Подпись руководителя (изображение)
+    if os.path.exists(SIGNATURE_PATH):
+        try:
+            sig_img = Image(SIGNATURE_PATH, width=4*cm, height=1.5*cm)
+            story.append(sig_img)
+        except:
+            pass
+
+    story.append(Paragraph("_________________ / Турбин А.А. /", styles['Normal_RU']))
+
+    # Печать
+    if os.path.exists(STAMP_PATH):
+        story.append(Spacer(1, 0.3*cm))
+        try:
+            stamp_img = Image(STAMP_PATH, width=3*cm, height=3*cm)
+            story.append(stamp_img)
+        except:
+            pass
+
     # Собираем PDF
     doc.build(story)
 
