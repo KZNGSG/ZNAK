@@ -1176,12 +1176,12 @@ async def suggest_company(request: INNLookupRequest):
             suggestions = []
 
             for item in data.get("suggestions", []):
-                d = item.get("data", {})
-                name_data = d.get("name", {})
-                address_data = d.get("address", {})
-                management = d.get("management", {})
-                state = d.get("state", {})
-                opf = d.get("opf", {})
+                d = item.get("data") or {}
+                name_data = d.get("name") or {}
+                address_data = d.get("address") or {}
+                management = d.get("management") or {}
+                state = d.get("state") or {}
+                opf = d.get("opf") or {}
 
                 suggestion = {
                     "inn": d.get("inn"),
@@ -1192,10 +1192,10 @@ async def suggest_company(request: INNLookupRequest):
                     "name_full": name_data.get("full_with_opf"),
                     "opf": opf.get("short"),
                     "type": d.get("type"),  # LEGAL или INDIVIDUAL
-                    "address": address_data.get("unrestricted_value") or address_data.get("value"),
-                    "management_name": management.get("name"),
-                    "management_post": management.get("post"),
-                    "status": state.get("status")  # ACTIVE, LIQUIDATED, etc.
+                    "address": (address_data.get("unrestricted_value") or address_data.get("value")) if address_data else None,
+                    "management_name": management.get("name") if management else None,
+                    "management_post": management.get("post") if management else None,
+                    "status": state.get("status") if state else None  # ACTIVE, LIQUIDATED, etc.
                 }
                 suggestions.append(suggestion)
 
