@@ -456,15 +456,20 @@ const QuotePage = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           company: selectedCompany,
-          products: selectedProducts,
+          products: selectedProducts.map(p => ({
+            id: p.id || 'unknown',
+            name: p.name || 'Товар',
+            tnved: p.tnved || '',
+            category: p.categoryId || p.category || 'other'
+          })),
           services: selectedServices.map(s => ({
             id: s.id,
             name: s.name,
-            description: s.description,
+            description: s.description || '',
             price: s.price,
             unit: s.unit,
             category: s.category,
-            quantity: s.quantity
+            quantity: s.quantity || 1
           })),
           contact_name: contactData.name,
           contact_phone: contactData.phone,
