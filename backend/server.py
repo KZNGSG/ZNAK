@@ -1855,17 +1855,19 @@ async def api_tnved_search(q: str = "", limit: int = 50):
 
 @app.get("/api/tnved/stats")
 async def api_tnved_stats():
-    """Статистика товаров из CATEGORIES_DATA (панель проверки)"""
+    """Статистика: всего кодов из tnved.json, обязательных/эксперимент из CATEGORIES_DATA"""
 
-    # Count products from CATEGORIES_DATA (not from tnved.json)
-    total = 0
+    # Total from tnved.json
+    data = get_tnved_data()
+    total = len(data) if data else 0
+
+    # Mandatory/Experiment from CATEGORIES_DATA (our curated products)
     mandatory = 0
     experimental = 0
 
     for category in CATEGORIES_DATA:
         for subcategory in category.get("subcategories", []):
             for product in subcategory.get("products", []):
-                total += 1
                 status = product.get("marking_status", "not_required")
                 if status == "mandatory":
                     mandatory += 1
