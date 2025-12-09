@@ -262,9 +262,9 @@ const CheckProductPage = () => {
       }
       setStep(2);
     } else if (step === 2) {
-      const incomplete = selectedProducts.find(p => !p.source || p.source.length === 0 || !p.volume);
+      const incomplete = selectedProducts.find(p => !p.source || p.source.length === 0);
       if (incomplete) {
-        toast.error(`Заполните данные для всех товаров`);
+        toast.error(`Укажите источник товара для всех товаров`);
         return;
       }
       handleSubmit();
@@ -383,23 +383,23 @@ const CheckProductPage = () => {
     switch (status) {
       case 'mandatory':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
-            <CheckCircle size={12} />
-            Обязательно
+          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-emerald-100 text-emerald-700">
+            <CheckCircle size={10} />
+            Обяз.
           </span>
         );
       case 'experiment':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
-            <FlaskConical size={12} />
-            Эксперимент
+          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-amber-100 text-amber-700">
+            <FlaskConical size={10} />
+            Экспер.
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-            <XCircle size={12} />
-            Не требуется
+          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-gray-100 text-gray-600">
+            <XCircle size={10} />
+            Нет
           </span>
         );
     }
@@ -667,7 +667,7 @@ const CheckProductPage = () => {
                     </div>
 
                     {currentProducts.length > 0 ? (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
                         {currentProducts.map((product) => {
                           const isSelected = isProductSelected(product.id);
                           return (
@@ -677,35 +677,35 @@ const CheckProductPage = () => {
                                 ? removeProduct(product.id)
                                 : addProduct(product, currentCategory?.id, selectedSubcategory.id)
                               }
-                              className={`group relative bg-white rounded-xl p-3 border-2 transition-all duration-200 text-left ${
+                              className={`group relative bg-white rounded-lg p-2 border-2 transition-all duration-200 text-left ${
                                 isSelected
                                   ? 'border-emerald-500 bg-emerald-50 shadow-md ring-1 ring-emerald-200'
                                   : 'border-gray-200 hover:border-[rgb(var(--brand-yellow-400))] hover:shadow-md'
                               }`}
                             >
                               {isSelected && (
-                                <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center shadow-sm">
-                                  <Check size={12} className="text-white" />
+                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center shadow-sm">
+                                  <Check size={10} className="text-white" />
                                 </div>
                               )}
 
-                              <h3 className="font-medium text-xs leading-tight line-clamp-2 text-gray-800 mb-2">
+                              <h3 className="font-medium text-[10px] leading-tight line-clamp-2 text-gray-800 mb-1">
                                 {product.name}
                               </h3>
 
                               {/* Marking Status Badge */}
                               {product.marking_status && (
-                                <div className="mb-2">
+                                <div className="mb-1">
                                   {getMarkingStatusBadge(product.marking_status)}
                                 </div>
                               )}
 
                               <div className="flex items-center justify-between">
-                                <span className="font-mono text-[10px] font-bold text-[rgb(var(--brand-yellow-700))] bg-[rgb(var(--brand-yellow-50))] px-1.5 py-0.5 rounded">
+                                <span className="font-mono text-[9px] font-bold text-[rgb(var(--brand-yellow-700))] bg-[rgb(var(--brand-yellow-50))] px-1 py-0.5 rounded">
                                   {product.tnved}
                                 </span>
                                 {!isSelected && (
-                                  <Plus size={14} className="text-gray-400 group-hover:text-[rgb(var(--brand-yellow-600))] transition-colors" />
+                                  <Plus size={12} className="text-gray-400 group-hover:text-[rgb(var(--brand-yellow-600))] transition-colors" />
                                 )}
                               </div>
                             </button>
@@ -801,7 +801,7 @@ const CheckProductPage = () => {
 
                         {/* Products grid */}
                         {selectedSubcategory && selectedSubcategory.categoryId === category.id && (
-                          <div className="grid grid-cols-2 gap-2">
+                          <div className="grid grid-cols-3 gap-1.5">
                             {(selectedSubcategory.products || []).length > 0 ? (
                               selectedSubcategory.products.map((product) => {
                                 const isSelected = isProductSelected(product.id);
@@ -812,25 +812,25 @@ const CheckProductPage = () => {
                                       ? removeProduct(product.id)
                                       : addProduct(product, category.id, selectedSubcategory.id)
                                     }
-                                    className={`relative bg-white rounded-lg p-2.5 border-2 transition-all text-left ${
+                                    className={`relative bg-white rounded-lg p-1.5 border-2 transition-all text-left ${
                                       isSelected
                                         ? 'border-emerald-500 bg-emerald-50'
                                         : 'border-gray-200'
                                     }`}
                                   >
                                     {isSelected && (
-                                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center">
-                                        <Check size={10} className="text-white" />
+                                      <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-500 rounded-full flex items-center justify-center">
+                                        <Check size={8} className="text-white" />
                                       </div>
                                     )}
-                                    <div className="text-xs font-medium text-gray-900 line-clamp-2 mb-1.5">{product.name}</div>
+                                    <div className="text-[9px] font-medium text-gray-900 line-clamp-2 mb-1">{product.name}</div>
                                     {/* Marking Status Badge - Mobile */}
                                     {product.marking_status && (
-                                      <div className="mb-1.5">
+                                      <div className="mb-1">
                                         {getMarkingStatusBadge(product.marking_status)}
                                       </div>
                                     )}
-                                    <div className="font-mono text-[10px] font-bold text-[rgb(var(--brand-yellow-700))] bg-[rgb(var(--brand-yellow-50))] px-1.5 py-0.5 rounded inline-block">
+                                    <div className="font-mono text-[8px] font-bold text-[rgb(var(--brand-yellow-700))] bg-[rgb(var(--brand-yellow-50))] px-1 py-0.5 rounded inline-block">
                                       {product.tnved}
                                     </div>
                                   </button>
@@ -838,7 +838,7 @@ const CheckProductPage = () => {
                               })
                             ) : (
                               /* Empty mobile subcategory - направляем к поиску */
-                              <div className="col-span-2 text-center py-4">
+                              <div className="col-span-3 text-center py-4">
                                 <Package size={24} className="mx-auto text-gray-300 mb-2" />
                                 <p className="text-xs text-gray-500">Используйте поиск выше</p>
                               </div>
@@ -900,13 +900,13 @@ const CheckProductPage = () => {
                     </div>
                   </div>
 
-                  <div className="p-6 grid md:grid-cols-2 gap-6">
+                  <div className="p-6">
                     <div>
                       <Label className="text-sm font-semibold text-gray-700 mb-1 block">
                         Откуда у вас этот товар?
                       </Label>
                       <p className="text-xs text-gray-500 mb-3">Можно выбрать несколько вариантов</p>
-                      <div className="space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
                         {[
                           { value: 'produce', label: 'Произвожу сам в России' },
                           { value: 'import', label: 'Импортирую из-за рубежа' },
@@ -926,48 +926,22 @@ const CheckProductPage = () => {
                         ))}
                       </div>
                     </div>
-
-                    <div>
-                      <Label className="text-sm font-semibold text-gray-700 mb-3 block">
-                        Какой объём в месяц?
-                      </Label>
-                      <RadioGroup
-                        value={product.volume}
-                        onValueChange={(value) => updateProductDetails(product.id, 'volume', value)}
-                      >
-                        <div className="space-y-2">
-                          {[
-                            { value: '<100', label: 'До 100 единиц' },
-                            { value: '100-1000', label: '100 — 1 000 единиц' },
-                            { value: '1000-10000', label: '1 000 — 10 000 единиц' },
-                            { value: '>10000', label: 'Более 10 000 единиц' }
-                          ].map((opt) => (
-                            <div key={opt.value} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50">
-                              <RadioGroupItem value={opt.value} id={`${product.id}-vol-${opt.value}`} />
-                              <Label htmlFor={`${product.id}-vol-${opt.value}`} className="cursor-pointer text-sm flex-1">
-                                {opt.label}
-                              </Label>
-                            </div>
-                          ))}
-                        </div>
-                      </RadioGroup>
-                    </div>
                   </div>
 
                   <div className={`px-6 py-3 text-sm flex items-center gap-2 ${
-                    product.source?.length > 0 && product.volume
+                    product.source?.length > 0
                       ? 'bg-emerald-50 text-emerald-700'
                       : 'bg-amber-50 text-amber-700'
                   }`}>
-                    {product.source?.length > 0 && product.volume ? (
+                    {product.source?.length > 0 ? (
                       <>
                         <CheckCircle size={16} />
-                        <span>Данные заполнены</span>
+                        <span>Источник товара указан</span>
                       </>
                     ) : (
                       <>
                         <AlertTriangle size={16} />
-                        <span>Заполните все поля</span>
+                        <span>Выберите источник товара</span>
                       </>
                     )}
                   </div>
