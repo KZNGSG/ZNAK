@@ -28131,7 +28131,7 @@
     "code": "210500",
     "code_formatted": "2105 00",
     "name": "Мороженое и прочие виды пищевого льда, не содержащие или содержащие какао:",
-    "marking_status": "not_required",
+    "marking_status": "mandatory",
     "requires_marking": false,
     "is_experimental": false
   },
@@ -28139,7 +28139,7 @@
     "code": "2105001000",
     "code_formatted": "2105 00 100 0",
     "name": "не содержащие молочных жиров или содержащие менее 3 мас.% молочных жиров",
-    "marking_status": "not_required",
+    "marking_status": "mandatory",
     "requires_marking": false,
     "is_experimental": false
   },
@@ -28147,7 +28147,7 @@
     "code": "2105009100",
     "code_formatted": "2105 00 910 0",
     "name": "3 мас.% или более, но менее 7 мас.%",
-    "marking_status": "not_required",
+    "marking_status": "mandatory",
     "requires_marking": false,
     "is_experimental": false
   },
@@ -28155,7 +28155,7 @@
     "code": "2105009900",
     "code_formatted": "2105 00 990 0",
     "name": "7 мас.% или более",
-    "marking_status": "not_required",
+    "marking_status": "mandatory",
     "requires_marking": false,
     "is_experimental": false
   },
@@ -28395,7 +28395,7 @@
     "code": "2202999100",
     "code_formatted": "2202 99 910 0",
     "name": "менее 0,2 мас.%",
-    "marking_status": "not_required",
+    "marking_status": "mandatory",
     "requires_marking": false,
     "is_experimental": false
   },
@@ -28403,7 +28403,7 @@
     "code": "2202999500",
     "code_formatted": "2202 99 950 0",
     "name": "0,2 мас.% или более, но менее 2 мас.%",
-    "marking_status": "not_required",
+    "marking_status": "mandatory",
     "requires_marking": false,
     "is_experimental": false
   },
@@ -28411,7 +28411,7 @@
     "code": "2202999900",
     "code_formatted": "2202 99 990 0",
     "name": "2 мас.% или более",
-    "marking_status": "not_required",
+    "marking_status": "mandatory",
     "requires_marking": false,
     "is_experimental": false
   },
