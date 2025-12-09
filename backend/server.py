@@ -178,9 +178,9 @@ CATEGORIES_DATA = [
             {"id": "beer_alcohol", "name": "Пиво и слабоалкогольные напитки", "icon": "beer", "products": []},
             {"id": "dairy", "name": "Молочная продукция", "icon": "milk", "products": [
                 {"id": "dairy_cheese", "name": "Сыры", "tnved": "0406"},
-                {"id": "dairy_ice_cream", "name": "Мороженое", "tnved": "2105 00"},
-                {"id": "dairy_long_shelf", "name": "Молочная продукция более 40 суток хранения", "tnved": "0401-0406"},
-                {"id": "dairy_short_shelf", "name": "Молочная продукция до 40 суток хранения", "tnved": "0401-0406"}
+                {"id": "dairy_ice_cream", "name": "Мороженое и прочие виды пищевого льда", "tnved": "2105 00"},
+                {"id": "dairy_long_shelf", "name": "Молочная продукция более 40 суток", "tnved": "0401, 0402, 0403, 0404, 0405, 0406, 2202 99 910 0, 2202 99 950 0, 2202 99 990 0"},
+                {"id": "dairy_short_shelf", "name": "Молочная продукция до 40 суток", "tnved": "0401, 0402, 0403, 0404, 0405, 0406, 2202 99 910 0, 2202 99 950 0, 2202 99 990 0"}
             ]},
             {"id": "water", "name": "Упакованная вода", "icon": "droplet", "products": []},
             {"id": "tobacco", "name": "Табак", "icon": "cigarette", "products": []},
