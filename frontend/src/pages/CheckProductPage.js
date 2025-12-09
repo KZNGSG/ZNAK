@@ -383,22 +383,22 @@ const CheckProductPage = () => {
     switch (status) {
       case 'mandatory':
         return (
-          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-emerald-100 text-emerald-700">
-            <CheckCircle size={10} />
-            Обяз.
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-100 text-emerald-700">
+            <CheckCircle size={12} />
+            Обязат.
           </span>
         );
       case 'experiment':
         return (
-          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-amber-100 text-amber-700">
-            <FlaskConical size={10} />
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-700">
+            <FlaskConical size={12} />
             Экспер.
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-gray-100 text-gray-600">
-            <XCircle size={10} />
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-600">
+            <XCircle size={12} />
             Нет
           </span>
         );
@@ -667,7 +667,7 @@ const CheckProductPage = () => {
                     </div>
 
                     {currentProducts.length > 0 ? (
-                      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                         {currentProducts.map((product) => {
                           const isSelected = isProductSelected(product.id);
                           return (
@@ -677,35 +677,35 @@ const CheckProductPage = () => {
                                 ? removeProduct(product.id)
                                 : addProduct(product, currentCategory?.id, selectedSubcategory.id)
                               }
-                              className={`group relative bg-white rounded-lg p-2 border-2 transition-all duration-200 text-left ${
+                              className={`group relative bg-white rounded-xl p-3 border-2 transition-all duration-200 text-left ${
                                 isSelected
-                                  ? 'border-emerald-500 bg-emerald-50 shadow-md ring-1 ring-emerald-200'
+                                  ? 'border-emerald-500 bg-emerald-50 shadow-md ring-2 ring-emerald-200'
                                   : 'border-gray-200 hover:border-[rgb(var(--brand-yellow-400))] hover:shadow-md'
                               }`}
                             >
                               {isSelected && (
-                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center shadow-sm">
-                                  <Check size={10} className="text-white" />
+                                <div className="absolute -top-2 -right-2 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center shadow-md">
+                                  <Check size={14} className="text-white" />
                                 </div>
                               )}
 
-                              <h3 className="font-medium text-[10px] leading-tight line-clamp-2 text-gray-800 mb-1">
+                              <h3 className="font-medium text-xs leading-tight line-clamp-2 text-gray-800 mb-2">
                                 {product.name}
                               </h3>
 
                               {/* Marking Status Badge */}
                               {product.marking_status && (
-                                <div className="mb-1">
+                                <div className="mb-2">
                                   {getMarkingStatusBadge(product.marking_status)}
                                 </div>
                               )}
 
                               <div className="flex items-center justify-between">
-                                <span className="font-mono text-[9px] font-bold text-[rgb(var(--brand-yellow-700))] bg-[rgb(var(--brand-yellow-50))] px-1 py-0.5 rounded">
+                                <span className="font-mono text-[10px] font-bold text-[rgb(var(--brand-yellow-700))] bg-[rgb(var(--brand-yellow-50))] px-1.5 py-0.5 rounded">
                                   {product.tnved}
                                 </span>
                                 {!isSelected && (
-                                  <Plus size={12} className="text-gray-400 group-hover:text-[rgb(var(--brand-yellow-600))] transition-colors" />
+                                  <Plus size={16} className="text-gray-400 group-hover:text-[rgb(var(--brand-yellow-600))] transition-colors" />
                                 )}
                               </div>
                             </button>
@@ -801,7 +801,7 @@ const CheckProductPage = () => {
 
                         {/* Products grid */}
                         {selectedSubcategory && selectedSubcategory.categoryId === category.id && (
-                          <div className="grid grid-cols-3 gap-1.5">
+                          <div className="grid grid-cols-2 gap-2">
                             {(selectedSubcategory.products || []).length > 0 ? (
                               selectedSubcategory.products.map((product) => {
                                 const isSelected = isProductSelected(product.id);
@@ -812,25 +812,25 @@ const CheckProductPage = () => {
                                       ? removeProduct(product.id)
                                       : addProduct(product, category.id, selectedSubcategory.id)
                                     }
-                                    className={`relative bg-white rounded-lg p-1.5 border-2 transition-all text-left ${
+                                    className={`relative bg-white rounded-lg p-2.5 border-2 transition-all text-left ${
                                       isSelected
                                         ? 'border-emerald-500 bg-emerald-50'
                                         : 'border-gray-200'
                                     }`}
                                   >
                                     {isSelected && (
-                                      <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-500 rounded-full flex items-center justify-center">
-                                        <Check size={8} className="text-white" />
+                                      <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center">
+                                        <Check size={12} className="text-white" />
                                       </div>
                                     )}
-                                    <div className="text-[9px] font-medium text-gray-900 line-clamp-2 mb-1">{product.name}</div>
+                                    <div className="text-xs font-medium text-gray-900 line-clamp-2 mb-1.5">{product.name}</div>
                                     {/* Marking Status Badge - Mobile */}
                                     {product.marking_status && (
-                                      <div className="mb-1">
+                                      <div className="mb-1.5">
                                         {getMarkingStatusBadge(product.marking_status)}
                                       </div>
                                     )}
-                                    <div className="font-mono text-[8px] font-bold text-[rgb(var(--brand-yellow-700))] bg-[rgb(var(--brand-yellow-50))] px-1 py-0.5 rounded inline-block">
+                                    <div className="font-mono text-[10px] font-bold text-[rgb(var(--brand-yellow-700))] bg-[rgb(var(--brand-yellow-50))] px-1.5 py-0.5 rounded inline-block">
                                       {product.tnved}
                                     </div>
                                   </button>
@@ -857,19 +857,19 @@ const CheckProductPage = () => {
         {/* ==================== STEP 2: Details for Each Product ==================== */}
         {step === 2 && (
           <div data-testid="step-2">
-            <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border-2 border-blue-200">
+            <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border-2 border-blue-200 max-w-md">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-xl bg-blue-100">
                   <ClipboardList size={20} className="text-blue-600" />
                 </div>
                 <div>
                   <h3 className="font-bold text-gray-900">Укажите детали по каждому товару</h3>
-                  <p className="text-sm text-gray-600">Откуда товар и какой объём в месяц</p>
+                  <p className="text-sm text-gray-600">Откуда товар</p>
                 </div>
               </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 max-w-md">
               {selectedProducts.map((product, index) => (
                 <div
                   key={product.id}
@@ -906,7 +906,7 @@ const CheckProductPage = () => {
                         Откуда у вас этот товар?
                       </Label>
                       <p className="text-xs text-gray-500 mb-3">Можно выбрать несколько вариантов</p>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-2">
                         {[
                           { value: 'produce', label: 'Произвожу сам в России' },
                           { value: 'import', label: 'Импортирую из-за рубежа' },
