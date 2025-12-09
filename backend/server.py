@@ -244,8 +244,38 @@ CATEGORIES_DATA = [
             {"id": "building_materials", "name": "Строительные материалы", "icon": "hammer", "products": []}
         ]
     },
-    {"id": "electronics", "name": "Электроника и техника", "icon": "cpu", "subcategories": []},
-    {"id": "pilot", "name": "Пилотные проекты", "icon": "rocket", "subcategories": []}
+    {
+        "id": "electronics",
+        "name": "Электроника и техника",
+        "icon": "cpu",
+        "subcategories": [
+            {"id": "cameras", "name": "Фотоаппараты и лампы-вспышки", "icon": "camera", "products": []}
+        ]
+    },
+    {
+        "id": "pilot",
+        "name": "Пилотные проекты",
+        "icon": "rocket",
+        "subcategories": [
+            {"id": "titanium", "name": "Титановая металлопродукция (завершён)", "icon": "box", "products": []},
+            {"id": "radio_electronics", "name": "Радиоэлектроника", "icon": "radio", "products": []},
+            {"id": "fiber_optic", "name": "Оптоволокно", "icon": "cable", "products": []},
+            {"id": "print_products", "name": "Печатная продукция (завершен)", "icon": "book", "products": []},
+            {"id": "heating", "name": "Отопительные приборы", "icon": "thermometer", "products": []},
+            {"id": "cables", "name": "Кабельная продукция", "icon": "cable", "products": []},
+            {"id": "low_alcohol", "name": "Слабый алкоголь", "icon": "wine", "products": []},
+            {"id": "medical_2", "name": "Медицинские изделия 2.0", "icon": "stethoscope", "products": []},
+            {"id": "pyrotechnics", "name": "Пиротехника", "icon": "sparkles", "products": []},
+            {"id": "polymer_pipes", "name": "Полимерные трубы", "icon": "cylinder", "products": []},
+            {"id": "auto_parts", "name": "Автозапчасти", "icon": "wrench", "products": []},
+            {"id": "hygiene", "name": "Средства гигиены", "icon": "sparkles", "products": []},
+            {"id": "home_interior", "name": "Товары для дома и интерьера", "icon": "home", "products": []},
+            {"id": "fertilizers", "name": "Удобрения", "icon": "leaf", "products": []},
+            {"id": "pasta_cereals", "name": "Макароны, крупы, мёд", "icon": "wheat", "products": []},
+            {"id": "meat_products", "name": "Мясные изделия", "icon": "beef", "products": []},
+            {"id": "frozen_food", "name": "Полуфабрикаты и замороженная продукция", "icon": "snowflake", "products": []}
+        ]
+    }
 ]
 
 # Build lookup dictionary for quick access (новая 3-уровневая структура)
