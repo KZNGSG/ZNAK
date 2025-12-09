@@ -1064,12 +1064,14 @@ async def recommend_equipment(request: EquipmentRequest):
 async def send_contact(request: ContactRequest, background_tasks: BackgroundTasks):
     """Send contact form to email"""
 
-    contact_email = os.getenv('CONTACT_TO_EMAIL', 'damirslk@mail.ru')
+    # Отправляем на все адреса менеджеров
+    contact_emails = os.getenv('CONTACT_TO_EMAIL', 'damirslk@mail.ru,turbin.ar8@gmail.com').split(',')
     subject = f"Заявка на {request.request_type} от {request.name}"
     body = format_contact_email(request)
 
-    # Send email in background
-    background_tasks.add_task(send_email, contact_email, subject, body)
+    # Send email to all managers in background
+    for email in contact_emails:
+        background_tasks.add_task(send_email, email.strip(), subject, body)
 
     return {
         "status": "success",
@@ -1278,15 +1280,16 @@ async def create_quote(request: QuoteRequest, background_tasks: BackgroundTasks)
             email_body
         )
 
-    # Также отправляем уведомление менеджеру
-    manager_email = os.getenv('CONTACT_TO_EMAIL', 'damirslk@mail.ru')
+    # Отправляем уведомление всем менеджерам
+    manager_emails = os.getenv('CONTACT_TO_EMAIL', 'damirslk@mail.ru,turbin.ar8@gmail.com').split(',')
     manager_body = format_quote_notification(quote_data)
-    background_tasks.add_task(
-        send_email,
-        manager_email,
-        f"Заявка на КП: {quote_id} от {request.company.name}",
-        manager_body
-    )
+    for email in manager_emails:
+        background_tasks.add_task(
+            send_email,
+            email.strip(),
+            f"Заявка на КП: {quote_id} от {request.company.name}",
+            manager_body
+        )
 
     return {
         "status": "success",
@@ -1982,8 +1985,8 @@ async def api_create_callback(
 
     callback_id = CallbackDB.create(callback_data)
 
-    # Отправляем уведомление менеджеру
-    manager_email = os.getenv('CONTACT_TO_EMAIL', 'damirslk@mail.ru')
+    # Отправляем уведомление всем менеджерам
+    manager_emails = os.getenv('CONTACT_TO_EMAIL', 'damirslk@mail.ru,turbin.ar8@gmail.com').split(',')
     source_name = {
         "check_page": "проверки товара",
         "quote_page": "коммерческого предложения",
@@ -1991,7 +1994,8 @@ async def api_create_callback(
     }.get(data.source or "", "звонка")
     subject = f"Заявка на обратный звонок ({source_name}) #{callback_id}"
     body = format_callback_email(callback_id, data, contact_name, contact_phone)
-    background_tasks.add_task(send_email, manager_email, subject, body)
+    for email in manager_emails:
+        background_tasks.add_task(send_email, email.strip(), subject, body)
 
     return {"status": "success", "callback_id": callback_id}
 
