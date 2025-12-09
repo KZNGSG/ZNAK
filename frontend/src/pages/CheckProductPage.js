@@ -79,41 +79,8 @@ const CheckProductPage = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Effect to search TNVED API when local search has no results
-  useEffect(() => {
-    if (topSearchTimeoutRef.current) {
-      clearTimeout(topSearchTimeoutRef.current);
-    }
-
-    // Only search TNVED if local results are empty and query is long enough
-    if (searchQuery.length >= 2 && searchResults.length === 0) {
-      setTopSearchTnvedLoading(true);
-      topSearchTimeoutRef.current = setTimeout(async () => {
-        try {
-          const response = await fetch(`${API_URL}/api/tnved/search?q=${encodeURIComponent(searchQuery)}&limit=10`);
-          if (response.ok) {
-            const data = await response.json();
-            setTopSearchTnvedResults(data.results || []);
-          }
-        } catch (error) {
-          console.error('Top search TNVED error:', error);
-        } finally {
-          setTopSearchTnvedLoading(false);
-        }
-      }, 300);
-    } else {
-      setTopSearchTnvedResults([]);
-      setTopSearchTnvedLoading(false);
-    }
-
-    return () => {
-      if (topSearchTimeoutRef.current) {
-        clearTimeout(topSearchTimeoutRef.current);
-      }
-    };
-  }, [searchQuery, searchResults.length]);
-
   // Search results - ищем по products внутри subcategories
+  // IMPORTANT: This useMemo must be declared BEFORE the useEffect that uses searchResults
   const searchResults = useMemo(() => {
     if (!searchQuery.trim() || searchQuery.length < 2) return [];
 
@@ -148,6 +115,40 @@ const CheckProductPage = () => {
 
     return results.slice(0, 10);
   }, [searchQuery, categories]);
+
+  // Effect to search TNVED API when local search has no results
+  useEffect(() => {
+    if (topSearchTimeoutRef.current) {
+      clearTimeout(topSearchTimeoutRef.current);
+    }
+
+    // Only search TNVED if local results are empty and query is long enough
+    if (searchQuery.length >= 2 && searchResults.length === 0) {
+      setTopSearchTnvedLoading(true);
+      topSearchTimeoutRef.current = setTimeout(async () => {
+        try {
+          const response = await fetch(`${API_URL}/api/tnved/search?q=${encodeURIComponent(searchQuery)}&limit=10`);
+          if (response.ok) {
+            const data = await response.json();
+            setTopSearchTnvedResults(data.results || []);
+          }
+        } catch (error) {
+          console.error('Top search TNVED error:', error);
+        } finally {
+          setTopSearchTnvedLoading(false);
+        }
+      }, 300);
+    } else {
+      setTopSearchTnvedResults([]);
+      setTopSearchTnvedLoading(false);
+    }
+
+    return () => {
+      if (topSearchTimeoutRef.current) {
+        clearTimeout(topSearchTimeoutRef.current);
+      }
+    };
+  }, [searchQuery, searchResults.length]);
 
   const handleSearchSelect = (result) => {
     addProduct(result, result.categoryId, result.subcategoryId);
