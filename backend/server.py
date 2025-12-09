@@ -180,7 +180,16 @@ CATEGORIES_DATA = [
         "name": "Продукты питания и напитки",
         "icon": "utensils",
         "subcategories": [
-            {"id": "beer_alcohol", "name": "Пиво и слабоалкогольные напитки", "icon": "beer", "products": []},
+            {"id": "beer_alcohol", "name": "Пиво и слабоалкогольные напитки", "icon": "beer", "products": [
+                {"id": "beer_alcohol_220300", "name": "пиво крепостью от 0,5 % до 8,6 % включительно,; пиво крепостью свыше 8", "tnved": "2203 00", "marking_status": "mandatory"},
+                {"id": "beer_alcohol_220600", "name": "пиво крепостью от 0,5 % до 8,6 % включительно,; пиво крепостью свыше 8", "tnved": "2206 00", "marking_status": "mandatory"},
+                {"id": "beer_alcohol_2206003100", "name": "сидр, пуаре", "tnved": "2206 00 310 0", "marking_status": "mandatory"},
+                {"id": "beer_alcohol_2206005100", "name": "сидр, пуаре", "tnved": "2206 00 510 0", "marking_status": "mandatory"},
+                {"id": "beer_alcohol_2206008100", "name": "сидр, пуаре", "tnved": "2206 00 810 0", "marking_status": "mandatory"},
+                {"id": "beer_alcohol_2206003901", "name": "напитки слабоалкогольные брожения", "tnved": "2206 00 390 1", "marking_status": "mandatory"},
+                {"id": "beer_alcohol_2206005901", "name": "напитки слабоалкогольные брожения", "tnved": "2206 00 590 1", "marking_status": "mandatory"},
+                {"id": "beer_alcohol_2206008901", "name": "напитки слабоалкогольные брожения", "tnved": "2206 00 890 1", "marking_status": "mandatory"}
+            ]},
             {"id": "dairy", "name": "Молочная продукция", "icon": "milk", "products": [
                 {
                     "id": "dairy_0401", "name": "Молоко и сливки несгущенные", "tnved": "0401",
@@ -335,17 +344,93 @@ CATEGORIES_DATA = [
                     }
                 }
             ]},
-            {"id": "water", "name": "Упакованная вода", "icon": "droplet", "products": []},
-            {"id": "tobacco", "name": "Табак", "icon": "cigarette", "products": []},
-            {"id": "seafood", "name": "Морепродукты (икра)", "icon": "fish", "products": []},
-            {"id": "oils", "name": "Растительные масла", "icon": "flask", "products": []},
-            {"id": "pet_food", "name": "Корма для животных", "icon": "paw", "products": []},
-            {"id": "canned", "name": "Консервированные продукты", "icon": "archive", "products": []},
-            {"id": "grocery", "name": "Бакалея", "icon": "shopping-basket", "products": []},
-            {"id": "soft_drinks", "name": "Безалкогольные напитки", "icon": "glass-water", "products": []},
-            {"id": "non_alc_beer", "name": "Безалкогольное пиво", "icon": "beer", "products": []},
-            {"id": "sweets", "name": "Сладости", "icon": "candy", "products": []},
-            {"id": "instant_drinks", "name": "Растворимые напитки", "icon": "coffee", "products": []}
+            {"id": "water", "name": "Упакованная вода", "icon": "droplet", "products": [
+                {"id": "water_2201220110", "name": "Природные минеральные воды, газированные;", "tnved": "2201, в том числе 2201 10", "marking_status": "mandatory"},
+                {"id": "water_2201220190", "name": "Воды, включая природные или искусственные минеральные, газированные, б", "tnved": "2201, в том числе 2201 90 000 0", "marking_status": "mandatory"},
+                {"id": "water_108610310", "name": "Код 10.86.10.310", "tnved": "10.86.10.310", "marking_status": "mandatory"}
+            ]},
+            {"id": "tobacco", "name": "Табак", "icon": "cigarette", "products": [
+                {"id": "tobacco_2402209000", "name": "сигареты", "tnved": "2402 20 900 0", "marking_status": "mandatory"},
+                {"id": "tobacco_2402100000", "name": "табак для кальяна, сигары, сигары с обрезанными концами (черуты), сига", "tnved": "2402 10 000 0", "marking_status": "mandatory"},
+                {"id": "tobacco_2403110000", "name": "табак для кальяна, сигары, сигары с обрезанными концами (черуты), сига", "tnved": "2403 11 000 0", "marking_status": "mandatory"},
+                {"id": "tobacco_2403999008", "name": "табачные изделия, предназначенные для потребления путем нагревания;; к", "tnved": "2403 99 900 8", "marking_status": "mandatory"},
+                {"id": "tobacco_2402201000", "name": "табак для кальяна, сигары, сигары с обрезанными концами (черуты), сига", "tnved": "2402 20 100 0", "marking_status": "mandatory"},
+                {"id": "tobacco_2403191000", "name": "табак для кальяна, сигары, сигары с обрезанными концами (черуты), сига", "tnved": "2403 19 100 0", "marking_status": "mandatory"},
+                {"id": "tobacco_2403991000", "name": "табак для кальяна, сигары, сигары с обрезанными концами (черуты), сига", "tnved": "2403 99 100 0", "marking_status": "mandatory"},
+                {"id": "tobacco_2404110009", "name": "табачные изделия, предназначенные для потребления путем нагревания;; к", "tnved": "2404 11 000 9", "marking_status": "mandatory"},
+                {"id": "tobacco_2404120000", "name": "Жидкости для электронных систем доставки никотина, в том числе безнико", "tnved": "2404 12 000 0", "marking_status": "mandatory"},
+                {"id": "tobacco_2404190001", "name": "табачные изделия, предназначенные для потребления путем нагревания;; к", "tnved": "2404 19 000 1", "marking_status": "mandatory"},
+                {"id": "tobacco_2404190009", "name": "Жидкости для электронных систем доставки никотина, в том числе безнико", "tnved": "2404 19 000 9", "marking_status": "mandatory"},
+                {"id": "tobacco_2404110001", "name": "табачные изделия, предназначенные для потребления путем нагревания;; к", "tnved": "2404 11 000 1", "marking_status": "mandatory"}
+            ]},
+            {"id": "seafood", "name": "Морепродукты (икра)", "icon": "fish", "products": [
+                {"id": "seafood_1604310000", "name": "Икра осетровых", "tnved": "1604310000", "marking_status": "mandatory"},
+                {"id": "seafood_1604320010", "name": "Заменители икры осетровых: икра лососевых (красная икра)", "tnved": "1604320010", "marking_status": "mandatory"},
+                {"id": "seafood_0305200000", "name": "Печень, икра и молоки рыб, сушеные, копченые, соленые или в рассоле", "tnved": "0305200000", "marking_status": "mandatory"},
+                {"id": "seafood_0302910000", "name": "Печень, икра и молоки, свежие или охлажденные", "tnved": "0302910000", "marking_status": "mandatory"},
+                {"id": "seafood_0303911000", "name": "Икра и молоки для производства дезоксирибонуклеиновой кислоты или суль", "tnved": "0303911000", "marking_status": "mandatory"},
+                {"id": "seafood_0303919000", "name": "Прочие печень, икра и молоки, мороженые", "tnved": "0303919000", "marking_status": "mandatory"}
+            ]},
+            {"id": "oils", "name": "Растительные масла", "icon": "flask", "products": [
+                {"id": "oils_1507109001", "name": "Отдельные виды пищевых растительных масел и масложировой продукции, уп", "tnved": "1507 10 900 1507 90 900 1508 10 900 0 1508 90 900 0 1509 1510 1511 10 900 1511 90 110 0 1511 90 190 1511 90 990 1512 11 910 1512 11 990 1512 19 900 1512 21 900 0 1512 29 900 0 1513 11 910 0 1513 11 990 1513 19 110 0 1513 19 190 1513 19 910 0 1513 19 990 1513 21 300 0 1513 21 900 1513 29 110 0 1513 29 190 1513 29 500 0 1513 29 900 1514 11 900 1514 19 900 1514 91 900 1514 99 900 1515 11 000 0 1515 19 900 0 1515 21 900 0 1515 29 900 0 1515 30 900 0 1515 50 190 0 1515 50 990 0 1515 90 110 0 1515 90 290 0 1515 90 390 0 1515 90 610 0 1515 90 690 0 1515 90 810 0 1515 90 890 0 1516 20 810 0 1516 20 960 1516 20 980 1517 1804 00 000 0", "marking_status": "mandatory"}
+            ]},
+            {"id": "pet_food", "name": "Корма для животных", "icon": "paw", "products": [
+                {"id": "pet_food_109210100", "name": "Сухой корм", "tnved": "10.92.10.100", "marking_status": "mandatory"},
+                {"id": "pet_food_109210110", "name": "Сухой корм животного происхождения", "tnved": "10.92.10.110", "marking_status": "mandatory"},
+                {"id": "pet_food_109210111", "name": "Сухой корм животного происхождения для собак", "tnved": "10.92.10.111", "marking_status": "mandatory"},
+                {"id": "pet_food_109210112", "name": "Сухой корм животного происхождения для кошек", "tnved": "10.92.10.112", "marking_status": "mandatory"},
+                {"id": "pet_food_109210119", "name": "Сухой корм животного происхождения для прочих животных", "tnved": "10.92.10.119", "marking_status": "mandatory"},
+                {"id": "pet_food_109210120", "name": "Сухой корм растительного происхождения", "tnved": "10.92.10.120", "marking_status": "mandatory"},
+                {"id": "pet_food_109210190", "name": "Сухой корм прочий", "tnved": "10.92.10.190", "marking_status": "mandatory"},
+                {"id": "pet_food_109210191", "name": "Сухой корм прочий для собак", "tnved": "10.92.10.191", "marking_status": "mandatory"},
+                {"id": "pet_food_109210192", "name": "Сухой корм прочий для кошек", "tnved": "10.92.10.192", "marking_status": "mandatory"},
+                {"id": "pet_food_109210199", "name": "Сухой корм прочий для прочих животных", "tnved": "10.92.10.199", "marking_status": "mandatory"},
+                {"id": "pet_food_109210200", "name": "Влажный корм", "tnved": "10.92.10.200", "marking_status": "mandatory"},
+                {"id": "pet_food_109210210", "name": "Влажный корм животного происхождения", "tnved": "10.92.10.210", "marking_status": "mandatory"},
+                {"id": "pet_food_109210211", "name": "Влажный корм животного происхождения для собак", "tnved": "10.92.10.211", "marking_status": "mandatory"},
+                {"id": "pet_food_109210212", "name": "Влажный корм животного происхождения для кошек", "tnved": "10.92.10.212", "marking_status": "mandatory"},
+                {"id": "pet_food_109210219", "name": "Влажный корм животного происхождения для прочих животных", "tnved": "10.92.10.219", "marking_status": "mandatory"},
+                {"id": "pet_food_109210220", "name": "Влажный корм растительного происхождения", "tnved": "10.92.10.220", "marking_status": "mandatory"},
+                {"id": "pet_food_109210290", "name": "Влажный корм прочий", "tnved": "10.92.10.290", "marking_status": "mandatory"},
+                {"id": "pet_food_109210291", "name": "Влажный корм прочий для собак", "tnved": "10.92.10.291", "marking_status": "mandatory"},
+                {"id": "pet_food_109210292", "name": "Влажный корм прочий для кошек", "tnved": "10.92.10.292", "marking_status": "mandatory"},
+                {"id": "pet_food_109210299", "name": "Влажный корм прочий для прочих животных", "tnved": "10.92.10.299", "marking_status": "mandatory"}
+            ]},
+            {"id": "canned", "name": "Консервированные продукты", "icon": "archive", "products": [
+                {"id": "canned_1604160431", "name": "Рыбная консервная продукция и консервированная продукция из морепродук", "tnved": "1604 (кроме 1604 31 000 0, 1604 32 001 0), 1605 (кроме 1605 21 100 0, 1605 21 900 0), 2104 20 00", "marking_status": "mandatory"},
+                {"id": "canned_1602200121", "name": "Мясная и плодоовощная консервация", "tnved": "1602, 2001, 2104 20 00, 2002, 2003, 2005 (кроме 2005 20), 2006 00, 2007 (кроме компотов и прочих напитков без содержания ягод или фруктов), 2008 (кроме 2008 11 и 2008 19)", "marking_status": "mandatory"}
+            ]},
+            {"id": "grocery", "name": "Бакалея", "icon": "shopping-basket", "products": [
+                {"id": "grocery_1904101000", "name": "Снековая продукция (чипсы, начос, сухарики, гренки, кукурузные палочки", "tnved": "1904 10 100 0 1904 10 300 0 1904 10 900 0 1905 10 000 0 1905 40 100 0 1905 40 900 0 1905 90 550 0 1905 90 900 0 2005 20 200 0 2005 20 800 0", "marking_status": "mandatory"},
+                {"id": "grocery_0712200000", "name": "Соусы, специи, приправы, пряности, сухие бульоны, сухие супы и уксусы", "tnved": "0712 20 000 0 0712 90 900 0 0904 0905 0906 0907 0908 0909 0910 1211 90 860 8 (в части пищевой продукции, за исключением смесей для изготовления напитков) 2103 2104 10 000 0 2209 00", "marking_status": "mandatory"}
+            ]},
+            {"id": "soft_drinks", "name": "Безалкогольные напитки", "icon": "glass-water", "products": [
+                {"id": "soft_drinks_2202100000", "name": "11.07.19.131, 11.07.19.132, 11.07.19.134, 11.07.19.135, 11.07.19.136, ", "tnved": "2202 10 000 0, 2202 99 180 0, 2206 00 590 1, 2206 00 890 1", "marking_status": "mandatory"}
+            ]},
+            {"id": "non_alc_beer", "name": "Безалкогольное пиво", "icon": "beer", "products": [
+                {"id": "non_alc_beer_2202910000", "name": "Безалкогольное пиво", "tnved": "2202 91 000 0", "marking_status": "mandatory"}
+            ]},
+            {"id": "sweets", "name": "Сладости", "icon": "candy", "products": [
+                {"id": "sweets_1704", "name": "Кондитерские изделия из сахара (включая белый шоколад), не содержащие ", "tnved": "1704", "marking_status": "mandatory"},
+                {"id": "sweets_1806180610", "name": "Шоколадные, ореховые и иные пасты", "tnved": "1806 (за исключением 1806 10, 1806 90 700 0)", "marking_status": "mandatory"},
+                {"id": "sweets_1905190510", "name": "Мучные кондитерские изделия, пирожные, печенье и прочие хлебобулочные ", "tnved": "1905 (за исключением 1905 10 000 0, 1905 40, 1905 90 100 0, 1905 90 300 0, 1905 90 550 0, 1905 90 600 0, 1905 90 900 0)", "marking_status": "mandatory"},
+                {"id": "sweets_200600", "name": "Овощи, фрукты, орехи, кожура плодов и другие части растений, консервир", "tnved": "2006 00", "marking_status": "mandatory"},
+                {"id": "sweets_2007", "name": "Джемы, желе фруктовое, мармелады, пюре фруктовое или ореховое, паста ф", "tnved": "2007", "marking_status": "mandatory"},
+                {"id": "sweets_2008", "name": "Фрукты, орехи и прочие съедобные части растений, приготовленные или ко", "tnved": "2008", "marking_status": "mandatory"},
+                {"id": "sweets_2106210690", "name": "Сахаристые кондитерские изделия", "tnved": "2106 (за исключением 2106 90 980 1, 2106 90 980 2)", "marking_status": "mandatory"}
+            ]},
+            {"id": "instant_drinks", "name": "Растворимые напитки", "icon": "coffee", "products": [
+                {"id": "instant_drinks_1806109000", "name": "Какао-порошок без добавок сахара или других подслащивающих веществ; ка", "tnved": "1806 10 900 0", "marking_status": "mandatory"},
+                {"id": "instant_drinks_2106909808", "name": "Какао-порошок без добавок сахара или других подслащивающих веществ; ка", "tnved": "2106 90 980 8", "marking_status": "mandatory"},
+                {"id": "instant_drinks_1805000000", "name": "Какао-порошок без добавок сахара или других подслащивающих веществ; ка", "tnved": "1805 00 000 0", "marking_status": "mandatory"},
+                {"id": "instant_drinks_1806907000", "name": "Какао-порошок без добавок сахара или других подслащивающих веществ; ка", "tnved": "1806 90 700 0", "marking_status": "mandatory"},
+                {"id": "instant_drinks_0902", "name": "Чай со вкусо-ароматическими добавками или без них;; Мате, или парагвай", "tnved": "0902", "marking_status": "mandatory"},
+                {"id": "instant_drinks_0903000000", "name": "Чай со вкусо-ароматическими добавками или без них;; Мате, или парагвай", "tnved": "0903 00 000 0", "marking_status": "mandatory"},
+                {"id": "instant_drinks_1211200000", "name": "Чай со вкусо-ароматическими добавками или без них;; Мате, или парагвай", "tnved": "1211 20 000 0", "marking_status": "mandatory"},
+                {"id": "instant_drinks_1211908608", "name": "Чай со вкусо-ароматическими добавками или без них;; Мате, или парагвай", "tnved": "1211 90 860 8", "marking_status": "mandatory"},
+                {"id": "instant_drinks_2101", "name": "Чай со вкусо-ароматическими добавками или без них;; Мате, или парагвай", "tnved": "2101", "marking_status": "mandatory"},
+                {"id": "instant_drinks_0901", "name": "Кофе, жареный или нежареный, с кофеином или без кофеина; заменители ко", "tnved": "0901", "marking_status": "mandatory"}
+            ]}
         ]
     },
     {
@@ -353,15 +438,126 @@ CATEGORIES_DATA = [
         "name": "Фармацевтика и здоровье",
         "icon": "pill",
         "subcategories": [
-            {"id": "medicines", "name": "Лекарства", "icon": "pill", "products": []},
-            {"id": "tsr", "name": "Технические средства реабилитации (ТСР)", "icon": "accessibility", "products": []},
-            {"id": "vet", "name": "Ветеринарные препараты", "icon": "stethoscope", "products": []},
+            {"id": "medicines", "name": "Лекарства", "icon": "pill", "products": [
+                {"id": "medicines_3004300230", "name": "Код 3004 (кроме 3002, 3005 или 3006)", "tnved": "3004 (кроме 3002, 3005 или 3006)", "marking_status": "mandatory"},
+                {"id": "medicines_3002150000", "name": "Код 3002150000", "tnved": "3002150000", "marking_status": "mandatory"}
+            ]},
+            {"id": "tsr", "name": "Технические средства реабилитации (ТСР)", "icon": "accessibility", "products": [
+                {"id": "tsr_6602000000", "name": "трости опорные и тактильные, костыли, опоры, поручни;", "tnved": "6602 00 000 0", "marking_status": "mandatory"},
+                {"id": "tsr_7326", "name": "трости опорные и тактильные, костыли, опоры, поручни;", "tnved": "7326", "marking_status": "mandatory"},
+                {"id": "tsr_9021101000", "name": "трости опорные и тактильные, костыли, опоры, поручни;", "tnved": "9021 10 100 0", "marking_status": "mandatory"},
+                {"id": "tsr_9021909009", "name": "трости опорные и тактильные, костыли, опоры, поручни;", "tnved": "9021 90 900 9", "marking_status": "mandatory"},
+                {"id": "tsr_9403", "name": "трости опорные и тактильные, костыли, опоры, поручни;", "tnved": "9403", "marking_status": "mandatory"},
+                {"id": "tsr_9620000009", "name": "трости опорные и тактильные, костыли, опоры, поручни;", "tnved": "9620 00 000 9", "marking_status": "mandatory"},
+                {"id": "tsr_6212900000", "name": "ортезы, функциональные узлы протезов (из категории товаров \"части и п", "tnved": "6212 90 000 0", "marking_status": "mandatory"},
+                {"id": "tsr_9021399000", "name": "ортезы, функциональные узлы протезов (из категории товаров \"части и п", "tnved": "9021 39 900 0", "marking_status": "mandatory"},
+                {"id": "tsr_9019109009", "name": "противопролежневые матрацы и подушки;", "tnved": "9019 10 900 9", "marking_status": "mandatory"},
+                {"id": "tsr_940421", "name": "противопролежневые матрацы и подушки;", "tnved": "9404 21", "marking_status": "mandatory"},
+                {"id": "tsr_9404299000", "name": "противопролежневые матрацы и подушки;", "tnved": "9404 29 900 0", "marking_status": "mandatory"},
+                {"id": "tsr_3006910000", "name": "специальные средства при нарушениях функций выделения (моче- и калопри", "tnved": "3006 91 000 0", "marking_status": "mandatory"},
+                {"id": "tsr_9018390000", "name": "специальные средства при нарушениях функций выделения (моче- и калопри", "tnved": "9018 39 000 0", "marking_status": "mandatory"},
+                {"id": "tsr_9401790009", "name": "кресла-стулья с санитарным оснащением;", "tnved": "9401 79 000 9", "marking_status": "mandatory"},
+                {"id": "tsr_9402900000", "name": "кресла-стулья с санитарным оснащением;", "tnved": "9402 90 000 0", "marking_status": "mandatory"},
+                {"id": "tsr_8713100000", "name": "кресла-стулья с санитарным оснащением;", "tnved": "8713 10 000 0", "marking_status": "mandatory"},
+                {"id": "tsr_3926909200", "name": "специальные средства при нарушениях функций выделения (моче- и калопри", "tnved": "3926 90 920 0", "marking_status": "mandatory"},
+                {"id": "tsr_3926909709", "name": "специальные средства при нарушениях функций выделения (моче- и калопри", "tnved": "3926 90 970 9", "marking_status": "mandatory"}
+            ]},
+            {"id": "vet", "name": "Ветеринарные препараты", "icon": "stethoscope", "products": [
+                {"id": "vet_3002120002", "name": "Код 3002 12 000 2", "tnved": "3002 12 000 2", "marking_status": "mandatory"},
+                {"id": "vet_3002150000", "name": "Код 3002 15 000 0", "tnved": "3002 15 000 0", "marking_status": "mandatory"},
+                {"id": "vet_2936900009", "name": "Код 2936 90 000 9", "tnved": "2936 90 000 9", "marking_status": "mandatory"},
+                {"id": "vet_2941900009", "name": "Код 2941 90 000 9", "tnved": "2941 90 000 9", "marking_status": "mandatory"},
+                {"id": "vet_3001209000", "name": "Код 3001 20 900 0", "tnved": "3001 20 900 0", "marking_status": "mandatory"},
+                {"id": "vet_3002120003", "name": "Код 3002 12 000 3", "tnved": "3002 12 000 3", "marking_status": "mandatory"},
+                {"id": "vet_3002120009", "name": "Код 3002 12 000 9", "tnved": "3002 12 000 9", "marking_status": "mandatory"},
+                {"id": "vet_3002420000", "name": "Код 3002 42 000 0 (за исключением вакцин, имеющих температурный режим ", "tnved": "3002 42 000 0 (за исключением вакцин, имеющих температурный режим хранения и транспортирования минус 60 градусов Цельсия или ниже)", "marking_status": "mandatory"},
+                {"id": "vet_3002903000", "name": "Код 3002 90 300 0", "tnved": "3002 90 300 0", "marking_status": "mandatory"}
+            ]},
             {"id": "pharma_raw", "name": "Фармацевтическое сырьё, лекарственные средства", "icon": "flask", "products": []},
-            {"id": "medical_devices", "name": "Медицинские изделия", "icon": "heart-pulse", "products": []},
-            {"id": "supplements", "name": "БАД", "icon": "apple", "products": []},
+            {"id": "medical_devices", "name": "Медицинские изделия", "icon": "heart-pulse", "products": [
+                {"id": "medical_devices_9021101000", "name": "250220250230250250250260320560343610", "tnved": "9021 10 100 0", "marking_status": "mandatory"},
+                {"id": "medical_devices_9021400000", "name": "113850173110202800202810204370210000228560302870", "tnved": "9021 40 000 0", "marking_status": "mandatory"},
+                {"id": "medical_devices_9021909001", "name": "135820155760155800155820218190273880343410343540", "tnved": "9021 90 900 1", "marking_status": "mandatory"},
+                {"id": "medical_devices_3926200000", "name": "1225401225601226101226301226401298001299001302201393101393501393601565", "tnved": "3926 20 000 04015 12 000 14015 12 000 94015 19 000 0", "marking_status": "mandatory"},
+                {"id": "medical_devices_8421392008", "name": "131980152690152700182750209360292620336330375930", "tnved": "8421 39 200 88421 39 800 68539 49 000 09018 20 000 0", "marking_status": "mandatory"},
+                {"id": "medical_devices_9022120000", "name": "135190142570280730282030", "tnved": "9022 12 000 09022 13 000 09022 14 000 09022 19 000 0", "marking_status": "mandatory"},
+                {"id": "medical_devices_961900890", "name": "233730233900280360320550331320331330331830356150126750233860343580", "tnved": "9619 00 890", "marking_status": "mandatory"}
+            ]},
+            {"id": "supplements", "name": "БАД", "icon": "apple", "products": [
+                {"id": "supplements_2202991800", "name": "Код 2202 99 180 0", "tnved": "2202 99 180 0", "marking_status": "mandatory"},
+                {"id": "supplements_2202999100", "name": "Код 2202 99 910 0", "tnved": "2202 99 910 0", "marking_status": "mandatory"},
+                {"id": "supplements_1602909909", "name": "Код 1602 90 990 9", "tnved": "1602 90 990 9", "marking_status": "mandatory"},
+                {"id": "supplements_1904109000", "name": "Код 1904 10 900 0", "tnved": "1904 10 900 0", "marking_status": "mandatory"},
+                {"id": "supplements_2202100000", "name": "Код 2202 10 000 0", "tnved": "2202 10 000 0", "marking_status": "mandatory"},
+                {"id": "supplements_1704905500", "name": "Код 1704 90 550 0", "tnved": "1704 90 550 0", "marking_status": "mandatory"},
+                {"id": "supplements_1806310000", "name": "Код 1806 31 000 0", "tnved": "1806 31 000 0", "marking_status": "mandatory"},
+                {"id": "supplements_2106108000", "name": "Код 2106 10 800 0", "tnved": "2106 10 800 0", "marking_status": "mandatory"},
+                {"id": "supplements_1806907000", "name": "Код 1806 90 700 0", "tnved": "1806 90 700 0", "marking_status": "mandatory"},
+                {"id": "supplements_2106905800", "name": "Код 2106 90 580 0", "tnved": "2106 90 580 0", "marking_status": "mandatory"},
+                {"id": "supplements_2106909801", "name": "Код 2106 90 980 1", "tnved": "2106 90 980 1", "marking_status": "mandatory"},
+                {"id": "supplements_2106909808", "name": "Код 2106 90 980 8", "tnved": "2106 90 980 8", "marking_status": "mandatory"},
+                {"id": "supplements_1211908608", "name": "Код 1211 90 860 8", "tnved": "1211 90 860 8", "marking_status": "mandatory"},
+                {"id": "supplements_2101129201", "name": "Код 2101 12 920 1", "tnved": "2101 12 920 1", "marking_status": "mandatory"},
+                {"id": "supplements_3002490001", "name": "Код 3002 49 000 1", "tnved": "3002 49 000 1", "marking_status": "mandatory"},
+                {"id": "supplements_2936", "name": "Код 2936", "tnved": "2936", "marking_status": "mandatory"},
+                {"id": "supplements_300120", "name": "Код 3001 20", "tnved": "3001 20", "marking_status": "mandatory"},
+                {"id": "supplements_3002903000", "name": "Код 3002 90 300 0", "tnved": "3002 90 300 0", "marking_status": "mandatory"},
+                {"id": "supplements_1204009000", "name": "Код 1204 00 900 0", "tnved": "1204 00 900 0", "marking_status": "mandatory"},
+                {"id": "supplements_1208900000", "name": "Код 1208 90 000 0", "tnved": "1208 90 000 0", "marking_status": "mandatory"},
+                {"id": "supplements_1210209000", "name": "Код 1210 20 900 0", "tnved": "1210 20 900 0", "marking_status": "mandatory"},
+                {"id": "supplements_1212210000", "name": "Код 1212 21 000 0", "tnved": "1212 21 000 0", "marking_status": "mandatory"},
+                {"id": "supplements_1302199000", "name": "Код 1302 19 900 0", "tnved": "1302 19 900 0", "marking_status": "mandatory"},
+                {"id": "supplements_1504101000", "name": "Код 1504 10 100 0", "tnved": "1504 10 100 0", "marking_status": "mandatory"},
+                {"id": "supplements_1504209000", "name": "Код 1504 20 900 0", "tnved": "1504 20 900 0", "marking_status": "mandatory"},
+                {"id": "supplements_1515110000", "name": "Код 1515 11 000 0", "tnved": "1515 11 000 0", "marking_status": "mandatory"},
+                {"id": "supplements_1515199000", "name": "Код 1515 19 900 0", "tnved": "1515 19 900 0", "marking_status": "mandatory"},
+                {"id": "supplements_1515906900", "name": "Код 1515 90 690 0", "tnved": "1515 90 690 0", "marking_status": "mandatory"},
+                {"id": "supplements_1515908900", "name": "Код 1515 90 890 0", "tnved": "1515 90 890 0", "marking_status": "mandatory"},
+                {"id": "supplements_1516109000", "name": "Код 1516 10 900 0", "tnved": "1516 10 900 0", "marking_status": "mandatory"},
+                {"id": "supplements_1517909900", "name": "Код 1517 90 990 0", "tnved": "1517 90 990 0", "marking_status": "mandatory"},
+                {"id": "supplements_1702305000", "name": "Код 1702 30 500 0", "tnved": "1702 30 500 0", "marking_status": "mandatory"},
+                {"id": "supplements_1702409000", "name": "Код 1702 40 900 0", "tnved": "1702 40 900 0", "marking_status": "mandatory"},
+                {"id": "supplements_1702609500", "name": "Код 1702 60 950 0", "tnved": "1702 60 950 0", "marking_status": "mandatory"},
+                {"id": "supplements_1702909500", "name": "Код 1702 90 950 0", "tnved": "1702 90 950 0", "marking_status": "mandatory"},
+                {"id": "supplements_1704907100", "name": "Код 1704 90 710 0", "tnved": "1704 90 710 0", "marking_status": "mandatory"},
+                {"id": "supplements_1704908200", "name": "Код 1704 90 820 0", "tnved": "1704 90 820 0", "marking_status": "mandatory"},
+                {"id": "supplements_180632", "name": "Код 1806 32", "tnved": "1806 32", "marking_status": "mandatory"},
+                {"id": "supplements_2106909300", "name": "Код 2106 90 930 0", "tnved": "2106 90 930 0", "marking_status": "mandatory"},
+                {"id": "supplements_2106909803", "name": "Код 2106 90 980 3", "tnved": "2106 90 980 3", "marking_status": "mandatory"},
+                {"id": "supplements_2922410000", "name": "Код 2922 41 000 0", "tnved": "2922 41 000 0", "marking_status": "mandatory"},
+                {"id": "supplements_2922420000", "name": "Код 2922 42 000 0", "tnved": "2922 42 000 0", "marking_status": "mandatory"},
+                {"id": "supplements_2923200000", "name": "Код 2923 20 000 0", "tnved": "2923 20 000 0", "marking_status": "mandatory"},
+                {"id": "supplements_2923900009", "name": "Код 2923 90 000 9", "tnved": "2923 90 000 9", "marking_status": "mandatory"},
+                {"id": "supplements_3002908000", "name": "Код 3002 90 800 0", "tnved": "3002 90 800 0", "marking_status": "mandatory"},
+                {"id": "supplements_1212999509", "name": "Код 1212 99 950 9", "tnved": "1212 99 950 9", "marking_status": "mandatory"},
+                {"id": "supplements_1302201000", "name": "Код 1302 20 100 0", "tnved": "1302 20 100 0", "marking_status": "mandatory"},
+                {"id": "supplements_1302209000", "name": "Код 1302 20 900 0", "tnved": "1302 20 900 0", "marking_status": "mandatory"},
+                {"id": "supplements_1504201000", "name": "Код 1504 20 100 0", "tnved": "1504 20 100 0", "marking_status": "mandatory"},
+                {"id": "supplements_1516101000", "name": "Код 1516 10 100 0", "tnved": "1516 10 100 0", "marking_status": "mandatory"},
+                {"id": "supplements_1603001000", "name": "Код 1603 00 100 0", "tnved": "1603 00 100 0", "marking_status": "mandatory"},
+                {"id": "supplements_1806903100", "name": "Код 1806 90 310 0", "tnved": "1806 90 310 0", "marking_status": "mandatory"},
+                {"id": "supplements_1901909800", "name": "Код 1901 90 980 0", "tnved": "1901 90 980 0", "marking_status": "mandatory"},
+                {"id": "supplements_2102201100", "name": "Код 2102 20 110 0", "tnved": "2102 20 110 0", "marking_status": "mandatory"},
+                {"id": "supplements_2922498500", "name": "Код 2922 49 850 0", "tnved": "2922 49 850 0", "marking_status": "mandatory"},
+                {"id": "supplements_2925290000", "name": "Код 2925 29 000 0", "tnved": "2925 29 000 0", "marking_status": "mandatory"},
+                {"id": "supplements_3502907000", "name": "Код 3502 90 700 0", "tnved": "3502 90 700 0", "marking_status": "mandatory"},
+                {"id": "supplements_350300", "name": "Код 3503 00", "tnved": "3503 00", "marking_status": "mandatory"},
+                {"id": "supplements_3802100000", "name": "Код 3802 10 000 0", "tnved": "3802 10 000 0", "marking_status": "mandatory"},
+                {"id": "supplements_3913100000", "name": "Код 3913 10 000 0", "tnved": "3913 10 000 0", "marking_status": "mandatory"},
+                {"id": "supplements_1504109900", "name": "Код 1504 10 990 0", "tnved": "1504 10 990 0", "marking_status": "mandatory"},
+                {"id": "supplements_350790900", "name": "Код 3507 90 900", "tnved": "3507 90 900", "marking_status": "mandatory"}
+            ]},
             {"id": "antiseptics", "name": "Антисептики и дезинфицирующие средства", "icon": "spray-can", "products": []},
-            {"id": "wheelchairs", "name": "Кресла-коляски", "icon": "wheelchair", "products": []},
-            {"id": "sports_nutrition", "name": "Спортивное питание", "icon": "dumbbell", "products": []}
+            {"id": "wheelchairs", "name": "Кресла-коляски", "icon": "wheelchair", "products": [
+                {"id": "wheelchairs_8713100000", "name": "Кресла-коляски с ручным приводом (без механических устройств для перед", "tnved": "8713 10 0000", "marking_status": "mandatory"},
+                {"id": "wheelchairs_8713900000", "name": "Кресла-коляски электрические (прочие, оснащенные двигателем или другим", "tnved": "8713 90 0000", "marking_status": "mandatory"},
+                {"id": "wheelchairs_309220000", "name": "Коляски инвалидные, кроме частей и принадлежностей", "tnved": "30.92.20.000", "marking_status": "mandatory"},
+                {"id": "wheelchairs_325050190", "name": "Изделия медицинские, в том числе хирургические, прочие, не включенные ", "tnved": "32.50.50.190", "marking_status": "mandatory"},
+                {"id": "wheelchairs_309910190", "name": "Средства транспортные и оборудование прочие, не включенные в другие гр", "tnved": "30.99.10.190", "marking_status": "mandatory"}
+            ]},
+            {"id": "sports_nutrition", "name": "Спортивное питание", "icon": "dumbbell", "products": [
+                {"id": "sports_nutrition_0210150420", "name": "10.13.11, 10.13.12, 10.13.13, 10.41.12, 10.61.33, 10.62.13, 10.72.12.1", "tnved": "0210, 1504 20 900 0, 1702 50 000 0, 1702 90 500 0, 1704 90 980 0, 1806 20 950 0, 1806 31 000 0, 1806 32 100 0, 1806 32 900 0, 1806 90 700 0, 1806 90 900 0, 1904, 1905 31 190 0, 2106 10 200 0, 2106 10 800 0, 2106 90 930 0, 2106 90 980 3, 2106 90 980 8, 2202 10 000 0, 2202 99 180 0, 2202 99 990 0, 2836 30 000 0, 2836 40 000 0, 2836 50 000 0, 2836 60 000 0, 2914 62 000 0, 2918 30 000 0, 2922 41 000 0, 2922 42 000 0, 2922 49, 2923 90 000 9, 2924 19 000 9, 2925 29 000 0, 2930 40 100 0, 2930 90 160 0, 2933 29 900 0, 2933 99 800 8, 2936 24 000 0, 2936 25 000 0, 2936 27 000 0, 2936 28 000 0, 2936 29 000, 2939 30 000 0, 2940 00 000 0, 3502 20 910 0, 3504, 3507", "marking_status": "mandatory"}
+            ]}
         ]
     },
     {
@@ -369,8 +565,19 @@ CATEGORIES_DATA = [
         "name": "Косметика, гигиена и бытовая химия",
         "icon": "sparkles",
         "subcategories": [
-            {"id": "perfume", "name": "Духи и туалетная вода", "icon": "spray-can", "products": []},
-            {"id": "cosmetics_hygiene", "name": "Косметика, бытовая химия и товары личной гигиены", "icon": "sparkles", "products": []}
+            {"id": "perfume", "name": "Духи и туалетная вода", "icon": "spray-can", "products": [
+                {"id": "perfume_330300", "name": "Код 3303 00", "tnved": "3303 00", "marking_status": "mandatory"}
+            ]},
+            {"id": "cosmetics_hygiene", "name": "Косметика, бытовая химия и товары личной гигиены", "icon": "sparkles", "products": [
+                {"id": "cosmetics_hygiene_3304330499", "name": "Косметические средства, декоративная косметика, средства для ухода за ", "tnved": "3304 ( кроме 3304 99 000 0, относящегося к парфюмерно-косметической продукции, предназначенной для гигиены рук, с заявленным в маркировке потребительской упаковки антимикробным действием) 3306 ( кроме 3306 20 000 0", "marking_status": "mandatory"},
+                {"id": "cosmetics_hygiene_112025", "name": "Код 1 этап — с 1 мая 2025 года", "tnved": "1 этап — с 1 мая 2025 года", "marking_status": "mandatory"},
+                {"id": "cosmetics_hygiene_3401340250", "name": "Мыло, моющие средства, бытовая химия и т.д.", "tnved": "3401 3402 50 000 0 3405 40 00 0", "marking_status": "mandatory"},
+                {"id": "cosmetics_hygiene_212025", "name": "Код 2 этап — с 1 июля 2025 года", "tnved": "2 этап — с 1 июля 2025 года", "marking_status": "mandatory"},
+                {"id": "cosmetics_hygiene_3305330733", "name": "Средства для волос, средства для бритья, дезодоранты, ароматизаторы и ", "tnved": "3305 3307 ( кроме 3307 41 000 0, 3307 90 000 1, 3307 90 000 2)", "marking_status": "mandatory"},
+                {"id": "cosmetics_hygiene_312025", "name": "Код 3 этап — с 1 октября 2025 года", "tnved": "3 этап — с 1 октября 2025 года", "marking_status": "mandatory"},
+                {"id": "cosmetics_hygiene_412025", "name": "Код 4 этап — с 1 декабря 2025 года", "tnved": "4 этап — с 1 декабря 2025 года", "marking_status": "mandatory"},
+                {"id": "cosmetics_hygiene_8212101000", "name": "Бритвы и лезвия для них, включая полосовые заготовки для лезвий", "tnved": "8212 10 100 0 8212 10 900 0 8212 20 000 0 8212 90 000 0", "marking_status": "mandatory"}
+            ]}
         ]
     },
     {
@@ -378,11 +585,88 @@ CATEGORIES_DATA = [
         "name": "Непродовольственные товары",
         "icon": "box",
         "subcategories": [
-            {"id": "light_industry", "name": "Товары лёгкой промышленности", "icon": "shirt", "products": []},
-            {"id": "shoes", "name": "Обувь", "icon": "footprints", "products": []},
-            {"id": "furs", "name": "Шубы", "icon": "shirt", "products": []},
-            {"id": "toys", "name": "Детские игрушки", "icon": "puzzle", "products": []},
-            {"id": "bicycles", "name": "Велосипеды", "icon": "bike", "products": []}
+            {"id": "light_industry", "name": "Товары лёгкой промышленности", "icon": "shirt", "products": [
+                {"id": "light_industry_6212", "name": "Бюстгальтеры, пояса, корсеты, подтяжки, подвязки и аналогичные изделия", "tnved": "6212", "marking_status": "mandatory"},
+                {"id": "light_industry_420310000", "name": "Предметы одежды, включая рабочую одежду, изготовленные из натуральной ", "tnved": "4203 10 000", "marking_status": "mandatory"},
+                {"id": "light_industry_4203210000", "name": "Перчатки, рукавицы и митенки", "tnved": "4203 21 000 0", "marking_status": "mandatory"},
+                {"id": "light_industry_6106", "name": "Блузки, блузы и блузоны трикотажные машинного или ручного вязания, жен", "tnved": "6106", "marking_status": "mandatory"},
+                {"id": "light_industry_6201", "name": "Пальто, полупальто, накидки, плащи, куртки (включая лыжные), ветровки,", "tnved": "6201", "marking_status": "mandatory"},
+                {"id": "light_industry_6202", "name": "Пальто, полупальто, накидки, плащи, куртки (включая лыжные), ветровки,", "tnved": "6202", "marking_status": "mandatory"},
+                {"id": "light_industry_6302", "name": "Белье постельное, столовое, туалетное и кухонное.", "tnved": "6302", "marking_status": "mandatory"},
+                {"id": "light_industry_6105", "name": "Рубашки трикотажные машинного или ручного вязания, мужские или для мал", "tnved": "6105", "marking_status": "mandatory"},
+                {"id": "light_industry_4304000000", "name": "Предметы одежды из искусственного меха", "tnved": "4304 00 000 0", "marking_status": "mandatory"},
+                {"id": "light_industry_6210", "name": "Одежда из фетра или нетканых материалов, текстильных материалов с проп", "tnved": "6210", "marking_status": "mandatory"},
+                {"id": "light_industry_611300", "name": "Одежда из фетра или нетканых материалов, текстильных материалов с проп", "tnved": "6113 00", "marking_status": "mandatory"},
+                {"id": "light_industry_6101", "name": "Пальто, куртки, плащи, плащи с капюшонами, анораки, ветровки, штормовк", "tnved": "6101", "marking_status": "mandatory"},
+                {"id": "light_industry_6102", "name": "Пальто, куртки, плащи, плащи с капюшонами, анораки, ветровки, штормовк", "tnved": "6102", "marking_status": "mandatory"},
+                {"id": "light_industry_6205", "name": "Рубашки мужские или для мальчиков", "tnved": "6205", "marking_status": "mandatory"},
+                {"id": "light_industry_6206", "name": "Блузки, блузы и блузоны женские и для девочек", "tnved": "6206", "marking_status": "mandatory"},
+                {"id": "light_industry_6211", "name": "Костюмы спортивные и лыжные предметы одежды прочие", "tnved": "6211", "marking_status": "mandatory"},
+                {"id": "light_industry_6211110000", "name": "Купальные костюмы", "tnved": "6211 11 000 0", "marking_status": "mandatory"},
+                {"id": "light_industry_6103", "name": "Костюмы, комплекты, пиджаки, блайзеры, брюки, комбинезоны с нагрудника", "tnved": "6103", "marking_status": "mandatory"},
+                {"id": "light_industry_6104", "name": "Костюмы, комплекты, жакеты, блайзеры, платья, юбки, юбки-брюки, брюки,", "tnved": "6104", "marking_status": "mandatory"},
+                {"id": "light_industry_6203", "name": "Костюмы, комплекты, пиджаки, блайзеры, брюки, комбинезоны с нагрудника", "tnved": "6203", "marking_status": "mandatory"},
+                {"id": "light_industry_6204", "name": "Костюмы, комплекты, жакеты, блайзеры, платья, юбки, юбки-брюки, брюки,", "tnved": "6204", "marking_status": "mandatory"},
+                {"id": "light_industry_6110", "name": "Свитеры, пуловеры, кардиганы, жилеты и аналогичные изделия трикотажные", "tnved": "6110", "marking_status": "mandatory"},
+                {"id": "light_industry_6112110000", "name": "Костюмы спортивные, лыжные, трикотажные машинного или ручного вязания ", "tnved": "6112 11 000 0", "marking_status": "mandatory"},
+                {"id": "light_industry_611231", "name": "Купальные костюмы", "tnved": "6112 31", "marking_status": "mandatory"},
+                {"id": "light_industry_6112120000", "name": "Костюмы спортивные, лыжные, трикотажные машинного или ручного вязания ", "tnved": "6112 12 000 0", "marking_status": "mandatory"},
+                {"id": "light_industry_6112190000", "name": "Костюмы спортивные, лыжные, трикотажные машинного или ручного вязания ", "tnved": "6112 19 000 0", "marking_status": "mandatory"},
+                {"id": "light_industry_6112200000", "name": "Костюмы спортивные, лыжные, трикотажные машинного или ручного вязания ", "tnved": "6112 20 000 0", "marking_status": "mandatory"},
+                {"id": "light_industry_6214", "name": "Шали, шарфы, кашне, мантильи, вуали и аналогичные изделия, галстуки, г", "tnved": "6214", "marking_status": "mandatory"},
+                {"id": "light_industry_6215", "name": "Шали, шарфы, кашне, мантильи, вуали и аналогичные изделия, галстуки, г", "tnved": "6215", "marking_status": "mandatory"},
+                {"id": "light_industry_6107", "name": "Майки и нательные фуфайки прочие, кальсоны, трусы, ночные сорочки, пиж", "tnved": "6107", "marking_status": "mandatory"},
+                {"id": "light_industry_6207", "name": "Майки и нательные фуфайки прочие, кальсоны, трусы, ночные сорочки, пиж", "tnved": "6207", "marking_status": "mandatory"},
+                {"id": "light_industry_6108", "name": "Майки и нательные фуфайки прочие, комбинации, нижние юбки, трусы, пант", "tnved": "6108", "marking_status": "mandatory"},
+                {"id": "light_industry_6208", "name": "Майки и нательные фуфайки прочие, комбинации, нижние юбки, трусы, пант", "tnved": "6208", "marking_status": "mandatory"},
+                {"id": "light_industry_6109", "name": "Майки, фуфайки с рукавами, прочие нательные фуфайки, и прочие нижние р", "tnved": "6109", "marking_status": "mandatory"},
+                {"id": "light_industry_6111", "name": "Детская одежда и принадлежности к детской одежде", "tnved": "6111", "marking_status": "mandatory"},
+                {"id": "light_industry_6209", "name": "Детская одежда и принадлежности к детской одежде", "tnved": "6209", "marking_status": "mandatory"},
+                {"id": "light_industry_611239", "name": "Купальные костюмы", "tnved": "6112 39", "marking_status": "mandatory"},
+                {"id": "light_industry_611241", "name": "Купальные костюмы", "tnved": "6112 41", "marking_status": "mandatory"},
+                {"id": "light_industry_611249", "name": "Купальные костюмы", "tnved": "6112 49", "marking_status": "mandatory"},
+                {"id": "light_industry_6211120000", "name": "Купальные костюмы", "tnved": "6211 12 000 0", "marking_status": "mandatory"},
+                {"id": "light_industry_6115", "name": "Колготы, чулки, гольфы, носки и подследники и прочие чулочно-носочные ", "tnved": "6115", "marking_status": "mandatory"},
+                {"id": "light_industry_420329", "name": "Перчатки, рукавицы и митенки", "tnved": "4203 29", "marking_status": "mandatory"},
+                {"id": "light_industry_6116", "name": "Перчатки, рукавицы и митенки", "tnved": "6116", "marking_status": "mandatory"},
+                {"id": "light_industry_6216000000", "name": "Перчатки, рукавицы и митенки", "tnved": "6216 00 000 0", "marking_status": "mandatory"},
+                {"id": "light_industry_6114", "name": "Предметы одежды и принадлежности к одежде готовые прочие, в том числе ", "tnved": "6114", "marking_status": "mandatory"},
+                {"id": "light_industry_6117100000", "name": "Предметы одежды и принадлежности к одежде готовые прочие, в том числе ", "tnved": "6117 10 000 0", "marking_status": "mandatory"},
+                {"id": "light_industry_6117808001", "name": "Галстуки, галстуки-бабочки и шейные платки", "tnved": "6117 80 800 1", "marking_status": "mandatory"},
+                {"id": "light_industry_6117801009", "name": "Предметы одежды и принадлежности к одежде готовые прочие, в том числе ", "tnved": "6117 80 100 9", "marking_status": "mandatory"},
+                {"id": "light_industry_6117808009", "name": "Предметы одежды и принадлежности к одежде готовые прочие, в том числе ", "tnved": "6117 80 800 9", "marking_status": "mandatory"},
+                {"id": "light_industry_6217100000", "name": "Предметы одежды и принадлежности к одежде готовые прочие, в том числе ", "tnved": "6217 10 000 0", "marking_status": "mandatory"},
+                {"id": "light_industry_6213", "name": "Галстуки, галстуки-бабочки и шейные платки", "tnved": "6213", "marking_status": "mandatory"},
+                {"id": "light_industry_6406909000", "name": "Гетры, гамаши и аналогичные изделия", "tnved": "6406 90 900 0", "marking_status": "mandatory"},
+                {"id": "light_industry_6504000000", "name": "Шляпы и прочие головные уборы", "tnved": "6504 00 000 0", "marking_status": "mandatory"},
+                {"id": "light_industry_650500", "name": "Шляпы и прочие головные уборы", "tnved": "6505 00", "marking_status": "mandatory"},
+                {"id": "light_industry_650699", "name": "Шляпы и прочие головные уборы", "tnved": "6506 99", "marking_status": "mandatory"}
+            ]},
+            {"id": "shoes", "name": "Обувь", "icon": "footprints", "products": [
+                {"id": "shoes_6401", "name": "Обувные товары", "tnved": "6401", "marking_status": "mandatory"},
+                {"id": "shoes_6402", "name": "Обувные товары", "tnved": "6402", "marking_status": "mandatory"},
+                {"id": "shoes_6403", "name": "Обувные товары", "tnved": "6403", "marking_status": "mandatory"},
+                {"id": "shoes_6404", "name": "Обувные товары", "tnved": "6404", "marking_status": "mandatory"},
+                {"id": "shoes_6405", "name": "Обувные товары", "tnved": "6405", "marking_status": "mandatory"}
+            ]},
+            {"id": "furs", "name": "Шубы", "icon": "shirt", "products": [
+                {"id": "furs_4303109010", "name": "Предметы одежды из норки.", "tnved": "4303 10 901 0", "marking_status": "mandatory"},
+                {"id": "furs_4303109020", "name": "Предметы одежды из нутрии.", "tnved": "4303 10 902 0", "marking_status": "mandatory"},
+                {"id": "furs_4303109030", "name": "Предметы одежды из песца или лисицы.", "tnved": "4303 10 903 0", "marking_status": "mandatory"},
+                {"id": "furs_4303109040", "name": "Предметы одежды из кролика или зайца.", "tnved": "4303 10 904 0", "marking_status": "mandatory"},
+                {"id": "furs_4303109050", "name": "Предметы одежды из енота.", "tnved": "4303 10 905 0", "marking_status": "mandatory"},
+                {"id": "furs_4303109060", "name": "Предметы одежды из овчины.", "tnved": "4303 10 906 0", "marking_status": "mandatory"},
+                {"id": "furs_4303109080", "name": "Предметы одежды прочие.", "tnved": "4303 10 908 0", "marking_status": "mandatory"}
+            ]},
+            {"id": "toys", "name": "Детские игрушки", "icon": "puzzle", "products": [
+                {"id": "toys_950300", "name": "Игрушки, предназначенные для детей в возрасте до 14 лет — самокаты, пе", "tnved": "9503 00", "marking_status": "mandatory"},
+                {"id": "toys_9504400000", "name": "Код 9504 40 000 0", "tnved": "9504 40 000 0", "marking_status": "mandatory"},
+                {"id": "toys_9504901000", "name": "Код 9504 90 100 0", "tnved": "9504 90 100 0", "marking_status": "mandatory"},
+                {"id": "toys_9504908009", "name": "Код 9504 90 800 9", "tnved": "9504 90 800 9", "marking_status": "mandatory"}
+            ]},
+            {"id": "bicycles", "name": "Велосипеды", "icon": "bike", "products": [
+                {"id": "bicycles_8711871200", "name": "Велосипеды (в том числе с установленным вспомогательным двигателем и т", "tnved": "8711 8712 00 8714 91 100 9503 00 100 9", "marking_status": "mandatory"}
+            ]}
         ]
     },
     {
@@ -390,8 +674,25 @@ CATEGORIES_DATA = [
         "name": "Автомобильная отрасль",
         "icon": "car",
         "subcategories": [
-            {"id": "tires", "name": "Шины и покрышки", "icon": "circle", "products": []},
-            {"id": "motor_oils", "name": "Моторные масла", "icon": "droplet", "products": []}
+            {"id": "tires", "name": "Шины и покрышки", "icon": "circle", "products": [
+                {"id": "tires_4011100003", "name": "Шины и покрышки пневматические резиновые новые", "tnved": "4011 10 000 3", "marking_status": "mandatory"},
+                {"id": "tires_4011100009", "name": "Шины и покрышки пневматические резиновые новые", "tnved": "4011 10 000 9", "marking_status": "mandatory"},
+                {"id": "tires_4011201000", "name": "Шины и покрышки пневматические резиновые новые", "tnved": "4011 20 100 0", "marking_status": "mandatory"},
+                {"id": "tires_4011209000", "name": "Шины и покрышки пневматические резиновые новые", "tnved": "4011 20 900 0", "marking_status": "mandatory"},
+                {"id": "tires_4011400000", "name": "Шины и покрышки пневматические резиновые новые", "tnved": "4011 40 000 0", "marking_status": "mandatory"},
+                {"id": "tires_4011700000", "name": "Шины и покрышки пневматические резиновые новые", "tnved": "4011 70 000 0", "marking_status": "mandatory"},
+                {"id": "tires_4011800000", "name": "Шины и покрышки пневматические резиновые новые", "tnved": "4011 80 000 0", "marking_status": "mandatory"},
+                {"id": "tires_4011900000", "name": "Шины и покрышки пневматические резиновые новые", "tnved": "4011 90 000 0", "marking_status": "mandatory"}
+            ]},
+            {"id": "motor_oils", "name": "Моторные масла", "icon": "droplet", "products": [
+                {"id": "motor_oils_2710198200", "name": "Моторные масла, компрессорное смазочное масло, турбинное смазочное мас", "tnved": "2710 19 820 0", "marking_status": "mandatory"},
+                {"id": "motor_oils_2710198800", "name": "Масло для шестерен и масло для редукторов (например, масло трансмиссио", "tnved": "2710 19 880 0", "marking_status": "mandatory"},
+                {"id": "motor_oils_3403191000", "name": "Прочие материалы смазочные, содержащие не в качестве основного компоне", "tnved": "3403 19 100 0", "marking_status": "mandatory"},
+                {"id": "motor_oils_3403199000", "name": "Средства для смазки машин, механизмов и транспортных средств. В данную", "tnved": "3403 19 900 0", "marking_status": "mandatory"},
+                {"id": "motor_oils_3403990000", "name": "Материалы смазочные (включая смазочно-охлаждающие эмульсии для режущих", "tnved": "3403 99 000 0", "marking_status": "mandatory"},
+                {"id": "motor_oils_3819000000", "name": "Жидкости тормозные гидравлические и жидкости готовые прочие для гидрав", "tnved": "3819 00 000 0", "marking_status": "mandatory"},
+                {"id": "motor_oils_3820000000", "name": "Антифризы и жидкости антиобледенительные готовые (например, омыватель ", "tnved": "3820 00 000 0", "marking_status": "mandatory"}
+            ]}
         ]
     },
     {
@@ -399,7 +700,13 @@ CATEGORIES_DATA = [
         "name": "Строительство и инфраструктура",
         "icon": "hard-hat",
         "subcategories": [
-            {"id": "building_materials", "name": "Строительные материалы", "icon": "hammer", "products": []}
+            {"id": "building_materials", "name": "Строительные материалы", "icon": "hammer", "products": [
+                {"id": "building_materials_2520", "name": "Гипс строительный, технический, медицинский, формовочный", "tnved": "2520", "marking_status": "mandatory"},
+                {"id": "building_materials_2523", "name": "Цементы общестроительные, портландцемент, шлакопортландцемент и др. (к", "tnved": "2523", "marking_status": "mandatory"},
+                {"id": "building_materials_3816000000", "name": "Цементы огнеупорные, растворы строительные огнеупорные, бетоны огнеупо", "tnved": "3816 00 000 0", "marking_status": "mandatory"},
+                {"id": "building_materials_3824509000", "name": "Смеси строительные, растворы строительные", "tnved": "3824 50 900 0", "marking_status": "mandatory"},
+                {"id": "building_materials_3214", "name": "Шпатлевки, замазки, герметики, мастики, пасты (кроме 3214 90 000 1)", "tnved": "3214", "marking_status": "mandatory"}
+            ]}
         ]
     },
     {
@@ -407,7 +714,9 @@ CATEGORIES_DATA = [
         "name": "Электроника и техника",
         "icon": "cpu",
         "subcategories": [
-            {"id": "cameras", "name": "Фотоаппараты и лампы-вспышки", "icon": "camera", "products": []}
+            {"id": "cameras", "name": "Фотоаппараты и лампы-вспышки", "icon": "camera", "products": [
+                {"id": "cameras_9006900691", "name": "Код 9006 (кроме 9006 91 000 0, 9006 99 000 0)", "tnved": "9006 (кроме 9006 91 000 0, 9006 99 000 0)", "marking_status": "mandatory"}
+            ]}
         ]
     },
     {
