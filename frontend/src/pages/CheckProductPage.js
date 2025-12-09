@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -54,16 +54,10 @@ const CheckProductPage = () => {
   const [callbackData, setCallbackData] = useState({ name: '', phone: '' });
   const [callbackLoading, setCallbackLoading] = useState(false);
 
-  // TNVED search state (for empty subcategories)
-  const [tnvedSearchQuery, setTnvedSearchQuery] = useState('');
-  const [tnvedSearchResults, setTnvedSearchResults] = useState([]);
-  const [tnvedSearchLoading, setTnvedSearchLoading] = useState(false);
-  const tnvedSearchTimeoutRef = useRef(null);
-
-  // Top search bar TNVED fallback
-  const [topSearchTnvedResults, setTopSearchTnvedResults] = useState([]);
-  const [topSearchTnvedLoading, setTopSearchTnvedLoading] = useState(false);
-  const topSearchTimeoutRef = useRef(null);
+  // Main TNVED search state (единый источник - большая база 16000+)
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const searchTimeoutRef = useRef(null);
 
   useEffect(() => {
     fetchCategories();
@@ -79,79 +73,64 @@ const CheckProductPage = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Search results - ищем по products внутри subcategories
-  // IMPORTANT: This useMemo must be declared BEFORE the useEffect that uses searchResults
-  const searchResults = useMemo(() => {
-    if (!searchQuery.trim() || searchQuery.length < 2) return [];
-
-    const query = searchQuery.toLowerCase().trim();
-    const results = [];
-
-    categories.forEach((category) => {
-      category.subcategories?.forEach((sub) => {
-        sub.products?.forEach((product) => {
-          const matchesTnved = product.tnved?.toLowerCase().includes(query);
-          const matchesName = product.name?.toLowerCase().includes(query);
-
-          if (matchesTnved || matchesName) {
-            results.push({
-              ...product,
-              categoryId: category.id,
-              categoryName: category.name,
-              subcategoryId: sub.id,
-              subcategoryName: sub.name,
-              matchType: matchesTnved ? 'tnved' : 'name'
-            });
-          }
-        });
-      });
-    });
-
-    results.sort((a, b) => {
-      if (a.matchType === 'tnved' && b.matchType !== 'tnved') return -1;
-      if (a.matchType !== 'tnved' && b.matchType === 'tnved') return 1;
-      return a.name.localeCompare(b.name);
-    });
-
-    return results.slice(0, 10);
-  }, [searchQuery, categories]);
-
-  // Effect to search TNVED API when local search has no results
+  // Effect to search TNVED API (единый источник - большая база 16000+)
   useEffect(() => {
-    if (topSearchTimeoutRef.current) {
-      clearTimeout(topSearchTimeoutRef.current);
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
     }
 
-    // Only search TNVED if local results are empty and query is long enough
-    if (searchQuery.length >= 2 && searchResults.length === 0) {
-      setTopSearchTnvedLoading(true);
-      topSearchTimeoutRef.current = setTimeout(async () => {
+    if (searchQuery.length >= 2) {
+      setSearchLoading(true);
+      searchTimeoutRef.current = setTimeout(async () => {
         try {
-          const response = await fetch(`${API_URL}/api/tnved/search?q=${encodeURIComponent(searchQuery)}&limit=10`);
+          const response = await fetch(`${API_URL}/api/tnved/search?q=${encodeURIComponent(searchQuery)}&limit=20`);
           if (response.ok) {
             const data = await response.json();
-            setTopSearchTnvedResults(data.results || []);
+            setSearchResults(data.results || []);
           }
         } catch (error) {
-          console.error('Top search TNVED error:', error);
+          console.error('TNVED search error:', error);
         } finally {
-          setTopSearchTnvedLoading(false);
+          setSearchLoading(false);
         }
       }, 300);
     } else {
-      setTopSearchTnvedResults([]);
-      setTopSearchTnvedLoading(false);
+      setSearchResults([]);
+      setSearchLoading(false);
     }
 
     return () => {
-      if (topSearchTimeoutRef.current) {
-        clearTimeout(topSearchTimeoutRef.current);
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
       }
     };
-  }, [searchQuery, searchResults.length]);
+  }, [searchQuery]);
 
-  const handleSearchSelect = (result) => {
-    addProduct(result, result.categoryId, result.subcategoryId);
+  // Добавление товара из поиска по ТН ВЭД
+  const handleSearchSelect = (item) => {
+    const productId = `tnved_${item.code}`;
+    const exists = selectedProducts.find(p => p.id === productId);
+
+    if (exists) {
+      toast.info('Товар уже добавлен в список');
+      return;
+    }
+
+    const newProduct = {
+      id: productId,
+      name: item.name,
+      tnved: item.code,
+      categoryId: 'tnved_search',
+      categoryName: 'ТН ВЭД',
+      subcategoryId: 'tnved_search',
+      subcategoryName: 'Поиск по ТН ВЭД',
+      markingStatus: item.marking_status,
+      source: [],
+      volume: ''
+    };
+
+    setSelectedProducts(prev => [...prev, newProduct]);
+    toast.success(`Добавлено: ${item.name.substring(0, 50)}...`);
     setSearchQuery('');
     setIsSearchFocused(false);
   };
@@ -159,7 +138,7 @@ const CheckProductPage = () => {
   const clearSearch = () => {
     setSearchQuery('');
     setIsSearchFocused(false);
-    setTopSearchTnvedResults([]);
+    setSearchResults([]);
   };
 
   const fetchCategories = async () => {
@@ -182,75 +161,6 @@ const CheckProductPage = () => {
       toast.error('Ошибка загрузки категорий');
       console.error(error);
     }
-  };
-
-  // TNVED search function (debounced)
-  const searchTnved = async (query) => {
-    if (!query || query.length < 2) {
-      setTnvedSearchResults([]);
-      return;
-    }
-
-    setTnvedSearchLoading(true);
-    try {
-      const response = await fetch(`${API_URL}/api/tnved/search?q=${encodeURIComponent(query)}&limit=20`);
-      if (response.ok) {
-        const data = await response.json();
-        setTnvedSearchResults(data.results || []);
-      }
-    } catch (error) {
-      console.error('TNVED search error:', error);
-    } finally {
-      setTnvedSearchLoading(false);
-    }
-  };
-
-  // Handle TNVED search input with debounce
-  const handleTnvedSearchChange = (value) => {
-    setTnvedSearchQuery(value);
-
-    // Clear previous timeout
-    if (tnvedSearchTimeoutRef.current) {
-      clearTimeout(tnvedSearchTimeoutRef.current);
-    }
-
-    // Set new timeout for debounced search
-    tnvedSearchTimeoutRef.current = setTimeout(() => {
-      searchTnved(value);
-    }, 300);
-  };
-
-  // Clear TNVED search
-  const clearTnvedSearch = () => {
-    setTnvedSearchQuery('');
-    setTnvedSearchResults([]);
-  };
-
-  // Add TNVED item to selected products
-  const addTnvedProduct = (tnvedItem) => {
-    const productId = `tnved_${tnvedItem.code}`;
-    const exists = selectedProducts.find(p => p.id === productId);
-
-    if (exists) {
-      toast.info('Товар уже добавлен в список');
-      return;
-    }
-
-    const newProduct = {
-      id: productId,
-      name: tnvedItem.name,
-      tnved: tnvedItem.code,
-      categoryId: selectedSubcategory?.categoryId || expandedCategory || 'unknown',
-      categoryName: currentCategory?.name || 'ТН ВЭД',
-      subcategoryId: selectedSubcategory?.id || 'tnved_search',
-      subcategoryName: selectedSubcategory?.name || 'Поиск по ТН ВЭД',
-      markingStatus: tnvedItem.marking_status,
-      source: [],
-      volume: ''
-    };
-
-    setSelectedProducts(prev => [...prev, newProduct]);
-    toast.success(`Добавлено: ${tnvedItem.name.substring(0, 50)}...`);
   };
 
   // Toggle category accordion
@@ -479,11 +389,6 @@ const CheckProductPage = () => {
     }
   };
 
-  // Check if TNVED item is already selected
-  const isTnvedSelected = (code) => {
-    return selectedProducts.some(p => p.id === `tnved_${code}`);
-  };
-
   return (
     <div className="py-12 bg-gradient-to-b from-slate-50 to-white min-h-screen">
       <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
@@ -525,17 +430,24 @@ const CheckProductPage = () => {
                   </button>
                 )}
 
-                {/* Search Dropdown */}
+                {/* Search Dropdown - единый поиск по базе ТН ВЭД */}
                 {isSearchFocused && searchQuery.length >= 2 && (
                   <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl border-2 border-[rgb(var(--brand-yellow-300))] shadow-2xl z-50 max-h-[400px] overflow-y-auto">
-                    {searchResults.length > 0 ? (
+                    {searchLoading ? (
+                      <div className="p-6 text-center">
+                        <Loader2 size={24} className="mx-auto text-[rgb(var(--brand-yellow-500))] animate-spin mb-2" />
+                        <p className="text-gray-500 text-sm">Поиск по ТН ВЭД...</p>
+                      </div>
+                    ) : searchResults.length > 0 ? (
                       <div className="p-2">
-                        <div className="text-xs text-gray-500 px-3 py-2">Найдено в каталоге: {searchResults.length}</div>
+                        <div className="text-xs text-gray-500 px-3 py-2">
+                          Найдено: {searchResults.length} результатов
+                        </div>
                         {searchResults.map((item, index) => {
-                          const alreadyAdded = isProductSelected(item.id);
+                          const alreadyAdded = selectedProducts.some(p => p.id === `tnved_${item.code}`);
                           return (
                             <button
-                              key={`${item.categoryId}-${item.id}-${index}`}
+                              key={`tnved-${item.code}-${index}`}
                               onClick={() => !alreadyAdded && handleSearchSelect(item)}
                               disabled={alreadyAdded}
                               className={`w-full text-left px-3 py-3 rounded-xl transition-colors flex items-center gap-3 ${
@@ -545,7 +457,7 @@ const CheckProductPage = () => {
                               }`}
                             >
                               <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${
-                                alreadyAdded ? 'bg-emerald-100' : 'bg-gray-100'
+                                alreadyAdded ? 'bg-emerald-100' : 'bg-[rgb(var(--brand-yellow-100))]'
                               }`}>
                                 {alreadyAdded ? (
                                   <Check size={18} className="text-emerald-600" />
@@ -554,57 +466,9 @@ const CheckProductPage = () => {
                                 )}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <div className="font-medium text-gray-900 text-sm">{item.name}</div>
-                                <div className="flex items-center gap-2 mt-1">
-                                  <span className="font-mono text-xs font-bold text-[rgb(var(--brand-yellow-700))] bg-[rgb(var(--brand-yellow-100))] px-2 py-0.5 rounded">
-                                    {item.tnved}
-                                  </span>
-                                  <span className="text-xs text-gray-500">{item.subcategoryName}</span>
-                                </div>
-                              </div>
-                              {alreadyAdded && (
-                                <span className="text-xs text-emerald-600 font-medium">Добавлен</span>
-                              )}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    ) : topSearchTnvedLoading ? (
-                      <div className="p-6 text-center">
-                        <Loader2 size={24} className="mx-auto text-blue-500 animate-spin mb-2" />
-                        <p className="text-gray-500 text-sm">Поиск по ТН ВЭД...</p>
-                      </div>
-                    ) : topSearchTnvedResults.length > 0 ? (
-                      <div className="p-2">
-                        <div className="text-xs text-gray-500 px-3 py-2 flex items-center gap-2">
-                          <span>Результаты из ТН ВЭД: {topSearchTnvedResults.length}</span>
-                        </div>
-                        {topSearchTnvedResults.map((item, index) => {
-                          const alreadyAdded = isTnvedSelected(item.code);
-                          return (
-                            <button
-                              key={`tnved-top-${item.code}-${index}`}
-                              onClick={() => !alreadyAdded && addTnvedProduct(item)}
-                              disabled={alreadyAdded}
-                              className={`w-full text-left px-3 py-3 rounded-xl transition-colors flex items-center gap-3 ${
-                                alreadyAdded
-                                  ? 'bg-emerald-50 cursor-default'
-                                  : 'hover:bg-blue-50'
-                              }`}
-                            >
-                              <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${
-                                alreadyAdded ? 'bg-emerald-100' : 'bg-blue-100'
-                              }`}>
-                                {alreadyAdded ? (
-                                  <Check size={18} className="text-emerald-600" />
-                                ) : (
-                                  <Plus size={18} className="text-blue-600" />
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
                                 <div className="font-medium text-gray-900 text-sm line-clamp-1">{item.name}</div>
                                 <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                  <span className="font-mono text-xs font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded">
+                                  <span className="font-mono text-xs font-bold text-[rgb(var(--brand-yellow-700))] bg-[rgb(var(--brand-yellow-100))] px-2 py-0.5 rounded">
                                     {item.code}
                                   </span>
                                   {getMarkingStatusBadge(item.marking_status)}
@@ -800,114 +664,25 @@ const CheckProductPage = () => {
                         })}
                       </div>
                     ) : (
-                      /* TNVED Search Panel - when subcategory has no products */
-                      <div className="bg-white rounded-2xl border-2 border-gray-200 overflow-hidden">
-                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-xl bg-blue-100">
-                              <Search size={20} className="text-blue-600" />
-                            </div>
-                            <div>
-                              <h3 className="font-bold text-gray-900">Поиск по ТН ВЭД</h3>
-                              <p className="text-sm text-gray-600">Введите код или название товара для проверки статуса маркировки</p>
-                            </div>
-                          </div>
+                      /* Empty subcategory - направляем к верхнему поиску */
+                      <div className="bg-white rounded-2xl border-2 border-gray-200 p-8 text-center">
+                        <div className="p-3 rounded-xl bg-[rgb(var(--brand-yellow-100))] inline-block mb-4">
+                          <Search size={32} className="text-[rgb(var(--brand-yellow-600))]" />
                         </div>
-
-                        <div className="p-6">
-                          {/* Search Input */}
-                          <div className="relative mb-4">
-                            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                            <input
-                              type="text"
-                              value={tnvedSearchQuery}
-                              onChange={(e) => handleTnvedSearchChange(e.target.value)}
-                              placeholder="Например: 8712 или велосипеды..."
-                              className="w-full pl-11 pr-10 py-3 text-sm rounded-xl border-2 border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-gray-400"
-                            />
-                            {tnvedSearchQuery && (
-                              <button
-                                onClick={clearTnvedSearch}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full bg-gray-100 hover:bg-gray-200"
-                              >
-                                <X size={14} />
-                              </button>
-                            )}
-                          </div>
-
-                          {/* Loading State */}
-                          {tnvedSearchLoading && (
-                            <div className="flex items-center justify-center py-8">
-                              <Loader2 size={24} className="animate-spin text-blue-500" />
-                              <span className="ml-2 text-gray-500">Поиск...</span>
-                            </div>
-                          )}
-
-                          {/* Search Results */}
-                          {!tnvedSearchLoading && tnvedSearchResults.length > 0 && (
-                            <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                              <div className="text-xs text-gray-500 mb-3">
-                                Найдено: {tnvedSearchResults.length} результатов
-                              </div>
-                              {tnvedSearchResults.map((item, index) => {
-                                const isSelected = isTnvedSelected(item.code);
-                                return (
-                                  <button
-                                    key={`${item.code}-${index}`}
-                                    onClick={() => !isSelected && addTnvedProduct(item)}
-                                    disabled={isSelected}
-                                    className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
-                                      isSelected
-                                        ? 'bg-emerald-50 border-emerald-200 cursor-default'
-                                        : 'bg-white border-gray-200 hover:border-blue-300 hover:bg-blue-50'
-                                    }`}
-                                  >
-                                    <div className="flex items-start justify-between gap-3">
-                                      <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-1">
-                                          <span className="font-mono text-sm font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
-                                            {item.code}
-                                          </span>
-                                          {getMarkingStatusBadge(item.marking_status)}
-                                        </div>
-                                        <p className="text-sm text-gray-700 line-clamp-2">{item.name}</p>
-                                      </div>
-                                      <div className="flex-shrink-0">
-                                        {isSelected ? (
-                                          <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
-                                            <Check size={16} className="text-emerald-600" />
-                                          </div>
-                                        ) : (
-                                          <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center group-hover:bg-blue-200">
-                                            <Plus size={16} className="text-blue-600" />
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          )}
-
-                          {/* No Results */}
-                          {!tnvedSearchLoading && tnvedSearchQuery.length >= 2 && tnvedSearchResults.length === 0 && (
-                            <div className="text-center py-8">
-                              <Search size={32} className="mx-auto text-gray-300 mb-2" />
-                              <p className="text-gray-500 text-sm">Ничего не найдено</p>
-                              <p className="text-gray-400 text-xs mt-1">Попробуйте изменить запрос</p>
-                            </div>
-                          )}
-
-                          {/* Empty State */}
-                          {!tnvedSearchLoading && !tnvedSearchQuery && (
-                            <div className="text-center py-8 text-gray-500">
-                              <Package size={32} className="mx-auto text-gray-300 mb-3" />
-                              <p className="text-sm">Товары для этой подкатегории ещё не добавлены</p>
-                              <p className="text-xs text-gray-400 mt-1">Воспользуйтесь поиском по ТН ВЭД выше</p>
-                            </div>
-                          )}
-                        </div>
+                        <h3 className="font-bold text-gray-900 mb-2">Товары ещё не добавлены</h3>
+                        <p className="text-sm text-gray-600 mb-4">
+                          Воспользуйтесь поиском по ТН ВЭД выше для поиска товаров
+                        </p>
+                        <button
+                          onClick={() => {
+                            const searchInput = document.querySelector('input[placeholder*="6403"]');
+                            if (searchInput) searchInput.focus();
+                          }}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-[rgb(var(--brand-yellow-500))] text-black font-medium rounded-xl hover:bg-[rgb(var(--brand-yellow-600))] transition-colors"
+                        >
+                          <Search size={16} />
+                          Перейти к поиску
+                        </button>
                       </div>
                     )}
                   </>
@@ -1007,60 +782,10 @@ const CheckProductPage = () => {
                                 );
                               })
                             ) : (
-                              /* Mobile TNVED Search */
-                              <div className="col-span-2">
-                                <div className="bg-white rounded-xl border border-gray-200 p-4">
-                                  <div className="text-sm font-medium text-gray-700 mb-3">Поиск по ТН ВЭД</div>
-                                  <div className="relative mb-3">
-                                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <input
-                                      type="text"
-                                      value={tnvedSearchQuery}
-                                      onChange={(e) => handleTnvedSearchChange(e.target.value)}
-                                      placeholder="Код или название..."
-                                      className="w-full pl-9 pr-8 py-2 text-sm rounded-lg border border-gray-200 focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
-                                    />
-                                    {tnvedSearchQuery && (
-                                      <button onClick={clearTnvedSearch} className="absolute right-2 top-1/2 -translate-y-1/2">
-                                        <X size={14} className="text-gray-400" />
-                                      </button>
-                                    )}
-                                  </div>
-
-                                  {tnvedSearchLoading && (
-                                    <div className="flex items-center justify-center py-4">
-                                      <Loader2 size={20} className="animate-spin text-blue-500" />
-                                    </div>
-                                  )}
-
-                                  {!tnvedSearchLoading && tnvedSearchResults.length > 0 && (
-                                    <div className="space-y-2 max-h-[200px] overflow-y-auto">
-                                      {tnvedSearchResults.slice(0, 5).map((item, index) => {
-                                        const isSelected = isTnvedSelected(item.code);
-                                        return (
-                                          <button
-                                            key={`mobile-${item.code}-${index}`}
-                                            onClick={() => !isSelected && addTnvedProduct(item)}
-                                            disabled={isSelected}
-                                            className={`w-full text-left p-2.5 rounded-lg border transition-all ${
-                                              isSelected ? 'bg-emerald-50 border-emerald-200' : 'border-gray-200'
-                                            }`}
-                                          >
-                                            <div className="flex items-center gap-2 mb-1">
-                                              <span className="font-mono text-xs font-bold text-blue-600">{item.code}</span>
-                                              {getMarkingStatusBadge(item.marking_status)}
-                                            </div>
-                                            <p className="text-xs text-gray-600 line-clamp-1">{item.name}</p>
-                                          </button>
-                                        );
-                                      })}
-                                    </div>
-                                  )}
-
-                                  {!tnvedSearchLoading && !tnvedSearchQuery && (
-                                    <p className="text-xs text-gray-400 text-center py-2">Товары пока не добавлены</p>
-                                  )}
-                                </div>
+                              /* Empty mobile subcategory - направляем к поиску */
+                              <div className="col-span-2 text-center py-4">
+                                <Package size={24} className="mx-auto text-gray-300 mb-2" />
+                                <p className="text-xs text-gray-500">Используйте поиск выше</p>
                               </div>
                             )}
                           </div>
