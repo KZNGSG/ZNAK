@@ -375,27 +375,68 @@ const QuotePage = () => {
 
   // Navigation
   const canProceed = () => {
-    switch (step) {
-      case 1: return selectedCompany !== null;
-      case 2: return true; // Products are optional
-      case 3: return selectedServices.length > 0;
-      case 4: return contactData.name && contactData.phone && contactData.consent;
-      default: return true;
+    if (hasProductsFromCheck) {
+      // Сокращённый flow: 3 шага
+      switch (step) {
+        case 1:
+          // Компания + Контакты на одном шаге
+          return selectedCompany !== null &&
+            contactData.name.trim() !== '' &&
+            contactData.phone.trim() !== '' &&
+            contactData.consent === true;
+        case 2: // Услуги
+          return selectedServices.length > 0;
+        default: return true;
+      }
+    } else {
+      // Полный flow: 5 шагов
+      switch (step) {
+        case 1: return selectedCompany !== null;
+        case 2: return true; // Products are optional
+        case 3: return selectedServices.length > 0;
+        case 4: return contactData.name && contactData.phone && contactData.consent;
+        default: return true;
+      }
     }
   };
 
   const handleNext = () => {
     if (!canProceed()) {
-      if (step === 1) toast.error('Выберите компанию');
-      if (step === 3) toast.error('Выберите хотя бы одну услугу');
-      if (step === 4) toast.error('Заполните контактные данные и дайте согласие');
+      if (hasProductsFromCheck) {
+        // Сокращённый flow
+        if (step === 1) {
+          if (!selectedCompany) {
+            toast.error('Выберите компанию');
+          } else if (!contactData.name.trim() || !contactData.phone.trim()) {
+            toast.error('Заполните контактные данные');
+          } else if (!contactData.consent) {
+            toast.error('Необходимо согласие на обработку ПД');
+          }
+        }
+        if (step === 2) toast.error('Выберите хотя бы одну услугу');
+      } else {
+        // Полный flow
+        if (step === 1) toast.error('Выберите компанию');
+        if (step === 3) toast.error('Выберите хотя бы одну услугу');
+        if (step === 4) toast.error('Заполните контактные данные и дайте согласие');
+      }
       return;
     }
 
-    if (step === 4) {
-      submitQuote();
+    if (hasProductsFromCheck) {
+      // Сокращённый flow: 1 (Компания+Контакты) → 2 (Услуги) → submitQuote
+      if (step === 2) {
+        submitQuote();
+      } else {
+        setStep(step + 1);
+      }
     } else {
-      setStep(step + 1);
+      // Полный flow
+      if (step === 4) {
+        submitQuote();
+      } else {
+        setStep(step + 1);
+      }
     }
   };
 
@@ -434,7 +475,7 @@ const QuotePage = () => {
       if (response.ok) {
         const data = await response.json();
         setQuoteResult(data);
-        setStep(5);
+        setStep(totalSteps); // Переход на финальный шаг (3 или 5 в зависимости от flow)
         toast.success('КП успешно сформировано!');
       } else {
         const error = await response.json();
@@ -462,7 +503,13 @@ const QuotePage = () => {
     return formatted;
   };
 
-  const stepLabels = ['Компания', 'Товары', 'Услуги', 'Контакты', 'КП'];
+  // Динамические шаги в зависимости от источника товаров
+  const stepLabels = hasProductsFromCheck
+    ? ['Компания и контакты', 'Услуги', 'КП']
+    : ['Компания', 'Товары', 'Услуги', 'Контакты', 'КП'];
+
+  // Общее количество шагов
+  const totalSteps = hasProductsFromCheck ? 3 : 5;
 
   // Скачать PDF коммерческого предложения
   const downloadQuotePdf = async () => {
@@ -581,169 +628,295 @@ const QuotePage = () => {
           </p>
         </div>
 
-        {step < 5 && <Stepper current={step} total={5} steps={stepLabels} />}
+        {step < totalSteps && <Stepper current={step} total={totalSteps} steps={stepLabels} />}
 
-        {/* ==================== STEP 1: Company ==================== */}
+        {/* ==================== STEP 1: Company (+ Contacts при hasProductsFromCheck) ==================== */}
         {step === 1 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="max-w-2xl mx-auto"
+            className={hasProductsFromCheck ? "" : "max-w-2xl mx-auto"}
           >
-            <div className="bg-white rounded-2xl p-8 border-2 border-gray-200 shadow-lg">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 rounded-xl bg-[rgb(var(--brand-yellow-100))]">
-                  <Building2 size={24} className="text-[rgb(var(--brand-yellow-700))]" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900">Данные компании</h2>
-                  <p className="text-sm text-gray-500">Введите ИНН или ОГРН для автозаполнения</p>
-                </div>
-              </div>
-
-              {/* INN Input */}
-              <div className="relative mb-6" ref={suggestionsRef}>
-                <Label className="text-sm font-semibold text-gray-700 mb-2 block">
-                  ИНН, ОГРН или название компании <span className="text-red-500">*</span>
-                </Label>
-                <div className="relative">
-                  <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <Input
-                    type="text"
-                    value={innQuery}
-                    onChange={(e) => setInnQuery(e.target.value)}
-                    onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-                    placeholder="Введите ИНН, ОГРН или название..."
-                    className="pl-12 pr-12 py-4 text-lg rounded-xl border-2"
-                  />
-                  {searchLoading && (
-                    <Loader2 size={20} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 animate-spin" />
-                  )}
-                  {innQuery && !searchLoading && (
-                    <button
-                      onClick={() => { setInnQuery(''); setSuggestions([]); setSelectedCompany(null); }}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-gray-100"
-                    >
-                      <X size={16} className="text-gray-400" />
-                    </button>
-                  )}
-                </div>
-
-                {/* Suggestions Dropdown */}
-                <AnimatePresence>
-                  {showSuggestions && suggestions.length > 0 && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl border-2 border-gray-200 shadow-xl z-50 max-h-[400px] overflow-y-auto"
-                    >
-                      <div className="p-2">
-                        <div className="text-xs text-gray-500 px-3 py-2 border-b border-gray-100">
-                          Найдено: {suggestions.length}
+            <div className={hasProductsFromCheck ? "grid lg:grid-cols-3 gap-6" : ""}>
+              {/* Левая колонка: Товары из проверки (только при hasProductsFromCheck) */}
+              {hasProductsFromCheck && (
+                <div className="lg:col-span-1">
+                  <div className="bg-white rounded-2xl border-2 border-emerald-200 shadow-lg sticky top-24">
+                    <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 px-5 py-4 rounded-t-2xl">
+                      <div className="flex items-center gap-3 text-white">
+                        <Package size={20} />
+                        <div>
+                          <div className="font-bold">Выбранные товары</div>
+                          <div className="text-sm text-emerald-100">{selectedProducts.length} товар(ов)</div>
                         </div>
-                        {suggestions.map((company, idx) => (
-                          <button
-                            key={idx}
-                            onClick={() => selectCompany(company)}
-                            className="w-full text-left px-4 py-3 rounded-lg hover:bg-[rgb(var(--brand-yellow-50))] transition-colors"
-                          >
-                            <div className="font-semibold text-gray-900">{company.name}</div>
-                            <div className="flex flex-wrap gap-2 mt-1 text-xs">
-                              <span className="px-2 py-0.5 rounded bg-gray-100 text-gray-600">
-                                ИНН: {company.inn}
-                              </span>
-                              {company.kpp && (
-                                <span className="px-2 py-0.5 rounded bg-gray-100 text-gray-600">
-                                  КПП: {company.kpp}
+                      </div>
+                    </div>
+                    <div className="p-4 max-h-[400px] overflow-y-auto">
+                      {selectedProducts.length > 0 ? (
+                        <div className="space-y-2">
+                          {selectedProducts.map((product) => (
+                            <div key={product.id} className="bg-gray-50 rounded-xl p-3">
+                              <div className="font-medium text-sm text-gray-900 line-clamp-2">
+                                {product.name}
+                              </div>
+                              <div className="flex items-center gap-2 mt-2">
+                                <span className="font-mono text-xs font-bold text-[rgb(var(--brand-yellow-700))] bg-[rgb(var(--brand-yellow-100))] px-2 py-0.5 rounded">
+                                  {product.tnved}
                                 </span>
-                              )}
-                              <span className={`px-2 py-0.5 rounded ${
-                                company.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
-                              }`}>
-                                {company.status === 'ACTIVE' ? 'Действующая' : company.status}
-                              </span>
+                                {product.requires_marking && (
+                                  <span className="text-xs px-2 py-0.5 rounded bg-emerald-100 text-emerald-700">
+                                    Маркировка
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                            <div className="text-xs text-gray-500 mt-1 line-clamp-1">
-                              {company.address}
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-6 text-gray-500">
+                          <Package size={32} className="mx-auto mb-2 opacity-30" />
+                          <p className="text-sm">Товары не выбраны</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Правая колонка (или единственная): Компания + Контакты */}
+              <div className={hasProductsFromCheck ? "lg:col-span-2 space-y-6" : ""}>
+                {/* Карточка компании */}
+                <div className="bg-white rounded-2xl p-8 border-2 border-gray-200 shadow-lg">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-3 rounded-xl bg-[rgb(var(--brand-yellow-100))]">
+                      <Building2 size={24} className="text-[rgb(var(--brand-yellow-700))]" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold text-gray-900">Данные компании</h2>
+                      <p className="text-sm text-gray-500">Введите ИНН или ОГРН для автозаполнения</p>
+                    </div>
+                  </div>
+
+                  {/* INN Input */}
+                  <div className="relative mb-6" ref={suggestionsRef}>
+                    <Label className="text-sm font-semibold text-gray-700 mb-2 block">
+                      ИНН, ОГРН или название компании <span className="text-red-500">*</span>
+                    </Label>
+                    <div className="relative">
+                      <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <Input
+                        type="text"
+                        value={innQuery}
+                        onChange={(e) => setInnQuery(e.target.value)}
+                        onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                        placeholder="Введите ИНН, ОГРН или название..."
+                        className="pl-12 pr-12 py-4 text-lg rounded-xl border-2"
+                      />
+                      {searchLoading && (
+                        <Loader2 size={20} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 animate-spin" />
+                      )}
+                      {innQuery && !searchLoading && (
+                        <button
+                          onClick={() => { setInnQuery(''); setSuggestions([]); setSelectedCompany(null); }}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-gray-100"
+                        >
+                          <X size={16} className="text-gray-400" />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Suggestions Dropdown */}
+                    <AnimatePresence>
+                      {showSuggestions && suggestions.length > 0 && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl border-2 border-gray-200 shadow-xl z-50 max-h-[400px] overflow-y-auto"
+                        >
+                          <div className="p-2">
+                            <div className="text-xs text-gray-500 px-3 py-2 border-b border-gray-100">
+                              Найдено: {suggestions.length}
                             </div>
-                          </button>
-                        ))}
+                            {suggestions.map((company, idx) => (
+                              <button
+                                key={idx}
+                                onClick={() => selectCompany(company)}
+                                className="w-full text-left px-4 py-3 rounded-lg hover:bg-[rgb(var(--brand-yellow-50))] transition-colors"
+                              >
+                                <div className="font-semibold text-gray-900">{company.name}</div>
+                                <div className="flex flex-wrap gap-2 mt-1 text-xs">
+                                  <span className="px-2 py-0.5 rounded bg-gray-100 text-gray-600">
+                                    ИНН: {company.inn}
+                                  </span>
+                                  {company.kpp && (
+                                    <span className="px-2 py-0.5 rounded bg-gray-100 text-gray-600">
+                                      КПП: {company.kpp}
+                                    </span>
+                                  )}
+                                  <span className={`px-2 py-0.5 rounded ${
+                                    company.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                                  }`}>
+                                    {company.status === 'ACTIVE' ? 'Действующая' : company.status}
+                                  </span>
+                                </div>
+                                <div className="text-xs text-gray-500 mt-1 line-clamp-1">
+                                  {company.address}
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  {/* Selected Company Card */}
+                  {selectedCompany && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="bg-gradient-to-r from-emerald-50 to-emerald-100 rounded-xl p-6 border-2 border-emerald-200"
+                    >
+                      <div className="flex items-start justify-between gap-4 mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg bg-emerald-200">
+                            <CheckCircle size={20} className="text-emerald-700" />
+                          </div>
+                          <div>
+                            <div className="text-sm text-emerald-600 font-medium">Компания выбрана</div>
+                            <div className="font-bold text-gray-900">{selectedCompany.name}</div>
+                          </div>
+                        </div>
+                        <button
+                          onClick={clearCompany}
+                          className="p-2 rounded-lg hover:bg-emerald-200 text-emerald-700"
+                        >
+                          <X size={18} />
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <div className="text-gray-500">ИНН</div>
+                          <div className="font-semibold">{selectedCompany.inn}</div>
+                        </div>
+                        {selectedCompany.kpp && (
+                          <div>
+                            <div className="text-gray-500">КПП</div>
+                            <div className="font-semibold">{selectedCompany.kpp}</div>
+                          </div>
+                        )}
+                        {selectedCompany.ogrn && (
+                          <div>
+                            <div className="text-gray-500">ОГРН</div>
+                            <div className="font-semibold">{selectedCompany.ogrn}</div>
+                          </div>
+                        )}
+                        {selectedCompany.management_name && (
+                          <div>
+                            <div className="text-gray-500">{selectedCompany.management_post || 'Руководитель'}</div>
+                            <div className="font-semibold">{selectedCompany.management_name}</div>
+                          </div>
+                        )}
+                        <div className="col-span-2">
+                          <div className="text-gray-500">Адрес</div>
+                          <div className="font-semibold">{selectedCompany.address || '—'}</div>
+                        </div>
                       </div>
                     </motion.div>
                   )}
-                </AnimatePresence>
-              </div>
 
-              {/* Selected Company Card */}
-              {selectedCompany && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="bg-gradient-to-r from-emerald-50 to-emerald-100 rounded-xl p-6 border-2 border-emerald-200"
-                >
-                  <div className="flex items-start justify-between gap-4 mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-emerald-200">
-                        <CheckCircle size={20} className="text-emerald-700" />
-                      </div>
-                      <div>
-                        <div className="text-sm text-emerald-600 font-medium">Компания выбрана</div>
-                        <div className="font-bold text-gray-900">{selectedCompany.name}</div>
-                      </div>
+                  {/* Helper text */}
+                  {!selectedCompany && innQuery.length > 0 && innQuery.length < 3 && (
+                    <div className="flex items-center gap-2 text-sm text-amber-600 mt-2">
+                      <AlertCircle size={16} />
+                      <span>Введите минимум 3 символа для поиска</span>
                     </div>
-                    <button
-                      onClick={clearCompany}
-                      className="p-2 rounded-lg hover:bg-emerald-200 text-emerald-700"
-                    >
-                      <X size={18} />
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <div className="text-gray-500">ИНН</div>
-                      <div className="font-semibold">{selectedCompany.inn}</div>
-                    </div>
-                    {selectedCompany.kpp && (
-                      <div>
-                        <div className="text-gray-500">КПП</div>
-                        <div className="font-semibold">{selectedCompany.kpp}</div>
-                      </div>
-                    )}
-                    {selectedCompany.ogrn && (
-                      <div>
-                        <div className="text-gray-500">ОГРН</div>
-                        <div className="font-semibold">{selectedCompany.ogrn}</div>
-                      </div>
-                    )}
-                    {selectedCompany.management_name && (
-                      <div>
-                        <div className="text-gray-500">{selectedCompany.management_post || 'Руководитель'}</div>
-                        <div className="font-semibold">{selectedCompany.management_name}</div>
-                      </div>
-                    )}
-                    <div className="col-span-2">
-                      <div className="text-gray-500">Адрес</div>
-                      <div className="font-semibold">{selectedCompany.address || '—'}</div>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Helper text */}
-              {!selectedCompany && innQuery.length > 0 && innQuery.length < 3 && (
-                <div className="flex items-center gap-2 text-sm text-amber-600 mt-2">
-                  <AlertCircle size={16} />
-                  <span>Введите минимум 3 символа для поиска</span>
+                  )}
                 </div>
-              )}
+
+                {/* Контактные данные (только при hasProductsFromCheck, иначе отдельный шаг) */}
+                {hasProductsFromCheck && (
+                  <div className="bg-white rounded-2xl p-8 border-2 border-gray-200 shadow-lg">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="p-3 rounded-xl bg-[rgb(var(--brand-yellow-100))]">
+                        <User size={24} className="text-[rgb(var(--brand-yellow-700))]" />
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-bold text-gray-900">Контактные данные</h2>
+                        <p className="text-sm text-gray-500">Для связи и отправки КП</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-5">
+                      {/* Name */}
+                      <div>
+                        <Label className="text-sm font-semibold text-gray-700 mb-2 block">
+                          <User size={16} className="inline mr-2" />
+                          Контактное лицо <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          type="text"
+                          value={contactData.name}
+                          onChange={(e) => setContactData(prev => ({ ...prev, name: e.target.value }))}
+                          placeholder="Иван Иванов"
+                          className="rounded-xl"
+                        />
+                      </div>
+
+                      {/* Phone */}
+                      <div>
+                        <Label className="text-sm font-semibold text-gray-700 mb-2 block">
+                          <Phone size={16} className="inline mr-2" />
+                          Телефон <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          type="tel"
+                          value={contactData.phone}
+                          onChange={(e) => setContactData(prev => ({ ...prev, phone: formatPhone(e.target.value) }))}
+                          placeholder="+7 (___) ___-__-__"
+                          className="rounded-xl"
+                        />
+                      </div>
+
+                      {/* Email */}
+                      <div>
+                        <Label className="text-sm font-semibold text-gray-700 mb-2 block">
+                          <Mail size={16} className="inline mr-2" />
+                          Email (для отправки КП)
+                        </Label>
+                        <Input
+                          type="email"
+                          value={contactData.email}
+                          onChange={(e) => setContactData(prev => ({ ...prev, email: e.target.value }))}
+                          placeholder="example@mail.ru"
+                          className="rounded-xl"
+                        />
+                      </div>
+
+                      {/* Consent */}
+                      <div className="flex items-start gap-3 p-4 rounded-xl bg-gray-50 border border-gray-200">
+                        <Checkbox
+                          id="consent-step1"
+                          checked={contactData.consent}
+                          onCheckedChange={(checked) => setContactData(prev => ({ ...prev, consent: checked }))}
+                        />
+                        <Label htmlFor="consent-step1" className="text-sm text-gray-700 cursor-pointer">
+                          Я согласен на обработку персональных данных и получение коммерческого предложения
+                          <span className="text-red-500"> *</span>
+                        </Label>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </motion.div>
         )}
 
-        {/* ==================== STEP 2: Products ==================== */}
-        {step === 2 && (
+        {/* ==================== STEP 2: Products (только для полного flow) ==================== */}
+        {step === 2 && !hasProductsFromCheck && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -828,8 +1001,8 @@ const QuotePage = () => {
           </motion.div>
         )}
 
-        {/* ==================== STEP 3: Services ==================== */}
-        {step === 3 && (
+        {/* ==================== STEP: Services ==================== */}
+        {((hasProductsFromCheck && step === 2) || (!hasProductsFromCheck && step === 3)) && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1124,8 +1297,8 @@ const QuotePage = () => {
           </motion.div>
         )}
 
-        {/* ==================== STEP 4: Contact ==================== */}
-        {step === 4 && (
+        {/* ==================== STEP 4: Contact (только для полного flow) ==================== */}
+        {step === 4 && !hasProductsFromCheck && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1234,8 +1407,8 @@ const QuotePage = () => {
           </motion.div>
         )}
 
-        {/* ==================== STEP 5: Quote Result ==================== */}
-        {step === 5 && quoteResult && (
+        {/* ==================== STEP: Quote Result ==================== */}
+        {step === totalSteps && quoteResult && (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -1392,7 +1565,7 @@ const QuotePage = () => {
         )}
 
         {/* Navigation Buttons */}
-        {step < 5 && (
+        {step < totalSteps && (
           <div className="flex items-center justify-between mt-8 max-w-4xl mx-auto">
             <Button
               onClick={handleBack}
@@ -1413,7 +1586,7 @@ const QuotePage = () => {
                   <Loader2 size={18} className="animate-spin" />
                   Создание КП...
                 </>
-              ) : step === 4 ? (
+              ) : (hasProductsFromCheck ? step === 2 : step === 4) ? (
                 <>
                   <FileText size={18} />
                   Сформировать КП
