@@ -15,7 +15,7 @@ from datetime import datetime
 from urllib.parse import quote as url_quote
 
 # Импорт генератора документов
-from document_generator import generate_contract_pdf, generate_quote_pdf
+from document_generator import generate_contract_pdf, generate_quote_pdf, generate_act_pdf
 
 # Импорт авторизации и БД
 from auth import (
@@ -1718,6 +1718,78 @@ async def generate_quote_pdf_endpoint(request: QuotePDFRequest):
     except Exception as e:
         logger.error(f"Quote PDF generation error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Ошибка генерации КП: {str(e)}")
+
+
+class ActGenerateRequest(BaseModel):
+    """Запрос на генерацию акта выполненных работ"""
+    contract_number: str
+    contract_date: str  # ISO format date string
+    company: CompanyInfo
+    services: List[QuoteService]
+    contact_name: str
+
+
+@app.post("/api/act/generate")
+async def generate_act(request: ActGenerateRequest):
+    """
+    Генерирует PDF акта выполненных работ.
+    Возвращает PDF файл для скачивания.
+    """
+    try:
+        # Подготавливаем данные клиента
+        client_info = {
+            "name": request.company.name,
+            "name_short": request.company.name_short or request.company.name,
+            "inn": request.company.inn,
+            "kpp": request.company.kpp or "",
+            "ogrn": request.company.ogrn or "",
+            "address": request.company.address or "",
+            "management_name": request.company.management_name or request.contact_name,
+            "management_post": request.company.management_post or "Директор",
+        }
+
+        # Подготавливаем услуги
+        services_list = []
+        total_amount = 0
+        for s in request.services:
+            subtotal = s.price * s.quantity
+            total_amount += subtotal
+            services_list.append({
+                "name": s.name,
+                "quantity": s.quantity,
+                "unit": s.unit,
+                "price": s.price,
+                "subtotal": subtotal
+            })
+
+        # Парсим дату договора
+        contract_date = datetime.fromisoformat(request.contract_date.replace('Z', '+00:00'))
+
+        # Генерируем PDF
+        pdf_bytes = generate_act_pdf(
+            client_info=client_info,
+            services=services_list,
+            total_amount=total_amount,
+            contract_number=request.contract_number,
+            contract_date=contract_date
+        )
+
+        # Формируем имя файла
+        act_number = request.contract_number.replace("ДОГ", "АКТ").replace("DOG", "ACT")
+        filename = f"Act_{act_number}_{request.company.inn}.pdf"
+        filename_encoded = url_quote(filename)
+
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"attachment; filename=\"{filename}\"; filename*=UTF-8''{filename_encoded}"
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Act generation error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Ошибка генерации акта: {str(e)}")
 
 
 # ======================== АВТОРИЗАЦИЯ ========================

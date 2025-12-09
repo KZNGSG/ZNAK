@@ -612,6 +612,133 @@ def generate_contract_pdf(
             [Image(STAMP_PATH, width=3*cm, height=3*cm), Paragraph("М.П.", styles['Requisites'])]
         ], colWidths=[9*cm, 9*cm]))
 
+    # === СЧЁТ НА ОПЛАТУ ===
+    story.append(PageBreak())
+
+    # Логотип на счёте
+    if os.path.exists(LOGO_PATH):
+        logo = Image(LOGO_PATH, width=4*cm, height=1*cm)
+        story.append(logo)
+        story.append(Spacer(1, 0.3*cm))
+
+    # Номер счёта (берём из номера договора)
+    invoice_number = contract_number.replace("ДОГ", "СЧ")
+
+    story.append(Paragraph(
+        f"<b>СЧЁТ НА ОПЛАТУ № {invoice_number}</b>",
+        styles['DocTitle']
+    ))
+    story.append(Paragraph(
+        f"от {date_str}",
+        styles['DocSubtitle']
+    ))
+    story.append(Spacer(1, 0.5*cm))
+
+    # Блок "Получатель"
+    receiver_info = f"""
+    <b>Получатель:</b> {EXECUTOR_INFO['name']}<br/>
+    <b>ИНН:</b> {EXECUTOR_INFO['inn']}<br/>
+    <b>Расчётный счёт:</b> {EXECUTOR_INFO['bank_account']}<br/>
+    <b>Банк:</b> {EXECUTOR_INFO['bank_name']}<br/>
+    <b>БИК:</b> {EXECUTOR_INFO['bank_bik']}<br/>
+    <b>Корр. счёт:</b> {EXECUTOR_INFO['bank_corr']}
+    """
+    story.append(Paragraph(receiver_info, styles['Normal_RU']))
+    story.append(Spacer(1, 0.5*cm))
+
+    # Блок "Плательщик"
+    payer_info = f"""
+    <b>Плательщик:</b> {client_name}<br/>
+    <b>ИНН:</b> {client_inn}{f', КПП: {client_kpp}' if client_kpp else ''}<br/>
+    <b>Адрес:</b> {client_info.get('address', '—')}
+    """
+    story.append(Paragraph(payer_info, styles['Normal_RU']))
+    story.append(Spacer(1, 0.5*cm))
+
+    # Основание
+    story.append(Paragraph(
+        f"<b>Основание:</b> Договор № {contract_number} от {date_str}",
+        styles['Normal_RU']
+    ))
+    story.append(Spacer(1, 0.5*cm))
+
+    # Таблица услуг для счёта
+    invoice_table_data = [["№", "Наименование", "Кол-во", "Ед.", "Цена, ₽", "Сумма, ₽"]]
+
+    for idx, service in enumerate(services, 1):
+        invoice_table_data.append([
+            str(idx),
+            service.get('name', ''),
+            str(service.get('quantity', 1)),
+            service.get('unit', 'шт'),
+            format_price(service.get('price', 0)),
+            format_price(service.get('subtotal', 0)),
+        ])
+
+    # Итого
+    invoice_table_data.append(["", "", "", "", "ИТОГО:", format_price(total_amount)])
+
+    invoice_table = Table(invoice_table_data, colWidths=[1*cm, 8*cm, 1.5*cm, 1.5*cm, 2.5*cm, 2.5*cm])
+    invoice_table.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (-1, -1), FONT_NORMAL),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.Color(0.2, 0.4, 0.8)),  # Синий
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('FONTNAME', (0, 0), (-1, 0), FONT_BOLD),
+        ('FONTSIZE', (0, 0), (-1, -1), 9),
+        ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+        ('ALIGN', (2, 1), (-1, -1), 'CENTER'),
+        ('ALIGN', (4, 1), (5, -1), 'RIGHT'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('GRID', (0, 0), (-1, -2), 0.5, colors.black),
+        ('FONTNAME', (4, -1), (5, -1), FONT_BOLD),
+        ('FONTSIZE', (4, -1), (5, -1), 11),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+    ]))
+
+    story.append(invoice_table)
+    story.append(Spacer(1, 0.5*cm))
+
+    # Сумма прописью
+    story.append(Paragraph(
+        f"<b>Всего к оплате: {format_price(total_amount)} ({amount_words}) рублей.</b>",
+        styles['Normal_RU']
+    ))
+    story.append(Paragraph("НДС не облагается в связи с применением УСН.", styles['Small']))
+
+    story.append(Spacer(1, 1*cm))
+
+    # Подпись на счёте
+    story.append(Paragraph("<b>Руководитель:</b>", styles['Normal_RU']))
+
+    if os.path.exists(SIGNATURE_PATH):
+        story.append(Table([
+            [Image(SIGNATURE_PATH, width=4*cm, height=1.5*cm)]
+        ], colWidths=[17*cm]))
+
+    story.append(Paragraph("_________________ / Турбин А.А. /", styles['Normal_RU']))
+
+    # Печать на счёте
+    if os.path.exists(STAMP_PATH):
+        story.append(Spacer(1, 0.3*cm))
+        stamp_table = Table([
+            [Image(STAMP_PATH, width=3*cm, height=3*cm)]
+        ], colWidths=[17*cm])
+        stamp_table.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (0, 0), 'LEFT'),
+            ('LEFTPADDING', (0, 0), (0, 0), 0),
+        ]))
+        story.append(stamp_table)
+
+    story.append(Spacer(1, 1*cm))
+
+    # Важная информация
+    payment_note = """
+    <b>ВНИМАНИЕ!</b> Оплата данного счёта означает согласие с условиями Договора.
+    Счёт действителен в течение 5 (пяти) банковских дней.
+    """
+    story.append(Paragraph(payment_note, styles['Small']))
+
     # Собираем PDF
     doc.build(story)
 
@@ -818,6 +945,231 @@ def generate_quote_pdf(
     return buffer.getvalue()
 
 
+# ======================== ГЕНЕРАЦИЯ АКТА ВЫПОЛНЕННЫХ РАБОТ ========================
+
+def generate_act_pdf(
+    client_info: Dict,
+    services: List[Dict],
+    total_amount: float,
+    contract_number: str,
+    contract_date: datetime,
+    act_number: str = None,
+    act_date: datetime = None,
+) -> bytes:
+    """
+    Генерирует PDF акта выполненных работ.
+
+    Args:
+        client_info: Данные заказчика
+        services: Список услуг
+        total_amount: Итоговая сумма
+        contract_number: Номер договора
+        contract_date: Дата договора
+        act_number: Номер акта (если None - генерируется из договора)
+        act_date: Дата акта (если None - текущая дата)
+
+    Returns:
+        bytes: PDF документ
+    """
+
+    if act_date is None:
+        act_date = datetime.now()
+
+    if act_number is None:
+        act_number = contract_number.replace("ДОГ", "АКТ")
+
+    buffer = io.BytesIO()
+
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=1.5*cm,
+        leftMargin=1.5*cm,
+        topMargin=1*cm,
+        bottomMargin=1*cm,
+    )
+
+    styles = get_styles()
+    story = []
+
+    # === ШАПКА ===
+    if os.path.exists(LOGO_PATH):
+        logo = Image(LOGO_PATH, width=4*cm, height=1*cm)
+        story.append(logo)
+        story.append(Spacer(1, 0.3*cm))
+
+    # Заголовок
+    story.append(Paragraph(
+        f"<b>АКТ № {act_number}</b>",
+        styles['DocTitle']
+    ))
+    story.append(Paragraph(
+        "сдачи-приёмки оказанных услуг",
+        styles['DocSubtitle']
+    ))
+
+    # Город и дата
+    act_date_str = format_date_russian(act_date)
+    contract_date_str = format_date_russian(contract_date)
+
+    city_date_table = Table(
+        [[Paragraph(EXECUTOR_INFO['city'], styles['Normal_RU']),
+          Paragraph(act_date_str, styles['Normal_RU'])]],
+        colWidths=[9*cm, 9*cm]
+    )
+    city_date_table.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (0, 0), 'LEFT'),
+        ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+    ]))
+    story.append(city_date_table)
+    story.append(Spacer(1, 0.5*cm))
+
+    # Преамбула акта
+    client_name = client_info.get('name', 'Наименование организации')
+    client_inn = client_info.get('inn', '')
+    client_manager_name = client_info.get('management_name', 'ФИО руководителя')
+    client_manager_post = client_info.get('management_post', 'Генеральный директор')
+
+    preamble = f"""
+    <b>{EXECUTOR_INFO['name']}</b>, именуемый в дальнейшем «Исполнитель», с одной стороны, и
+    <b>{client_name}</b>, ИНН {client_inn}, в лице {client_manager_post} {client_manager_name},
+    именуемый в дальнейшем «Заказчик», с другой стороны, составили настоящий Акт о нижеследующем:
+    """
+    story.append(Paragraph(preamble, styles['ContractText']))
+    story.append(Spacer(1, 0.5*cm))
+
+    # Основание
+    story.append(Paragraph(
+        f"<b>Основание:</b> Договор № {contract_number} от {contract_date_str}",
+        styles['Normal_RU']
+    ))
+    story.append(Spacer(1, 0.5*cm))
+
+    # Текст акта
+    act_text = """
+    1. Исполнитель оказал, а Заказчик принял следующие услуги:
+    """
+    story.append(Paragraph(act_text, styles['Normal_RU']))
+    story.append(Spacer(1, 0.3*cm))
+
+    # Таблица услуг
+    table_data = [["№", "Наименование услуги", "Кол-во", "Ед.", "Цена, ₽", "Сумма, ₽"]]
+
+    for idx, service in enumerate(services, 1):
+        table_data.append([
+            str(idx),
+            service.get('name', ''),
+            str(service.get('quantity', 1)),
+            service.get('unit', 'шт'),
+            format_price(service.get('price', 0)),
+            format_price(service.get('subtotal', 0)),
+        ])
+
+    # Итого
+    table_data.append(["", "", "", "", "ИТОГО:", format_price(total_amount)])
+
+    services_table = Table(table_data, colWidths=[1*cm, 8*cm, 1.5*cm, 1.5*cm, 2.5*cm, 2.5*cm])
+    services_table.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (-1, -1), FONT_NORMAL),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.Color(0.2, 0.6, 0.3)),  # Зелёный
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('FONTNAME', (0, 0), (-1, 0), FONT_BOLD),
+        ('FONTSIZE', (0, 0), (-1, -1), 9),
+        ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+        ('ALIGN', (2, 1), (-1, -1), 'CENTER'),
+        ('ALIGN', (4, 1), (5, -1), 'RIGHT'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('GRID', (0, 0), (-1, -2), 0.5, colors.black),
+        ('FONTNAME', (4, -1), (5, -1), FONT_BOLD),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+    ]))
+
+    story.append(services_table)
+    story.append(Spacer(1, 0.5*cm))
+
+    # Сумма прописью
+    amount_words = amount_to_words(total_amount)
+    story.append(Paragraph(
+        f"<b>Итого оказано услуг на сумму: {format_price(total_amount)} ({amount_words}) рублей.</b>",
+        styles['Normal_RU']
+    ))
+    story.append(Paragraph("НДС не облагается в связи с применением Исполнителем УСН.", styles['Small']))
+
+    story.append(Spacer(1, 0.5*cm))
+
+    # Заключительные положения акта
+    conclusion = """
+    2. Вышеперечисленные услуги выполнены полностью и в срок. Заказчик претензий по объёму,
+    качеству и срокам оказания услуг не имеет.
+    <br/><br/>
+    3. Настоящий Акт составлен в двух экземплярах, имеющих одинаковую юридическую силу,
+    по одному для каждой из сторон.
+    """
+    story.append(Paragraph(conclusion, styles['ContractText']))
+
+    story.append(Spacer(1, 1*cm))
+
+    # Подписи сторон
+    story.append(Paragraph("ПОДПИСИ СТОРОН:", styles['SectionTitle']))
+    story.append(Spacer(1, 0.5*cm))
+
+    # Таблица реквизитов
+    exec_reqs = f"""<b>ИСПОЛНИТЕЛЬ:</b><br/><br/>
+    {EXECUTOR_INFO['name']}<br/>
+    ИНН: {EXECUTOR_INFO['inn']}
+    """
+
+    client_reqs = f"""<b>ЗАКАЗЧИК:</b><br/><br/>
+    {client_name}<br/>
+    ИНН: {client_inn}
+    """
+
+    reqs_table = Table([
+        [Paragraph(exec_reqs, styles['Requisites']),
+         Paragraph(client_reqs, styles['Requisites'])]
+    ], colWidths=[9*cm, 9*cm])
+
+    reqs_table.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 0),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+    ]))
+
+    story.append(reqs_table)
+    story.append(Spacer(1, 0.5*cm))
+
+    # Подписи с изображениями
+    if os.path.exists(SIGNATURE_PATH):
+        story.append(Table([
+            [Image(SIGNATURE_PATH, width=4*cm, height=1.5*cm), ""]
+        ], colWidths=[9*cm, 9*cm]))
+
+    story.append(Table([
+        [Paragraph("_________________ / Турбин А.А. /", styles['Requisites']),
+         Paragraph("_________________ / ____________ /", styles['Requisites'])]
+    ], colWidths=[9*cm, 9*cm]))
+
+    # Печать
+    if os.path.exists(STAMP_PATH):
+        story.append(Spacer(1, 0.3*cm))
+        story.append(Table([
+            [Image(STAMP_PATH, width=3*cm, height=3*cm), Paragraph("М.П.", styles['Requisites'])]
+        ], colWidths=[9*cm, 9*cm]))
+    else:
+        story.append(Table([
+            [Paragraph("М.П.", styles['Requisites']),
+             Paragraph("М.П.", styles['Requisites'])]
+        ], colWidths=[9*cm, 9*cm]))
+
+    # Собираем PDF
+    doc.build(story)
+
+    buffer.seek(0)
+    return buffer.getvalue()
+
+
 # ======================== ТЕСТ ========================
 
 if __name__ == "__main__":
@@ -858,3 +1210,16 @@ if __name__ == "__main__":
     with open("test_quote.pdf", "wb") as f:
         f.write(quote_pdf)
     print(f"КП сохранено: test_quote.pdf ({len(quote_pdf)} bytes)")
+
+    # Генерируем Акт
+    from datetime import datetime
+    act_pdf = generate_act_pdf(
+        test_client,
+        test_services,
+        total,
+        contract_number="ДОГ-091224-001",
+        contract_date=datetime.now(),
+    )
+    with open("test_act.pdf", "wb") as f:
+        f.write(act_pdf)
+    print(f"Акт сохранён: test_act.pdf ({len(act_pdf)} bytes)")
