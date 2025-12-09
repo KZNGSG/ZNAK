@@ -980,29 +980,29 @@ const CheckProductPage = () => {
         {/* ==================== STEP 3: Results ==================== */}
         {step === 3 && results.length > 0 && (
           <div data-testid="step-3">
-            <div className="mb-8 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-3xl p-8 text-white shadow-2xl">
+            <div className="mb-8 bg-gradient-to-r from-[rgb(var(--brand-yellow-400))] to-[rgb(var(--brand-yellow-500))] rounded-3xl p-8 text-black shadow-2xl">
               <div className="flex items-center gap-4 mb-6">
-                <div className="p-3 bg-white/20 rounded-2xl">
+                <div className="p-3 bg-black/10 rounded-2xl">
                   <FileText size={28} />
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold">Результаты проверки</h2>
-                  <p className="text-white/80">Проверено товаров: {results.length}</p>
+                  <p className="text-black/70">Проверено товаров: {results.length}</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-4">
-                <div className="bg-white/10 rounded-2xl p-4 text-center backdrop-blur-sm">
-                  <div className="text-4xl font-bold mb-1">{requiresMarkingCount}</div>
-                  <div className="text-sm text-white/80">Обязательная маркировка</div>
+                <div className="bg-white/40 rounded-2xl p-4 text-center backdrop-blur-sm">
+                  <div className="text-4xl font-bold mb-1 text-emerald-700">{requiresMarkingCount}</div>
+                  <div className="text-sm text-black/70">Обязательная маркировка</div>
                 </div>
-                <div className="bg-white/10 rounded-2xl p-4 text-center backdrop-blur-sm">
-                  <div className="text-4xl font-bold mb-1">{experimentCount}</div>
-                  <div className="text-sm text-white/80">Эксперимент</div>
+                <div className="bg-white/40 rounded-2xl p-4 text-center backdrop-blur-sm">
+                  <div className="text-4xl font-bold mb-1 text-amber-600">{experimentCount}</div>
+                  <div className="text-sm text-black/70">Эксперимент</div>
                 </div>
-                <div className="bg-white/10 rounded-2xl p-4 text-center backdrop-blur-sm">
-                  <div className="text-4xl font-bold mb-1">{freeCount}</div>
-                  <div className="text-sm text-white/80">Без маркировки</div>
+                <div className="bg-white/40 rounded-2xl p-4 text-center backdrop-blur-sm">
+                  <div className="text-4xl font-bold mb-1 text-gray-600">{freeCount}</div>
+                  <div className="text-sm text-black/70">Без маркировки</div>
                 </div>
               </div>
             </div>
@@ -1059,21 +1059,69 @@ const CheckProductPage = () => {
                           ? 'bg-amber-50'
                           : 'bg-gray-50'
                     }`}>
-                      <div className={`font-semibold mb-2 ${
+                      <div className={`font-semibold mb-2 flex items-center gap-2 ${
                         result.requires_marking
                           ? 'text-emerald-700'
                           : result.status === 'experiment'
                             ? 'text-amber-700'
                             : 'text-gray-700'
                       }`}>
+                        {result.requires_marking ? (
+                          <CheckCircle size={18} />
+                        ) : result.status === 'experiment' ? (
+                          <FlaskConical size={18} />
+                        ) : (
+                          <XCircle size={18} />
+                        )}
                         {result.requires_marking
                           ? 'Требуется маркировка'
                           : result.status === 'experiment'
                             ? 'Участвует в эксперименте'
                             : 'Маркировка не требуется'}
                       </div>
+                      {result.deadline && (
+                        <div className="text-sm font-medium text-gray-800 mb-1">
+                          📅 Действует {result.deadline}
+                        </div>
+                      )}
                       <p className="text-sm text-gray-600">{result.message}</p>
                     </div>
+
+                    {/* Timeline Info - Кого касается и что нужно делать */}
+                    {result.timeline && (
+                      <div className="mb-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
+                        <div className="text-sm font-semibold text-blue-800 mb-2">
+                          {result.timeline.title}
+                        </div>
+
+                        {result.timeline.who && result.timeline.who.length > 0 && (
+                          <div className="mb-3">
+                            <div className="text-xs text-blue-600 mb-1">Кого касается:</div>
+                            <div className="flex flex-wrap gap-1">
+                              {result.timeline.who.map((who, i) => (
+                                <span key={i} className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                                  {who}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {result.timeline.current_requirements && result.timeline.current_requirements.length > 0 && (
+                          <div>
+                            <div className="text-xs text-blue-600 mb-1">Что нужно сейчас:</div>
+                            <div className="text-sm text-blue-800 space-y-1">
+                              {result.timeline.current_requirements.map((req, i) => (
+                                <div key={i} className="flex items-start gap-2">
+                                  <CheckCircle size={14} className="text-blue-500 mt-0.5 flex-shrink-0" />
+                                  <span>{req}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
@@ -1092,23 +1140,6 @@ const CheckProductPage = () => {
                         <div className="font-medium">{result.productInfo.volume} ед.</div>
                       </div>
                     </div>
-
-                    {result.steps && result.steps.length > 0 && (
-                      <div className="mt-4 pt-4 border-t border-gray-100">
-                        <div className="text-xs text-gray-500 mb-2">Необходимые шаги:</div>
-                        <div className="text-sm text-gray-700">
-                          {result.steps.slice(0, 2).map((s, i) => (
-                            <div key={i} className="flex items-start gap-2 mb-1">
-                              <span className="text-[rgb(var(--brand-yellow-600))]">•</span>
-                              <span className="line-clamp-1">{s}</span>
-                            </div>
-                          ))}
-                          {result.steps.length > 2 && (
-                            <div className="text-xs text-gray-400">+{result.steps.length - 2} ещё...</div>
-                          )}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
               ))}
