@@ -177,10 +177,16 @@ CATEGORIES_DATA = [
         "subcategories": [
             {"id": "beer_alcohol", "name": "Пиво и слабоалкогольные напитки", "icon": "beer", "products": []},
             {"id": "dairy", "name": "Молочная продукция", "icon": "milk", "products": [
-                {"id": "dairy_cheese", "name": "Сыры", "tnved": "0406"},
-                {"id": "dairy_ice_cream", "name": "Мороженое и прочие виды пищевого льда", "tnved": "2105 00"},
-                {"id": "dairy_long_shelf", "name": "Молочная продукция более 40 суток", "tnved": "0401, 0402, 0403, 0404, 0405, 0406, 2202 99 910 0, 2202 99 950 0, 2202 99 990 0"},
-                {"id": "dairy_short_shelf", "name": "Молочная продукция до 40 суток", "tnved": "0401, 0402, 0403, 0404, 0405, 0406, 2202 99 910 0, 2202 99 950 0, 2202 99 990 0"}
+                {"id": "dairy_0401", "name": "Молоко и сливки несгущенные", "tnved": "0401", "marking_status": "mandatory"},
+                {"id": "dairy_0402", "name": "Молоко и сливки сгущенные", "tnved": "0402", "marking_status": "mandatory"},
+                {"id": "dairy_0403", "name": "Пахта, йогурт, кефир", "tnved": "0403", "marking_status": "mandatory"},
+                {"id": "dairy_0404", "name": "Молочная сыворотка", "tnved": "0404", "marking_status": "mandatory"},
+                {"id": "dairy_0405", "name": "Сливочное масло", "tnved": "0405", "marking_status": "mandatory"},
+                {"id": "dairy_0406", "name": "Сыры и творог", "tnved": "0406", "marking_status": "mandatory"},
+                {"id": "dairy_210500", "name": "Мороженое", "tnved": "2105 00", "marking_status": "mandatory"},
+                {"id": "dairy_2202999100", "name": "Молочные напитки (до 0,2% жира)", "tnved": "2202 99 910 0", "marking_status": "mandatory"},
+                {"id": "dairy_2202999500", "name": "Молочные напитки (0,2-2% жира)", "tnved": "2202 99 950 0", "marking_status": "mandatory"},
+                {"id": "dairy_2202999900", "name": "Молочные напитки (от 2% жира)", "tnved": "2202 99 990 0", "marking_status": "mandatory"}
             ]},
             {"id": "water", "name": "Упакованная вода", "icon": "droplet", "products": []},
             {"id": "tobacco", "name": "Табак", "icon": "cigarette", "products": []},
