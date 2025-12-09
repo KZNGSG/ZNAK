@@ -190,13 +190,92 @@ CATEGORIES_DATA = [
             {"id": "instant_drinks", "name": "Растворимые напитки", "icon": "coffee", "products": []}
         ]
     },
-    {"id": "pharma", "name": "Фармацевтика и здоровье", "icon": "pill", "subcategories": []},
-    {"id": "cosmetics", "name": "Косметика, гигиена и бытовая химия", "icon": "sparkles", "subcategories": []},
-    {"id": "non_food", "name": "Непродовольственные товары", "icon": "box", "subcategories": []},
-    {"id": "auto", "name": "Автомобильная отрасль", "icon": "car", "subcategories": []},
-    {"id": "construction", "name": "Строительство и инфраструктура", "icon": "hard-hat", "subcategories": []},
-    {"id": "electronics", "name": "Электроника и техника", "icon": "cpu", "subcategories": []},
-    {"id": "pilot", "name": "Пилотные проекты", "icon": "rocket", "subcategories": []}
+    {
+        "id": "pharma",
+        "name": "Фармацевтика и здоровье",
+        "icon": "pill",
+        "subcategories": [
+            {"id": "medicines", "name": "Лекарства", "icon": "pill", "products": []},
+            {"id": "tsr", "name": "Технические средства реабилитации (ТСР)", "icon": "accessibility", "products": []},
+            {"id": "vet", "name": "Ветеринарные препараты", "icon": "stethoscope", "products": []},
+            {"id": "pharma_raw", "name": "Фармацевтическое сырьё, лекарственные средства", "icon": "flask", "products": []},
+            {"id": "medical_devices", "name": "Медицинские изделия", "icon": "heart-pulse", "products": []},
+            {"id": "supplements", "name": "БАД", "icon": "apple", "products": []},
+            {"id": "antiseptics", "name": "Антисептики и дезинфицирующие средства", "icon": "spray-can", "products": []},
+            {"id": "wheelchairs", "name": "Кресла-коляски", "icon": "wheelchair", "products": []},
+            {"id": "sports_nutrition", "name": "Спортивное питание", "icon": "dumbbell", "products": []}
+        ]
+    },
+    {
+        "id": "cosmetics",
+        "name": "Косметика, гигиена и бытовая химия",
+        "icon": "sparkles",
+        "subcategories": [
+            {"id": "perfume", "name": "Духи и туалетная вода", "icon": "spray-can", "products": []},
+            {"id": "cosmetics_hygiene", "name": "Косметика, бытовая химия и товары личной гигиены", "icon": "sparkles", "products": []}
+        ]
+    },
+    {
+        "id": "non_food",
+        "name": "Непродовольственные товары",
+        "icon": "box",
+        "subcategories": [
+            {"id": "light_industry", "name": "Товары лёгкой промышленности", "icon": "shirt", "products": []},
+            {"id": "shoes", "name": "Обувь", "icon": "footprints", "products": []},
+            {"id": "furs", "name": "Шубы", "icon": "shirt", "products": []},
+            {"id": "toys", "name": "Детские игрушки", "icon": "puzzle", "products": []},
+            {"id": "bicycles", "name": "Велосипеды", "icon": "bike", "products": []}
+        ]
+    },
+    {
+        "id": "auto",
+        "name": "Автомобильная отрасль",
+        "icon": "car",
+        "subcategories": [
+            {"id": "tires", "name": "Шины и покрышки", "icon": "circle", "products": []},
+            {"id": "motor_oils", "name": "Моторные масла", "icon": "droplet", "products": []}
+        ]
+    },
+    {
+        "id": "construction",
+        "name": "Строительство и инфраструктура",
+        "icon": "hard-hat",
+        "subcategories": [
+            {"id": "building_materials", "name": "Строительные материалы", "icon": "hammer", "products": []}
+        ]
+    },
+    {
+        "id": "electronics",
+        "name": "Электроника и техника",
+        "icon": "cpu",
+        "subcategories": [
+            {"id": "cameras", "name": "Фотоаппараты и лампы-вспышки", "icon": "camera", "products": []}
+        ]
+    },
+    {
+        "id": "pilot",
+        "name": "Пилотные проекты",
+        "icon": "rocket",
+        "subcategories": [
+            {"id": "titanium", "name": "Титановая металлопродукция (завершён)", "icon": "box", "products": []},
+            {"id": "radio_electronics", "name": "Радиоэлектроника", "icon": "radio", "products": []},
+            {"id": "fiber_optic", "name": "Оптоволокно", "icon": "cable", "products": []},
+            {"id": "print_products", "name": "Печатная продукция (завершен)", "icon": "book", "products": []},
+            {"id": "heating", "name": "Отопительные приборы", "icon": "thermometer", "products": []},
+            {"id": "cables", "name": "Кабельная продукция", "icon": "cable", "products": []},
+            {"id": "low_alcohol", "name": "Слабый алкоголь", "icon": "wine", "products": []},
+            {"id": "medical_2", "name": "Медицинские изделия 2.0", "icon": "stethoscope", "products": []},
+            {"id": "pyrotechnics", "name": "Пиротехника", "icon": "sparkles", "products": []},
+            {"id": "polymer_pipes", "name": "Полимерные трубы", "icon": "cylinder", "products": []},
+            {"id": "auto_parts", "name": "Автозапчасти", "icon": "wrench", "products": []},
+            {"id": "hygiene", "name": "Средства гигиены", "icon": "sparkles", "products": []},
+            {"id": "home_interior", "name": "Товары для дома и интерьера", "icon": "home", "products": []},
+            {"id": "fertilizers", "name": "Удобрения", "icon": "leaf", "products": []},
+            {"id": "pasta_cereals", "name": "Макароны, крупы, мёд", "icon": "wheat", "products": []},
+            {"id": "meat_products", "name": "Мясные изделия", "icon": "beef", "products": []},
+            {"id": "frozen_food", "name": "Полуфабрикаты и замороженная продукция", "icon": "snowflake", "products": []}
+        ]
+    }
 ]
 
 # Build lookup dictionary for quick access (новая 3-уровневая структура)
