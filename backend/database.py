@@ -155,12 +155,19 @@ def init_database():
                 contact_email TEXT,
                 products_json TEXT,  -- JSON с проверенными товарами
                 comment TEXT,
+                source TEXT,  -- откуда пришла заявка: check_page, quote_page, contact_form
                 status TEXT DEFAULT 'new',  -- new, processing, completed, cancelled
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 processed_at TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(id)
             )
         ''')
+
+        # Добавляем колонку source если её нет (миграция)
+        try:
+            cursor.execute('ALTER TABLE callbacks ADD COLUMN source TEXT')
+        except:
+            pass  # Колонка уже существует
 
         # Таблица счетов
         cursor.execute('''
@@ -568,8 +575,8 @@ class CallbackDB:
             cursor.execute('''
                 INSERT INTO callbacks (
                     user_id, company_inn, company_name, contact_name,
-                    contact_phone, contact_email, products_json, comment
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    contact_phone, contact_email, products_json, comment, source
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 data.get('user_id'),
                 data.get('company_inn'),
@@ -578,7 +585,8 @@ class CallbackDB:
                 data['contact_phone'],
                 data.get('contact_email'),
                 json.dumps(data.get('products', []), ensure_ascii=False),
-                data.get('comment')
+                data.get('comment'),
+                data.get('source', 'unknown')
             ))
             return cursor.lastrowid
 

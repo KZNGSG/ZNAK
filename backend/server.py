@@ -1852,13 +1852,106 @@ async def api_get_user_companies(user: Dict = Depends(require_auth)):
 # ======================== ЗАЯВКИ НА ЗВОНОК ========================
 
 class CallbackRequest(BaseModel):
-    contact_name: str
-    contact_phone: str
+    # Поддерживаем оба формата: name/phone (фронтенд) и contact_name/contact_phone
+    contact_name: Optional[str] = None
+    contact_phone: Optional[str] = None
+    name: Optional[str] = None  # Альтернативное поле от фронтенда
+    phone: Optional[str] = None  # Альтернативное поле от фронтенда
     contact_email: Optional[str] = None
     company_inn: Optional[str] = None
     company_name: Optional[str] = None
     products: Optional[List[Dict]] = None
     comment: Optional[str] = None
+    source: Optional[str] = None  # откуда пришла заявка: check_page, quote_page, contact_form
+
+
+def format_callback_email(callback_id: int, data: CallbackRequest, contact_name: str, contact_phone: str) -> str:
+    """Форматирование email для заявки на звонок"""
+    from datetime import datetime
+
+    # Определяем читаемый источник
+    source_labels = {
+        'check_page': '📋 Страница проверки товаров',
+        'quote_page': '📝 Страница КП',
+        'contact_form': '📞 Форма обратной связи',
+        'unknown': '❓ Неизвестно'
+    }
+    source_label = source_labels.get(data.source, data.source or 'Не указан')
+
+    # Формируем список товаров
+    products_html = ""
+    if data.products:
+        products_html = """
+        <h3 style="color: #1E3A8A; margin-top: 20px;">🛒 Проверенные товары:</h3>
+        <table style="border-collapse: collapse; width: 100%;">
+            <tr style="background-color: #f8f9fa;">
+                <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Товар</th>
+                <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">ТН ВЭД</th>
+                <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Маркировка</th>
+            </tr>
+        """
+        for p in data.products:
+            marking_status = "✅ Требуется" if p.get('requires_marking') else (
+                "🧪 Эксперимент" if p.get('status') == 'experiment' else "❌ Не требуется"
+            )
+            products_html += f"""
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd;">{p.get('name', '—')}</td>
+                <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">{p.get('tnved', '—')}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">{marking_status}</td>
+            </tr>
+            """
+        products_html += "</table>"
+
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="utf-8"></head>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px;">
+        <div style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); padding: 20px; border-radius: 12px 12px 0 0;">
+            <h1 style="margin: 0; color: #000;">🔔 Новая заявка #{callback_id}</h1>
+            <p style="margin: 5px 0 0 0; color: rgba(0,0,0,0.7);">{datetime.now().strftime('%d.%m.%Y %H:%M')}</p>
+        </div>
+
+        <div style="background: #fff; padding: 20px; border: 1px solid #e5e7eb; border-top: none;">
+            <h3 style="color: #1E3A8A; margin-top: 0;">📍 Источник заявки:</h3>
+            <p style="font-size: 16px; font-weight: bold; color: #059669;">{source_label}</p>
+
+            <h3 style="color: #1E3A8A;">👤 Контактные данные:</h3>
+            <table style="border-collapse: collapse; width: 100%;">
+                <tr>
+                    <td style="padding: 8px; background-color: #f8f9fa; font-weight: bold; width: 120px;">Имя:</td>
+                    <td style="padding: 8px;">{contact_name}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; background-color: #f8f9fa; font-weight: bold;">Телефон:</td>
+                    <td style="padding: 8px;"><a href="tel:{contact_phone}" style="color: #2563eb; font-weight: bold;">{contact_phone}</a></td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; background-color: #f8f9fa; font-weight: bold;">Email:</td>
+                    <td style="padding: 8px;">{data.contact_email or '—'}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; background-color: #f8f9fa; font-weight: bold;">Компания:</td>
+                    <td style="padding: 8px;">{data.company_name or '—'}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; background-color: #f8f9fa; font-weight: bold;">ИНН:</td>
+                    <td style="padding: 8px;">{data.company_inn or '—'}</td>
+                </tr>
+            </table>
+
+            {products_html}
+
+            {f'<h3 style="color: #1E3A8A; margin-top: 20px;">💬 Комментарий:</h3><p style="background: #f8f9fa; padding: 12px; border-radius: 8px;">{data.comment}</p>' if data.comment else ''}
+        </div>
+
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 0 0 12px 12px; text-align: center; border: 1px solid #e5e7eb; border-top: none;">
+            <p style="margin: 0; color: #6b7280; font-size: 12px;">Про.Маркируй • promarkirui.ru</p>
+        </div>
+    </body>
+    </html>
+    """
 
 
 @app.post("/api/callback/create")
@@ -1868,30 +1961,28 @@ async def api_create_callback(
     user: Optional[Dict] = Depends(get_current_user)
 ):
     """Создать заявку на звонок"""
+    # Поддержка обоих форматов полей
+    contact_name = data.contact_name or data.name or "Не указано"
+    contact_phone = data.contact_phone or data.phone or "Не указан"
+
     callback_data = {
         "user_id": user["id"] if user else None,
-        "contact_name": data.contact_name,
-        "contact_phone": data.contact_phone,
+        "contact_name": contact_name,
+        "contact_phone": contact_phone,
         "contact_email": data.contact_email,
         "company_inn": data.company_inn,
         "company_name": data.company_name,
         "products": data.products or [],
-        "comment": data.comment
+        "comment": data.comment,
+        "source": data.source or "unknown"
     }
 
     callback_id = CallbackDB.create(callback_data)
 
     # Отправляем уведомление менеджеру
     manager_email = os.getenv('CONTACT_TO_EMAIL', 'info@promarkirui.ru')
-    subject = f"Новая заявка на звонок #{callback_id}"
-    body = f"""
-    <h2>Новая заявка на звонок</h2>
-    <p><b>Имя:</b> {data.contact_name}</p>
-    <p><b>Телефон:</b> {data.contact_phone}</p>
-    <p><b>Email:</b> {data.contact_email or '—'}</p>
-    <p><b>Компания:</b> {data.company_name or '—'} (ИНН: {data.company_inn or '—'})</p>
-    <p><b>Комментарий:</b> {data.comment or '—'}</p>
-    """
+    subject = f"🔔 Новая заявка на звонок #{callback_id}"
+    body = format_callback_email(callback_id, data, contact_name, contact_phone)
     background_tasks.add_task(send_email, manager_email, subject, body)
 
     return {"status": "success", "callback_id": callback_id}
