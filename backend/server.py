@@ -905,36 +905,41 @@ def send_email(to_email: str, subject: str, body: str) -> bool:
 
 def format_contact_email(data: ContactRequest) -> str:
     """Format contact form data into HTML email"""
+    now = datetime.now().strftime("%d.%m.%Y %H:%M")
     return f"""
     <html>
         <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-            <h2 style="color: #1E3A8A;">Новая заявка с сайта Про.Маркируй</h2>
-            <table style="border-collapse: collapse; width: 100%; max-width: 600px;">
-                <tr>
-                    <td style="padding: 8px; background-color: #f8f9fa; font-weight: bold;">Имя:</td>
-                    <td style="padding: 8px;">{data.name}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px; background-color: #f8f9fa; font-weight: bold;">Телефон:</td>
-                    <td style="padding: 8px;">{data.phone}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px; background-color: #f8f9fa; font-weight: bold;">Email:</td>
-                    <td style="padding: 8px;">{data.email or 'Не указан'}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px; background-color: #f8f9fa; font-weight: bold;">Тип запроса:</td>
-                    <td style="padding: 8px;">{data.request_type}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px; background-color: #f8f9fa; font-weight: bold;">Комментарий:</td>
-                    <td style="padding: 8px;">{data.comment or 'Не указан'}</td>
-                </tr>
-            </table>
-            <p style="margin-top: 20px; color: #666; font-size: 12px;">
-                Отправлено: {data.phone}<br>
-                С согласием на обработку персональных данных
-            </p>
+            <div style="background: linear-gradient(135deg, #FFDA07 0%, #F5C300 100%); padding: 20px; border-radius: 12px 12px 0 0;">
+                <h2 style="margin: 0; color: #000;">Заявка на {data.request_type}</h2>
+            </div>
+            <div style="background: #fff; padding: 20px; border: 1px solid #eee; border-top: none; border-radius: 0 0 12px 12px;">
+                <table style="border-collapse: collapse; width: 100%; max-width: 600px;">
+                    <tr>
+                        <td style="padding: 12px; background-color: #f8f9fa; font-weight: bold; width: 150px;">Имя:</td>
+                        <td style="padding: 12px; font-size: 16px;">{data.name}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 12px; background-color: #f8f9fa; font-weight: bold;">Телефон:</td>
+                        <td style="padding: 12px; font-size: 16px;"><a href="tel:{data.phone}" style="color: #1E3A8A;">{data.phone}</a></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 12px; background-color: #f8f9fa; font-weight: bold;">Email:</td>
+                        <td style="padding: 12px;">{f'<a href="mailto:{data.email}" style="color: #1E3A8A;">{data.email}</a>' if data.email else 'Не указан'}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 12px; background-color: #f8f9fa; font-weight: bold;">Тип запроса:</td>
+                        <td style="padding: 12px;">{data.request_type}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 12px; background-color: #f8f9fa; font-weight: bold;">Комментарий:</td>
+                        <td style="padding: 12px;">{data.comment or 'Не указан'}</td>
+                    </tr>
+                </table>
+                <p style="margin-top: 20px; color: #666; font-size: 12px;">
+                    Отправлено: {now}<br>
+                    С согласием на обработку персональных данных
+                </p>
+            </div>
         </body>
     </html>
     """
@@ -1061,8 +1066,8 @@ async def recommend_equipment(request: EquipmentRequest):
 async def send_contact(request: ContactRequest, background_tasks: BackgroundTasks):
     """Send contact form to email"""
 
-    contact_email = os.getenv('CONTACT_TO_EMAIL', 'info@promarkirui.ru')
-    subject = f"Новая заявка: {request.request_type}"
+    contact_email = os.getenv('CONTACT_TO_EMAIL', 'damirslk@mail.ru')
+    subject = f"Заявка на {request.request_type} от {request.name}"
     body = format_contact_email(request)
 
     # Send email in background
@@ -1276,12 +1281,12 @@ async def create_quote(request: QuoteRequest, background_tasks: BackgroundTasks)
         )
 
     # Также отправляем уведомление менеджеру
-    manager_email = os.getenv('CONTACT_TO_EMAIL', 'info@promarkirui.ru')
+    manager_email = os.getenv('CONTACT_TO_EMAIL', 'damirslk@mail.ru')
     manager_body = format_quote_notification(quote_data)
     background_tasks.add_task(
         send_email,
         manager_email,
-        f"Новая заявка на КП: {quote_id}",
+        f"Заявка на КП: {quote_id} от {request.company.name}",
         manager_body
     )
 
@@ -1980,8 +1985,13 @@ async def api_create_callback(
     callback_id = CallbackDB.create(callback_data)
 
     # Отправляем уведомление менеджеру
-    manager_email = os.getenv('CONTACT_TO_EMAIL', 'info@promarkirui.ru')
-    subject = f"🔔 Новая заявка на звонок #{callback_id}"
+    manager_email = os.getenv('CONTACT_TO_EMAIL', 'damirslk@mail.ru')
+    source_name = {
+        "check_page": "проверки товара",
+        "quote_page": "коммерческого предложения",
+        "contact_form": "контактной формы"
+    }.get(data.source or "", "звонка")
+    subject = f"Заявка на обратный звонок ({source_name}) #{callback_id}"
     body = format_callback_email(callback_id, data, contact_name, contact_phone)
     background_tasks.add_task(send_email, manager_email, subject, body)
 
