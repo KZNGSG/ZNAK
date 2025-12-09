@@ -1702,14 +1702,16 @@ async def generate_quote_pdf_endpoint(request: QuotePDFRequest):
             valid_until=request.valid_until
         )
 
-        # Формируем имя файла
+        # Формируем имя файла (URL-кодируем для поддержки кириллицы)
+        from urllib.parse import quote
         filename = f"KP_{request.quote_id}_{request.company.inn}.pdf"
+        filename_encoded = quote(filename, safe='')
 
         return Response(
             content=pdf_bytes,
             media_type="application/pdf",
             headers={
-                "Content-Disposition": f"attachment; filename*=UTF-8''{filename}"
+                "Content-Disposition": f"attachment; filename*=UTF-8''{filename_encoded}"
             }
         )
 
