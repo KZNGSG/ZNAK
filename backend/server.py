@@ -176,7 +176,12 @@ CATEGORIES_DATA = [
         "icon": "utensils",
         "subcategories": [
             {"id": "beer_alcohol", "name": "Пиво и слабоалкогольные напитки", "icon": "beer", "products": []},
-            {"id": "dairy", "name": "Молочная продукция", "icon": "milk", "products": []},
+            {"id": "dairy", "name": "Молочная продукция", "icon": "milk", "products": [
+                {"id": "dairy_cheese", "name": "Сыры", "tnved": "0406"},
+                {"id": "dairy_ice_cream", "name": "Мороженое", "tnved": "2105 00"},
+                {"id": "dairy_long_shelf", "name": "Молочная продукция более 40 суток хранения", "tnved": "0401-0406"},
+                {"id": "dairy_short_shelf", "name": "Молочная продукция до 40 суток хранения", "tnved": "0401-0406"}
+            ]},
             {"id": "water", "name": "Упакованная вода", "icon": "droplet", "products": []},
             {"id": "tobacco", "name": "Табак", "icon": "cigarette", "products": []},
             {"id": "seafood", "name": "Морепродукты (икра)", "icon": "fish", "products": []},
