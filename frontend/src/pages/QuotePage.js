@@ -336,8 +336,8 @@ const QuotePage = () => {
         setSelectedServices(ss => ss.filter(s => s.category !== categoryId));
         setTieredQuantities(tq => ({ ...tq, [categoryId]: 0 }));
       } else {
-        // Если включаем — ставим начальное количество 1
-        setTieredQuantities(tq => ({ ...tq, [categoryId]: tq[categoryId] || 1 }));
+        // Если включаем — ставим начальное количество 0 (пользователь сам вводит)
+        setTieredQuantities(tq => ({ ...tq, [categoryId]: tq[categoryId] || 0 }));
       }
 
       return newState;
@@ -1078,10 +1078,13 @@ const QuotePage = () => {
                                       value={qty || ''}
                                       onChange={(e) => updateTieredQuantity(categoryId, e.target.value)}
                                       placeholder="0"
-                                      className="w-32 text-lg font-semibold text-center"
-                                      min="1"
+                                      className={`w-32 text-lg font-semibold text-center ${!qty ? 'border-red-300 focus:border-red-500' : ''}`}
+                                      min="0"
                                     />
                                     <span className="text-gray-500">шт</span>
+                                    {!qty && (
+                                      <span className="text-red-500 text-sm font-medium">← Введите количество</span>
+                                    )}
                                   </div>
                                 </div>
 
@@ -1483,7 +1486,7 @@ const QuotePage = () => {
 
               {/* Actions */}
               <div className="p-6">
-                <div className="grid sm:grid-cols-3 gap-4 mb-6">
+                <div className="grid sm:grid-cols-2 gap-4 mb-6">
                   <Button
                     onClick={downloadQuotePdf}
                     disabled={downloadingPdf}
@@ -1510,14 +1513,7 @@ const QuotePage = () => {
                     )}
                     Скачать договор
                   </Button>
-                  <Button
-                    onClick={() => toast.info('Функция в разработке')}
-                    variant="outline"
-                    className="rounded-xl py-4 flex items-center justify-center gap-2 border-2"
-                  >
-                    <Receipt size={20} />
-                    Получить счёт
-                  </Button>
+  {/* Кнопка "Получить счёт" убрана - счёт внутри договора */}
                 </div>
 
                 <div className="grid sm:grid-cols-2 gap-4">
