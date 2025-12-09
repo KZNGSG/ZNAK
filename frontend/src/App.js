@@ -20,7 +20,6 @@ import QuotePage from './pages/QuotePage';
 import LoginPage from './pages/LoginPage';
 import CabinetPage from './pages/CabinetPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
-import TestTnvedPage from './pages/TestTnvedPage';
 
 // Admin pages
 import AdminLoginPage from './pages/admin/AdminLoginPage';
@@ -64,7 +63,6 @@ function App() {
               <Route path="/login" element={<MainLayout><LoginPage /></MainLayout>} />
               <Route path="/cabinet" element={<MainLayout><CabinetPage /></MainLayout>} />
               <Route path="/verify-email" element={<MainLayout><VerifyEmailPage /></MainLayout>} />
-              <Route path="/test-tnved" element={<MainLayout><TestTnvedPage /></MainLayout>} />
 
               {/* Admin routes */}
               <Route path="/admin/login" element={<AdminLoginPage />} />
