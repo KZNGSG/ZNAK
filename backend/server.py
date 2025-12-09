@@ -1861,8 +1861,9 @@ async def api_tnved_stats():
     if not data:
         return {"loaded": False, "total": 0}
 
-    mandatory = len([d for d in data if d.get('requires_marking')])
-    experimental = len([d for d in data if d.get('is_experimental')])
+    # Count by marking_status field (more reliable than requires_marking boolean)
+    mandatory = len([d for d in data if d.get('marking_status') == 'mandatory'])
+    experimental = len([d for d in data if d.get('marking_status') == 'experiment' or d.get('is_experimental')])
 
     return {
         "loaded": True,
