@@ -8,6 +8,8 @@ from dotenv import load_dotenv
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.header import Header
+from email.utils import formataddr
 import logging
 import httpx
 import uuid
@@ -876,8 +878,8 @@ def send_email(to_email: str, subject: str, body: str) -> bool:
 
     try:
         msg = MIMEMultipart('alternative')
-        msg['Subject'] = subject
-        msg['From'] = f'Про.Маркируй <{smtp_from}>'
+        msg['Subject'] = Header(subject, 'utf-8')
+        msg['From'] = formataddr((str(Header('Про.Маркируй', 'utf-8')), smtp_from))
         msg['To'] = to_email
 
         part = MIMEText(body, 'html', 'utf-8')
