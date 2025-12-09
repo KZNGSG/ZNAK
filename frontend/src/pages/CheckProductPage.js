@@ -7,20 +7,35 @@ import { Checkbox } from '../components/ui/checkbox';
 import { Label } from '../components/ui/label';
 import {
   CheckCircle, XCircle, ArrowLeft, ArrowRight, Package, FlaskConical,
-  Check, Search, X, ChevronDown, Plus, Trash2, ShoppingCart,
-  FileText, AlertTriangle, Sparkles, Send, ClipboardList, Phone, User, Loader2
+  Check, Search, X, ChevronDown, ChevronRight, Plus, Trash2, ShoppingCart,
+  FileText, AlertTriangle, Sparkles, Send, ClipboardList, Phone, User, Loader2,
+  Utensils, Pill, SprayCan, Box, Car, HardHat, Cpu, Rocket
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Stepper from '../components/Stepper';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
+// Иконки для категорий
+const CATEGORY_ICONS = {
+  'food_drinks': Utensils,
+  'pharma': Pill,
+  'cosmetics': SprayCan,
+  'non_food': Box,
+  'auto': Car,
+  'construction': HardHat,
+  'electronics': Cpu,
+  'pilot': Rocket
+};
+
 const CheckProductPage = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [categories, setCategories] = useState([]);
-  const [selectedGroup, setSelectedGroup] = useState(null);
-  const [selectedCategory, setSelectedCategory] = useState('');
+
+  // Новая структура: выбранная категория и подкатегория
+  const [expandedCategory, setExpandedCategory] = useState(null);
+  const [selectedSubcategory, setSelectedSubcategory] = useState(null);
 
   // Multi-select: array of selected products
   const [selectedProducts, setSelectedProducts] = useState([]);
@@ -53,27 +68,30 @@ const CheckProductPage = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Search results
+  // Search results - ищем по products внутри subcategories
   const searchResults = useMemo(() => {
     if (!searchQuery.trim() || searchQuery.length < 2) return [];
 
     const query = searchQuery.toLowerCase().trim();
     const results = [];
 
-    categories.forEach((group) => {
-      group.subcategories?.forEach((sub) => {
-        const matchesTnved = sub.tnved?.toLowerCase().includes(query);
-        const matchesName = sub.name?.toLowerCase().includes(query);
+    categories.forEach((category) => {
+      category.subcategories?.forEach((sub) => {
+        sub.products?.forEach((product) => {
+          const matchesTnved = product.tnved?.toLowerCase().includes(query);
+          const matchesName = product.name?.toLowerCase().includes(query);
 
-        if (matchesTnved || matchesName) {
-          results.push({
-            ...sub,
-            groupId: group.id,
-            groupName: group.name,
-            groupStatus: group.status,
-            matchType: matchesTnved ? 'tnved' : 'name'
-          });
-        }
+          if (matchesTnved || matchesName) {
+            results.push({
+              ...product,
+              categoryId: category.id,
+              categoryName: category.name,
+              subcategoryId: sub.id,
+              subcategoryName: sub.name,
+              matchType: matchesTnved ? 'tnved' : 'name'
+            });
+          }
+        });
       });
     });
 
@@ -87,7 +105,7 @@ const CheckProductPage = () => {
   }, [searchQuery, categories]);
 
   const handleSearchSelect = (result) => {
-    addProduct(result, result.groupId, result.groupStatus);
+    addProduct(result, result.categoryId, result.subcategoryId);
     setSearchQuery('');
     setIsSearchFocused(false);
   };
@@ -102,9 +120,16 @@ const CheckProductPage = () => {
       const response = await fetch(`${API_URL}/api/check/categories`);
       const data = await response.json();
       setCategories(data.groups || []);
+
+      // Раскрыть первую категорию с подкатегориями по умолчанию
       if (data.groups && data.groups.length > 0) {
-        setSelectedGroup(data.groups[0]);
-        setSelectedCategory(data.groups[0].id);
+        const firstWithSubs = data.groups.find(g => g.subcategories && g.subcategories.length > 0);
+        if (firstWithSubs) {
+          setExpandedCategory(firstWithSubs.id);
+          if (firstWithSubs.subcategories.length > 0) {
+            setSelectedSubcategory(firstWithSubs.subcategories[0]);
+          }
+        }
       }
     } catch (error) {
       toast.error('Ошибка загрузки категорий');
@@ -112,37 +137,50 @@ const CheckProductPage = () => {
     }
   };
 
-  const handleCategorySelect = (group) => {
-    if (selectedCategory === group.id) {
-      setSelectedGroup(null);
-      setSelectedCategory('');
+  // Toggle category accordion
+  const toggleCategory = (categoryId) => {
+    if (expandedCategory === categoryId) {
+      setExpandedCategory(null);
     } else {
-      setSelectedGroup(group);
-      setSelectedCategory(group.id);
+      setExpandedCategory(categoryId);
+      // Выбрать первую подкатегорию при раскрытии
+      const category = categories.find(c => c.id === categoryId);
+      if (category?.subcategories?.length > 0) {
+        setSelectedSubcategory(category.subcategories[0]);
+      }
     }
   };
 
+  // Select subcategory
+  const selectSubcategory = (subcategory, categoryId) => {
+    setSelectedSubcategory({ ...subcategory, categoryId });
+  };
+
   // Add product to selection
-  const addProduct = (subcategory, categoryId, categoryStatus) => {
-    const exists = selectedProducts.find(p => p.id === subcategory.id);
+  const addProduct = (product, categoryId, subcategoryId) => {
+    const exists = selectedProducts.find(p => p.id === product.id);
     if (exists) {
       toast.info('Товар уже добавлен в список');
       return;
     }
 
+    const category = categories.find(c => c.id === categoryId);
+    const subcategory = category?.subcategories?.find(s => s.id === subcategoryId);
+
     const newProduct = {
-      id: subcategory.id,
-      name: subcategory.name,
-      tnved: subcategory.tnved,
+      id: product.id,
+      name: product.name,
+      tnved: product.tnved,
       categoryId: categoryId,
-      categoryName: categories.find(c => c.id === categoryId)?.name || '',
-      status: categoryStatus,
-      source: [],  // массив для множественного выбора
+      categoryName: category?.name || '',
+      subcategoryId: subcategoryId,
+      subcategoryName: subcategory?.name || '',
+      source: [],
       volume: ''
     };
 
     setSelectedProducts(prev => [...prev, newProduct]);
-    toast.success(`Добавлено: ${subcategory.name}`);
+    toast.success(`Добавлено: ${product.name}`);
   };
 
   // Remove product from selection
@@ -170,8 +208,8 @@ const CheckProductPage = () => {
   };
 
   // Check if product is selected
-  const isProductSelected = (subcategoryId) => {
-    return selectedProducts.some(p => p.id === subcategoryId);
+  const isProductSelected = (productId) => {
+    return selectedProducts.some(p => p.id === productId);
   };
 
   const handleNext = () => {
@@ -203,14 +241,14 @@ const CheckProductPage = () => {
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      // Check all products in parallel
       const promises = selectedProducts.map(product =>
         fetch(`${API_URL}/api/check/assess`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             category: product.categoryId,
-            subcategory: product.id,
+            subcategory: product.subcategoryId,
+            product: product.id,
             source: product.source,
             volume: product.volume
           })
@@ -219,7 +257,6 @@ const CheckProductPage = () => {
 
       const allResults = await Promise.all(promises);
 
-      // Merge results with product info
       const mergedResults = allResults.map((result, index) => ({
         ...result,
         productInfo: selectedProducts[index]
@@ -236,14 +273,12 @@ const CheckProductPage = () => {
     }
   };
 
-  // Handle callback request submission
   const handleCallbackSubmit = async () => {
     if (!callbackData.name.trim() || !callbackData.phone.trim()) {
       toast.error('Заполните все поля');
       return;
     }
 
-    // Simple phone validation
     const phoneClean = callbackData.phone.replace(/\D/g, '');
     if (phoneClean.length < 10) {
       toast.error('Введите корректный номер телефона');
@@ -286,10 +321,20 @@ const CheckProductPage = () => {
 
   const stepLabels = ['Товары', 'Детали', 'Результат'];
 
+  // Get current subcategory products
+  const currentProducts = selectedSubcategory?.products || [];
+  const currentCategory = categories.find(c => c.id === (selectedSubcategory?.categoryId || expandedCategory));
+
   // Summary stats
   const requiresMarkingCount = results.filter(r => r.requires_marking).length;
   const experimentCount = results.filter(r => r.status === 'experiment').length;
   const freeCount = results.filter(r => !r.requires_marking && r.status !== 'experiment').length;
+
+  // Get icon component for category
+  const getCategoryIcon = (categoryId) => {
+    const IconComponent = CATEGORY_ICONS[categoryId] || Package;
+    return IconComponent;
+  };
 
   return (
     <div className="py-12 bg-gradient-to-b from-slate-50 to-white min-h-screen">
@@ -342,7 +387,7 @@ const CheckProductPage = () => {
                           const alreadyAdded = isProductSelected(item.id);
                           return (
                             <button
-                              key={`${item.groupId}-${item.id}-${index}`}
+                              key={`${item.categoryId}-${item.id}-${index}`}
                               onClick={() => !alreadyAdded && handleSearchSelect(item)}
                               disabled={alreadyAdded}
                               className={`w-full text-left px-3 py-3 rounded-xl transition-colors flex items-center gap-3 ${
@@ -366,7 +411,7 @@ const CheckProductPage = () => {
                                   <span className="font-mono text-xs font-bold text-[rgb(var(--brand-yellow-700))] bg-[rgb(var(--brand-yellow-100))] px-2 py-0.5 rounded">
                                     {item.tnved}
                                   </span>
-                                  <span className="text-xs text-gray-500">{item.groupName}</span>
+                                  <span className="text-xs text-gray-500">{item.subcategoryName}</span>
                                 </div>
                               </div>
                               {alreadyAdded && (
@@ -379,7 +424,8 @@ const CheckProductPage = () => {
                     ) : (
                       <div className="p-6 text-center">
                         <Search size={32} className="mx-auto text-gray-300 mb-2" />
-                        <p className="text-gray-500 text-sm">Ничего не найдено</p>
+                        <p className="text-gray-500 text-sm">Товары ещё не добавлены</p>
+                        <p className="text-gray-400 text-xs mt-1">Выберите категорию слева</p>
                       </div>
                     )}
                   </div>
@@ -418,14 +464,7 @@ const CheckProductPage = () => {
                           <span className="font-mono text-xs font-bold text-[rgb(var(--brand-yellow-700))] bg-[rgb(var(--brand-yellow-100))] px-2 py-0.5 rounded">
                             {product.tnved}
                           </span>
-                          <span className="text-xs text-gray-500">{product.categoryName}</span>
-                          <span className={`text-[10px] px-2 py-0.5 rounded-full ${
-                            product.status === 'experiment'
-                              ? 'bg-amber-100 text-amber-700'
-                              : 'bg-emerald-100 text-emerald-700'
-                          }`}>
-                            {product.status === 'experiment' ? 'Эксп.' : 'Обяз.'}
-                          </span>
+                          <span className="text-xs text-gray-500">{product.subcategoryName}</span>
                         </div>
                       </div>
                       <button
@@ -441,151 +480,244 @@ const CheckProductPage = () => {
             )}
 
             {/* Category Grid - Desktop */}
-            <div className="hidden lg:grid grid-cols-[280px,1fr] gap-8">
-              {/* Left: Category Menu */}
+            <div className="hidden lg:grid grid-cols-[320px,1fr] gap-8">
+              {/* Left: Accordion Categories */}
               <aside className="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
-                {categories.map((group) => (
-                  <button
-                    key={group.id}
-                    onClick={() => handleCategorySelect(group)}
-                    className={`w-full text-left rounded-xl px-4 py-3 transition-all text-sm font-medium flex items-center justify-between gap-2 ${
-                      selectedCategory === group.id
-                        ? 'bg-gradient-to-r from-[rgb(var(--brand-yellow-500))] to-[rgb(var(--brand-yellow-600))] text-black shadow-lg'
-                        : 'bg-white hover:bg-[rgb(var(--brand-yellow-50))] text-gray-700 border border-gray-200'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2">
-                      {selectedCategory === group.id && <Check size={16} />}
-                      <span className="truncate">{group.name}</span>
-                    </span>
-                    {group.status === 'experiment' && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-200 text-amber-800">Эксп.</span>
-                    )}
-                  </button>
-                ))}
-              </aside>
+                {categories.map((category) => {
+                  const IconComponent = getCategoryIcon(category.id);
+                  const isExpanded = expandedCategory === category.id;
+                  const hasSubcategories = category.subcategories && category.subcategories.length > 0;
 
-              {/* Right: Subcategories */}
-              <div>
-                <div className="mb-6 flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-[rgb(var(--brand-yellow-100))]">
-                    {selectedGroup?.status === 'experiment' ? (
-                      <FlaskConical size={24} className="text-amber-600" />
-                    ) : (
-                      <Package size={24} className="text-[rgb(var(--brand-yellow-600))]" />
-                    )}
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-900">{selectedGroup?.name}</h2>
-                    <p className="text-sm text-gray-500">
-                      {selectedGroup?.subcategories?.length} товаров •
-                      <span className={`ml-1 ${selectedGroup?.status === 'experiment' ? 'text-amber-600' : 'text-emerald-600'}`}>
-                        {selectedGroup?.status === 'experiment' ? 'Эксперимент' : 'Обязательная маркировка'}
-                      </span>
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                  {selectedGroup?.subcategories?.map((sub) => {
-                    const isSelected = isProductSelected(sub.id);
-                    return (
+                  return (
+                    <div key={category.id} className="rounded-xl overflow-hidden border border-gray-200">
+                      {/* Category Header */}
                       <button
-                        key={sub.id}
-                        onClick={() => isSelected ? removeProduct(sub.id) : addProduct(sub, selectedGroup.id, selectedGroup.status)}
-                        className={`group relative bg-white rounded-xl p-3 border-2 transition-all duration-200 text-left ${
-                          isSelected
-                            ? 'border-emerald-500 bg-emerald-50 shadow-md ring-1 ring-emerald-200'
-                            : 'border-gray-200 hover:border-[rgb(var(--brand-yellow-400))] hover:shadow-md'
+                        onClick={() => hasSubcategories && toggleCategory(category.id)}
+                        className={`w-full text-left px-4 py-3 transition-all flex items-center gap-3 ${
+                          isExpanded
+                            ? 'bg-gradient-to-r from-[rgb(var(--brand-yellow-500))] to-[rgb(var(--brand-yellow-600))] text-black'
+                            : hasSubcategories
+                              ? 'bg-white hover:bg-[rgb(var(--brand-yellow-50))] text-gray-700'
+                              : 'bg-gray-50 text-gray-400 cursor-not-allowed'
                         }`}
                       >
-                        {isSelected && (
-                          <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center shadow-sm">
-                            <Check size={12} className="text-white" />
-                          </div>
-                        )}
-
-                        <h3 className="font-medium text-xs leading-tight line-clamp-2 text-gray-800 mb-2">
-                          {sub.name}
-                        </h3>
-
-                        <div className="flex items-center justify-between">
-                          <span className="font-mono text-[10px] font-bold text-[rgb(var(--brand-yellow-700))] bg-[rgb(var(--brand-yellow-50))] px-1.5 py-0.5 rounded">
-                            {sub.tnved}
-                          </span>
-                          {!isSelected && (
-                            <Plus size={14} className="text-gray-400 group-hover:text-[rgb(var(--brand-yellow-600))] transition-colors" />
-                          )}
+                        <div className={`p-2 rounded-lg ${isExpanded ? 'bg-white/30' : 'bg-[rgb(var(--brand-yellow-100))]'}`}>
+                          <IconComponent size={18} className={isExpanded ? 'text-black' : 'text-[rgb(var(--brand-yellow-600))]'} />
                         </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            {/* Mobile: Accordion */}
-            <div className="lg:hidden space-y-3">
-              {categories.map((group) => (
-                <div key={group.id} className="rounded-2xl border-2 border-gray-200 overflow-hidden bg-white">
-                  <button
-                    onClick={() => handleCategorySelect(group)}
-                    className={`w-full text-left px-4 py-4 transition-all flex items-center justify-between gap-3 ${
-                      selectedCategory === group.id
-                        ? 'bg-gradient-to-r from-[rgb(var(--brand-yellow-500))] to-[rgb(var(--brand-yellow-600))] text-black'
-                        : 'bg-white text-gray-700'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg ${selectedCategory === group.id ? 'bg-white/30' : 'bg-[rgb(var(--brand-yellow-100))]'}`}>
-                        {group.status === 'experiment' ? (
-                          <FlaskConical size={20} className={selectedCategory === group.id ? 'text-black' : 'text-amber-600'} />
-                        ) : (
-                          <Package size={20} className={selectedCategory === group.id ? 'text-black' : 'text-[rgb(var(--brand-yellow-600))]'} />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-sm truncate">{category.name}</div>
+                          <div className={`text-xs ${isExpanded ? 'text-black/70' : 'text-gray-500'}`}>
+                            {hasSubcategories ? `${category.subcategories.length} подкатегорий` : 'Скоро'}
+                          </div>
+                        </div>
+                        {hasSubcategories && (
+                          isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />
                         )}
+                      </button>
+
+                      {/* Subcategories */}
+                      {isExpanded && hasSubcategories && (
+                        <div className="bg-gray-50 border-t border-gray-200">
+                          {category.subcategories.map((sub) => {
+                            const isSelected = selectedSubcategory?.id === sub.id;
+                            const productsCount = sub.products?.length || 0;
+
+                            return (
+                              <button
+                                key={sub.id}
+                                onClick={() => selectSubcategory(sub, category.id)}
+                                className={`w-full text-left px-4 py-2.5 pl-12 transition-all flex items-center justify-between ${
+                                  isSelected
+                                    ? 'bg-[rgb(var(--brand-yellow-100))] text-[rgb(var(--brand-yellow-800))] font-medium'
+                                    : 'hover:bg-[rgb(var(--brand-yellow-50))] text-gray-600'
+                                }`}
+                              >
+                                <span className="text-sm truncate">{sub.name}</span>
+                                {productsCount > 0 && (
+                                  <span className="text-xs bg-white px-2 py-0.5 rounded-full text-gray-500">
+                                    {productsCount}
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </aside>
+
+              {/* Right: Products */}
+              <div>
+                {selectedSubcategory ? (
+                  <>
+                    <div className="mb-6 flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-[rgb(var(--brand-yellow-100))]">
+                        <Package size={24} className="text-[rgb(var(--brand-yellow-600))]" />
                       </div>
                       <div>
-                        <div className="font-bold text-sm">{group.name}</div>
-                        <div className={`text-xs ${selectedCategory === group.id ? 'text-black/70' : 'text-gray-500'}`}>
-                          {group.subcategories?.length} товаров
-                        </div>
+                        <h2 className="text-xl font-semibold text-gray-900">{selectedSubcategory.name}</h2>
+                        <p className="text-sm text-gray-500">
+                          {currentCategory?.name} • {currentProducts.length} товаров
+                        </p>
                       </div>
                     </div>
-                    <ChevronDown size={20} className={`transition-transform ${selectedCategory === group.id ? 'rotate-180' : ''}`} />
-                  </button>
 
-                  {selectedCategory === group.id && (
-                    <div className="p-3 bg-gray-50 border-t-2 border-[rgb(var(--brand-yellow-200))]">
-                      <div className="grid grid-cols-2 gap-2">
-                        {group.subcategories?.map((sub) => {
-                          const isSelected = isProductSelected(sub.id);
+                    {currentProducts.length > 0 ? (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                        {currentProducts.map((product) => {
+                          const isSelected = isProductSelected(product.id);
                           return (
                             <button
-                              key={sub.id}
-                              onClick={() => isSelected ? removeProduct(sub.id) : addProduct(sub, group.id, group.status)}
-                              className={`relative bg-white rounded-lg p-2.5 border-2 transition-all text-left ${
+                              key={product.id}
+                              onClick={() => isSelected
+                                ? removeProduct(product.id)
+                                : addProduct(product, currentCategory?.id, selectedSubcategory.id)
+                              }
+                              className={`group relative bg-white rounded-xl p-3 border-2 transition-all duration-200 text-left ${
                                 isSelected
-                                  ? 'border-emerald-500 bg-emerald-50'
-                                  : 'border-gray-200'
+                                  ? 'border-emerald-500 bg-emerald-50 shadow-md ring-1 ring-emerald-200'
+                                  : 'border-gray-200 hover:border-[rgb(var(--brand-yellow-400))] hover:shadow-md'
                               }`}
                             >
                               {isSelected && (
-                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center">
-                                  <Check size={10} className="text-white" />
+                                <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center shadow-sm">
+                                  <Check size={12} className="text-white" />
                                 </div>
                               )}
-                              <div className="text-xs font-medium text-gray-900 line-clamp-2 mb-1.5">{sub.name}</div>
-                              <div className="font-mono text-[10px] font-bold text-[rgb(var(--brand-yellow-700))] bg-[rgb(var(--brand-yellow-50))] px-1.5 py-0.5 rounded inline-block">
-                                {sub.tnved}
+
+                              <h3 className="font-medium text-xs leading-tight line-clamp-2 text-gray-800 mb-2">
+                                {product.name}
+                              </h3>
+
+                              <div className="flex items-center justify-between">
+                                <span className="font-mono text-[10px] font-bold text-[rgb(var(--brand-yellow-700))] bg-[rgb(var(--brand-yellow-50))] px-1.5 py-0.5 rounded">
+                                  {product.tnved}
+                                </span>
+                                {!isSelected && (
+                                  <Plus size={14} className="text-gray-400 group-hover:text-[rgb(var(--brand-yellow-600))] transition-colors" />
+                                )}
                               </div>
                             </button>
                           );
                         })}
                       </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+                    ) : (
+                      <div className="text-center py-16 bg-gray-50 rounded-2xl">
+                        <Package size={48} className="mx-auto text-gray-300 mb-4" />
+                        <h3 className="text-lg font-medium text-gray-600 mb-2">Товары ещё не добавлены</h3>
+                        <p className="text-gray-500 text-sm">Эта подкатегория пока пуста.<br/>Товары будут добавлены позже.</p>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-center py-16 bg-gray-50 rounded-2xl">
+                    <ChevronRight size={48} className="mx-auto text-gray-300 mb-4" />
+                    <h3 className="text-lg font-medium text-gray-600 mb-2">Выберите подкатегорию</h3>
+                    <p className="text-gray-500 text-sm">Раскройте категорию слева и выберите нужную подкатегорию</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Mobile: Accordion */}
+            <div className="lg:hidden space-y-3">
+              {categories.map((category) => {
+                const IconComponent = getCategoryIcon(category.id);
+                const isExpanded = expandedCategory === category.id;
+                const hasSubcategories = category.subcategories && category.subcategories.length > 0;
+
+                return (
+                  <div key={category.id} className="rounded-2xl border-2 border-gray-200 overflow-hidden bg-white">
+                    <button
+                      onClick={() => hasSubcategories && toggleCategory(category.id)}
+                      className={`w-full text-left px-4 py-4 transition-all flex items-center justify-between gap-3 ${
+                        isExpanded
+                          ? 'bg-gradient-to-r from-[rgb(var(--brand-yellow-500))] to-[rgb(var(--brand-yellow-600))] text-black'
+                          : hasSubcategories
+                            ? 'bg-white text-gray-700'
+                            : 'bg-gray-50 text-gray-400'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg ${isExpanded ? 'bg-white/30' : 'bg-[rgb(var(--brand-yellow-100))]'}`}>
+                          <IconComponent size={20} className={isExpanded ? 'text-black' : 'text-[rgb(var(--brand-yellow-600))]'} />
+                        </div>
+                        <div>
+                          <div className="font-bold text-sm">{category.name}</div>
+                          <div className={`text-xs ${isExpanded ? 'text-black/70' : 'text-gray-500'}`}>
+                            {hasSubcategories ? `${category.subcategories.length} подкатегорий` : 'Скоро'}
+                          </div>
+                        </div>
+                      </div>
+                      {hasSubcategories && (
+                        <ChevronDown size={20} className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                      )}
+                    </button>
+
+                    {isExpanded && hasSubcategories && (
+                      <div className="p-3 bg-gray-50 border-t-2 border-[rgb(var(--brand-yellow-200))]">
+                        {/* Subcategory tabs */}
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {category.subcategories.map((sub) => (
+                            <button
+                              key={sub.id}
+                              onClick={() => selectSubcategory(sub, category.id)}
+                              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                selectedSubcategory?.id === sub.id
+                                  ? 'bg-[rgb(var(--brand-yellow-500))] text-black'
+                                  : 'bg-white text-gray-600 border border-gray-200'
+                              }`}
+                            >
+                              {sub.name}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Products grid */}
+                        {selectedSubcategory && selectedSubcategory.categoryId === category.id && (
+                          <div className="grid grid-cols-2 gap-2">
+                            {(selectedSubcategory.products || []).length > 0 ? (
+                              selectedSubcategory.products.map((product) => {
+                                const isSelected = isProductSelected(product.id);
+                                return (
+                                  <button
+                                    key={product.id}
+                                    onClick={() => isSelected
+                                      ? removeProduct(product.id)
+                                      : addProduct(product, category.id, selectedSubcategory.id)
+                                    }
+                                    className={`relative bg-white rounded-lg p-2.5 border-2 transition-all text-left ${
+                                      isSelected
+                                        ? 'border-emerald-500 bg-emerald-50'
+                                        : 'border-gray-200'
+                                    }`}
+                                  >
+                                    {isSelected && (
+                                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center">
+                                        <Check size={10} className="text-white" />
+                                      </div>
+                                    )}
+                                    <div className="text-xs font-medium text-gray-900 line-clamp-2 mb-1.5">{product.name}</div>
+                                    <div className="font-mono text-[10px] font-bold text-[rgb(var(--brand-yellow-700))] bg-[rgb(var(--brand-yellow-50))] px-1.5 py-0.5 rounded inline-block">
+                                      {product.tnved}
+                                    </div>
+                                  </button>
+                                );
+                              })
+                            ) : (
+                              <div className="col-span-2 text-center py-8 text-gray-500 text-sm">
+                                Товары ещё не добавлены
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -611,7 +743,6 @@ const CheckProductPage = () => {
                   key={product.id}
                   className="bg-white rounded-2xl border-2 border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                 >
-                  {/* Product Header */}
                   <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex items-center gap-4">
@@ -624,7 +755,7 @@ const CheckProductPage = () => {
                             <span className="font-mono text-xs font-bold text-[rgb(var(--brand-yellow-700))] bg-[rgb(var(--brand-yellow-100))] px-2 py-0.5 rounded">
                               {product.tnved}
                             </span>
-                            <span className="text-xs text-gray-500">{product.categoryName}</span>
+                            <span className="text-xs text-gray-500">{product.subcategoryName}</span>
                           </div>
                         </div>
                       </div>
@@ -637,9 +768,7 @@ const CheckProductPage = () => {
                     </div>
                   </div>
 
-                  {/* Product Details Form */}
                   <div className="p-6 grid md:grid-cols-2 gap-6">
-                    {/* Source - Multiple selection */}
                     <div>
                       <Label className="text-sm font-semibold text-gray-700 mb-1 block">
                         Откуда у вас этот товар?
@@ -666,7 +795,6 @@ const CheckProductPage = () => {
                       </div>
                     </div>
 
-                    {/* Volume */}
                     <div>
                       <Label className="text-sm font-semibold text-gray-700 mb-3 block">
                         Какой объём в месяц?
@@ -694,7 +822,6 @@ const CheckProductPage = () => {
                     </div>
                   </div>
 
-                  {/* Completion indicator */}
                   <div className={`px-6 py-3 text-sm flex items-center gap-2 ${
                     product.source?.length > 0 && product.volume
                       ? 'bg-emerald-50 text-emerald-700'
@@ -721,7 +848,6 @@ const CheckProductPage = () => {
         {/* ==================== STEP 3: Results ==================== */}
         {step === 3 && results.length > 0 && (
           <div data-testid="step-3">
-            {/* Summary Panel */}
             <div className="mb-8 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-3xl p-8 text-white shadow-2xl">
               <div className="flex items-center gap-4 mb-6">
                 <div className="p-3 bg-white/20 rounded-2xl">
@@ -749,7 +875,6 @@ const CheckProductPage = () => {
               </div>
             </div>
 
-            {/* Result Cards */}
             <div className="grid md:grid-cols-2 gap-6 mb-8">
               {results.map((result, index) => (
                 <div
@@ -762,7 +887,6 @@ const CheckProductPage = () => {
                         : 'border-gray-200'
                   }`}
                 >
-                  {/* Card Header */}
                   <div className={`px-6 py-4 flex items-center gap-4 ${
                     result.requires_marking
                       ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white'
@@ -787,15 +911,14 @@ const CheckProductPage = () => {
                     </div>
                     <div className="flex-1">
                       <div className="font-bold text-lg leading-tight">{result.productInfo.name}</div>
-                      <div className="text-sm opacity-80">{result.productInfo.categoryName}</div>
+                      <div className="text-sm opacity-80">{result.productInfo.subcategoryName}</div>
                     </div>
                     <div className="text-right">
                       <div className="text-xs opacity-70">ТН ВЭД</div>
-                      <div className="font-mono font-bold">{result.tnved}</div>
+                      <div className="font-mono font-bold">{result.tnved || result.productInfo.tnved}</div>
                     </div>
                   </div>
 
-                  {/* Card Body */}
                   <div className="p-6">
                     <div className={`rounded-xl p-4 mb-4 ${
                       result.requires_marking
@@ -820,7 +943,6 @@ const CheckProductPage = () => {
                       <p className="text-sm text-gray-600">{result.message}</p>
                     </div>
 
-                    {/* Details */}
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
                         <div className="text-gray-500 mb-1">Источник</div>
@@ -839,7 +961,6 @@ const CheckProductPage = () => {
                       </div>
                     </div>
 
-                    {/* Steps Preview */}
                     {result.steps && result.steps.length > 0 && (
                       <div className="mt-4 pt-4 border-t border-gray-100">
                         <div className="text-xs text-gray-500 mb-2">Необходимые шаги:</div>
@@ -861,7 +982,6 @@ const CheckProductPage = () => {
               ))}
             </div>
 
-            {/* Call to Action */}
             <div className="bg-gradient-to-r from-[rgb(var(--brand-yellow-50))] to-[rgb(var(--brand-yellow-100))] rounded-3xl p-8 border-2 border-[rgb(var(--brand-yellow-300))]">
               <div className="flex flex-col md:flex-row items-center gap-6">
                 <div className="p-4 bg-[rgb(var(--brand-yellow-200))] rounded-2xl">
@@ -931,15 +1051,12 @@ const CheckProductPage = () => {
       {/* Callback Modal */}
       {showCallbackModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => !callbackLoading && setShowCallbackModal(false)}
           />
 
-          {/* Modal Content */}
           <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
-            {/* Modal Header */}
             <div className="bg-gradient-to-r from-[rgb(var(--brand-yellow-400))] to-[rgb(var(--brand-yellow-500))] px-6 py-5">
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-white/20 rounded-xl">
@@ -950,7 +1067,6 @@ const CheckProductPage = () => {
                   <p className="text-sm text-black/70">Мы перезвоним в течение 15 минут</p>
                 </div>
               </div>
-              {/* Close button */}
               <button
                 onClick={() => !callbackLoading && setShowCallbackModal(false)}
                 className="absolute top-4 right-4 p-2 rounded-full hover:bg-white/20 transition-colors"
@@ -960,9 +1076,7 @@ const CheckProductPage = () => {
               </button>
             </div>
 
-            {/* Modal Body */}
             <div className="p-6 space-y-4">
-              {/* Products summary */}
               {results.length > 0 && (
                 <div className="bg-gray-50 rounded-xl p-4 mb-4">
                   <div className="text-sm text-gray-600 mb-2">Проверено товаров:</div>
@@ -977,7 +1091,6 @@ const CheckProductPage = () => {
                 </div>
               )}
 
-              {/* Name field */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Ваше имя
@@ -995,7 +1108,6 @@ const CheckProductPage = () => {
                 </div>
               </div>
 
-              {/* Phone field */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Телефон
@@ -1013,7 +1125,6 @@ const CheckProductPage = () => {
                 </div>
               </div>
 
-              {/* Submit button */}
               <Button
                 onClick={handleCallbackSubmit}
                 disabled={callbackLoading}
@@ -1032,7 +1143,6 @@ const CheckProductPage = () => {
                 )}
               </Button>
 
-              {/* Privacy note */}
               <p className="text-xs text-center text-gray-500">
                 Нажимая кнопку, вы соглашаетесь на обработку персональных данных
               </p>
