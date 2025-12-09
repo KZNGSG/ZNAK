@@ -862,26 +862,22 @@ SERVICE_CATEGORIES = {
 # ======================== EMAIL FUNCTIONS ========================
 
 def send_email(to_email: str, subject: str, body: str) -> bool:
-    """Send email via SMTP with environment configuration"""
-    smtp_host = os.getenv('SMTP_HOST')
-    smtp_port = os.getenv('SMTP_PORT', '587')
-    smtp_user = os.getenv('SMTP_USER')
-    smtp_pass = os.getenv('SMTP_PASS')
+    """Send email via SMTP with Beget configuration"""
+    # Beget SMTP defaults (порт 2525 - альтернативный для Beget)
+    smtp_host = os.getenv('SMTP_HOST', 'smtp.beget.com')
+    smtp_port = os.getenv('SMTP_PORT', '2525')
+    smtp_user = os.getenv('SMTP_USER', 'info@promarkirui.ru')
+    smtp_pass = os.getenv('SMTP_PASS', '&UDnQCJUE757')
     smtp_from = os.getenv('SMTP_FROM', smtp_user)
     smtp_use_tls = os.getenv('SMTP_USE_TLS', 'true').lower() == 'true'
 
-    # Dry-run mode if SMTP not configured
-    if not smtp_host or not smtp_user or not smtp_pass:
-        logger.warning("SMTP not configured. Running in dry-run mode.")
-        logger.info(f"[DRY-RUN] Would send email to: {to_email}")
-        logger.info(f"[DRY-RUN] Subject: {subject}")
-        logger.info(f"[DRY-RUN] Body: {body}")
-        return True
+    # Log email attempt
+    logger.info(f"Sending email to {to_email}, subject: {subject}")
 
     try:
         msg = MIMEMultipart('alternative')
         msg['Subject'] = subject
-        msg['From'] = smtp_from
+        msg['From'] = f'Про.Маркируй <{smtp_from}>'
         msg['To'] = to_email
 
         part = MIMEText(body, 'html', 'utf-8')
