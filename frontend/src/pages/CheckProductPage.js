@@ -857,7 +857,7 @@ const CheckProductPage = () => {
         {/* ==================== STEP 2: Details for Each Product ==================== */}
         {step === 2 && (
           <div data-testid="step-2">
-            <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border-2 border-blue-200 max-w-md">
+            <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border-2 border-blue-200">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-xl bg-blue-100">
                   <ClipboardList size={20} className="text-blue-600" />
@@ -869,7 +869,7 @@ const CheckProductPage = () => {
               </div>
             </div>
 
-            <div className="space-y-4 max-w-md">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {selectedProducts.map((product, index) => (
                 <div
                   key={product.id}
