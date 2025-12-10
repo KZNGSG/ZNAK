@@ -47,6 +47,7 @@ import EmployeeClientNew from './pages/employee/EmployeeClientNew';
 import EmployeeQuoteCreate from './pages/employee/EmployeeQuoteCreate';
 import EmployeeQuotes from './pages/employee/EmployeeQuotes';
 import EmployeeContracts from './pages/employee/EmployeeContracts';
+import EmployeeDocuments from './pages/employee/EmployeeDocuments';
 import EmployeeStaff from './pages/employee/EmployeeStaff';
 import SuperadminDashboard from './pages/employee/SuperadminDashboard';
 import EmployeeSettings from './pages/employee/EmployeeSettings';
@@ -187,6 +188,11 @@ function App() {
                 <Route path="/employee/contracts" element={
                   <EmployeeRoute>
                     <EmployeeLayout><EmployeeContracts /></EmployeeLayout>
+                  </EmployeeRoute>
+                } />
+                <Route path="/employee/documents" element={
+                  <EmployeeRoute>
+                    <EmployeeLayout><EmployeeDocuments /></EmployeeLayout>
                   </EmployeeRoute>
                 } />
                 <Route path="/employee/settings" element={
