@@ -65,10 +65,15 @@ const ContactPage = () => {
 
     setLoading(true);
     try {
+      // Отправляем email как null если пустой
+      const dataToSend = {
+        ...formData,
+        email: formData.email.trim() || null
+      };
       const response = await fetch(`${API_URL}/api/contact/send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(dataToSend)
       });
 
       if (response.ok) {
