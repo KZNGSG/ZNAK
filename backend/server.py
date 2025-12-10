@@ -2837,6 +2837,281 @@ async def api_employee_stats(user: Dict = Depends(require_employee)):
     }
 
 
+# --- Расширенная статистика для Superadmin ---
+@app.get("/api/superadmin/stats")
+async def api_superadmin_stats(
+    period: str = "week",
+    user: Dict = Depends(require_superadmin)
+):
+    """Расширенная статистика для Superadmin Dashboard"""
+    from datetime import timedelta
+
+    # Определяем период
+    now = datetime.now()
+    if period == "day":
+        start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    elif period == "week":
+        start_date = now - timedelta(days=7)
+    elif period == "month":
+        start_date = now - timedelta(days=30)
+    else:
+        start_date = now - timedelta(days=7)
+
+    start_str = start_date.strftime('%Y-%m-%d %H:%M:%S')
+
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        # === ЗАЯВКИ ===
+        cursor.execute("SELECT COUNT(*) as cnt FROM callbacks WHERE status = 'new'")
+        new_callbacks = cursor.fetchone()['cnt']
+
+        cursor.execute("SELECT COUNT(*) as cnt FROM callbacks WHERE status = 'processing'")
+        processing_callbacks = cursor.fetchone()['cnt']
+
+        cursor.execute("SELECT COUNT(*) as cnt FROM callbacks WHERE created_at >= ?", (start_str,))
+        period_callbacks = cursor.fetchone()['cnt']
+
+        cursor.execute("SELECT COUNT(*) as cnt FROM callbacks")
+        total_callbacks = cursor.fetchone()['cnt']
+
+        # === КЛИЕНТЫ ===
+        cursor.execute('''
+            SELECT
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'lead' THEN 1 ELSE 0 END) as leads,
+                SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
+                SUM(CASE WHEN status = 'regular' THEN 1 ELSE 0 END) as regular,
+                SUM(CASE WHEN status = 'inactive' THEN 1 ELSE 0 END) as inactive
+            FROM clients
+        ''')
+        client_stats = dict(cursor.fetchone())
+
+        cursor.execute("SELECT COUNT(*) as cnt FROM clients WHERE created_at >= ?", (start_str,))
+        period_clients = cursor.fetchone()['cnt']
+
+        # === КП ===
+        cursor.execute('''
+            SELECT
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'created' THEN 1 ELSE 0 END) as created,
+                SUM(CASE WHEN status = 'sent' THEN 1 ELSE 0 END) as sent,
+                SUM(CASE WHEN status = 'accepted' THEN 1 ELSE 0 END) as accepted,
+                SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected,
+                COALESCE(SUM(total_amount), 0) as total_amount
+            FROM quotes
+        ''')
+        quote_stats = dict(cursor.fetchone())
+
+        cursor.execute('''
+            SELECT COUNT(*) as cnt, COALESCE(SUM(total_amount), 0) as amount
+            FROM quotes WHERE created_at >= ?
+        ''', (start_str,))
+        row = cursor.fetchone()
+        period_quotes = row['cnt']
+        period_quotes_amount = row['amount']
+
+        # === ДОГОВОРЫ ===
+        cursor.execute('''
+            SELECT
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'draft' THEN 1 ELSE 0 END) as draft,
+                SUM(CASE WHEN status = 'signed' THEN 1 ELSE 0 END) as signed,
+                SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
+                SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
+                COALESCE(SUM(total_amount), 0) as total_amount
+            FROM contracts
+        ''')
+        contract_stats = dict(cursor.fetchone())
+
+        cursor.execute('''
+            SELECT COUNT(*) as cnt, COALESCE(SUM(total_amount), 0) as amount
+            FROM contracts WHERE created_at >= ?
+        ''', (start_str,))
+        row = cursor.fetchone()
+        period_contracts = row['cnt']
+        period_contracts_amount = row['amount']
+
+        # === ВОРОНКА ПРОДАЖ ===
+        funnel = {
+            "callbacks": total_callbacks,
+            "clients": client_stats['total'] or 0,
+            "quotes": quote_stats['total'] or 0,
+            "contracts": contract_stats['total'] or 0
+        }
+
+        # === СТАТИСТИКА ПО МЕНЕДЖЕРАМ ===
+        cursor.execute('''
+            SELECT
+                u.id,
+                u.email,
+                COUNT(DISTINCT c.id) as clients_count,
+                COUNT(DISTINCT q.id) as quotes_count,
+                COUNT(DISTINCT ct.id) as contracts_count,
+                COALESCE(SUM(ct.total_amount), 0) as contracts_amount
+            FROM users u
+            LEFT JOIN clients c ON c.assigned_manager_id = u.id
+            LEFT JOIN quotes q ON q.client_id IN (SELECT id FROM clients WHERE assigned_manager_id = u.id)
+            LEFT JOIN contracts ct ON ct.client_id IN (SELECT id FROM clients WHERE assigned_manager_id = u.id)
+            WHERE u.role IN ('employee', 'superadmin')
+            GROUP BY u.id, u.email
+            ORDER BY contracts_count DESC
+        ''')
+        managers_stats = [dict(row) for row in cursor.fetchall()]
+
+        # === ИСТОЧНИКИ ЗАЯВОК ===
+        cursor.execute('''
+            SELECT
+                COALESCE(source, 'unknown') as source,
+                COUNT(*) as count
+            FROM callbacks
+            GROUP BY source
+            ORDER BY count DESC
+        ''')
+        sources = [dict(row) for row in cursor.fetchall()]
+
+        # === ПОСЛЕДНИЕ АКТИВНОСТИ ===
+        cursor.execute('''
+            SELECT cb.id, cb.contact_name, cb.company_name, cb.status, cb.source, cb.created_at
+            FROM callbacks cb
+            ORDER BY cb.created_at DESC
+            LIMIT 5
+        ''')
+        recent_callbacks = [dict(row) for row in cursor.fetchall()]
+
+        cursor.execute('''
+            SELECT q.id, q.quote_number, q.total_amount, q.status, q.created_at,
+                   c.contact_name as client_name
+            FROM quotes q
+            LEFT JOIN clients c ON q.client_id = c.id
+            ORDER BY q.created_at DESC
+            LIMIT 5
+        ''')
+        recent_quotes = [dict(row) for row in cursor.fetchall()]
+
+        cursor.execute('''
+            SELECT ct.id, ct.contract_number, ct.total_amount, ct.status, ct.created_at,
+                   c.contact_name as client_name
+            FROM contracts ct
+            LEFT JOIN clients c ON ct.client_id = c.id
+            ORDER BY ct.created_at DESC
+            LIMIT 5
+        ''')
+        recent_contracts = [dict(row) for row in cursor.fetchall()]
+
+    return {
+        "period": period,
+        "callbacks": {
+            "new": new_callbacks,
+            "processing": processing_callbacks,
+            "period": period_callbacks,
+            "total": total_callbacks
+        },
+        "clients": {
+            **client_stats,
+            "period": period_clients
+        },
+        "quotes": {
+            **quote_stats,
+            "period": period_quotes,
+            "period_amount": period_quotes_amount
+        },
+        "contracts": {
+            **contract_stats,
+            "period": period_contracts,
+            "period_amount": period_contracts_amount
+        },
+        "funnel": funnel,
+        "managers": managers_stats,
+        "sources": sources,
+        "recent": {
+            "callbacks": recent_callbacks,
+            "quotes": recent_quotes,
+            "contracts": recent_contracts
+        }
+    }
+
+
+# --- Список КП для менеджеров ---
+@app.get("/api/employee/quotes")
+async def api_employee_get_quotes(
+    status: Optional[str] = None,
+    client_id: Optional[int] = None,
+    user: Dict = Depends(require_employee)
+):
+    """Получить все КП"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        query = '''
+            SELECT q.*, c.contact_name as client_name, c.company_name
+            FROM quotes q
+            LEFT JOIN clients c ON q.client_id = c.id
+            WHERE 1=1
+        '''
+        params = []
+
+        if status:
+            query += ' AND q.status = ?'
+            params.append(status)
+        if client_id:
+            query += ' AND q.client_id = ?'
+            params.append(client_id)
+
+        query += ' ORDER BY q.created_at DESC'
+        cursor.execute(query, params)
+
+        quotes = []
+        for row in cursor.fetchall():
+            item = dict(row)
+            item['services'] = json.loads(item['services_json']) if item.get('services_json') else []
+            if 'services_json' in item:
+                del item['services_json']
+            quotes.append(item)
+
+    return {"quotes": quotes}
+
+
+# --- Список договоров для менеджеров ---
+@app.get("/api/employee/contracts")
+async def api_employee_get_contracts(
+    status: Optional[str] = None,
+    client_id: Optional[int] = None,
+    user: Dict = Depends(require_employee)
+):
+    """Получить все договоры"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        query = '''
+            SELECT ct.*, c.contact_name as client_name, c.company_name
+            FROM contracts ct
+            LEFT JOIN clients c ON ct.client_id = c.id
+            WHERE 1=1
+        '''
+        params = []
+
+        if status:
+            query += ' AND ct.status = ?'
+            params.append(status)
+        if client_id:
+            query += ' AND ct.client_id = ?'
+            params.append(client_id)
+
+        query += ' ORDER BY ct.created_at DESC'
+        cursor.execute(query, params)
+
+        contracts = []
+        for row in cursor.fetchall():
+            item = dict(row)
+            item['services'] = json.loads(item['services_json']) if item.get('services_json') else []
+            if 'services_json' in item:
+                del item['services_json']
+            contracts.append(item)
+
+    return {"contracts": contracts}
+
+
 # --- Заявки (Callbacks) ---
 @app.get("/api/employee/callbacks")
 async def api_employee_get_callbacks(

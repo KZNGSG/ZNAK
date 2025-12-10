@@ -38,7 +38,10 @@ import EmployeeClients from './pages/employee/EmployeeClients';
 import EmployeeClientCard from './pages/employee/EmployeeClientCard';
 import EmployeeClientNew from './pages/employee/EmployeeClientNew';
 import EmployeeQuoteCreate from './pages/employee/EmployeeQuoteCreate';
+import EmployeeQuotes from './pages/employee/EmployeeQuotes';
+import EmployeeContracts from './pages/employee/EmployeeContracts';
 import EmployeeStaff from './pages/employee/EmployeeStaff';
+import SuperadminDashboard from './pages/employee/SuperadminDashboard';
 import EmployeeRoute from './components/employee/EmployeeRoute';
 import EmployeeLayout from './components/employee/EmployeeLayout';
 
@@ -131,6 +134,21 @@ function App() {
                 <Route path="/employee/staff" element={
                   <EmployeeRoute>
                     <EmployeeLayout><EmployeeStaff /></EmployeeLayout>
+                  </EmployeeRoute>
+                } />
+                <Route path="/employee/analytics" element={
+                  <EmployeeRoute>
+                    <EmployeeLayout><SuperadminDashboard /></EmployeeLayout>
+                  </EmployeeRoute>
+                } />
+                <Route path="/employee/quotes" element={
+                  <EmployeeRoute>
+                    <EmployeeLayout><EmployeeQuotes /></EmployeeLayout>
+                  </EmployeeRoute>
+                } />
+                <Route path="/employee/contracts" element={
+                  <EmployeeRoute>
+                    <EmployeeLayout><EmployeeContracts /></EmployeeLayout>
                   </EmployeeRoute>
                 } />
               </Routes>
