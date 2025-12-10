@@ -102,8 +102,9 @@ const LoginPage = () => {
       if (mode === 'login') {
         result = await login(email, password);
 
-        // Проверяем подтверждение email
-        if (!result.user.email_verified) {
+        // Проверяем подтверждение email (только для клиентов, не для сотрудников)
+        const isStaff = ['employee', 'superadmin'].includes(result.user.role);
+        if (!isStaff && !result.user.email_verified) {
           setShowEmailNotVerified(true);
           toast.warning('Подтвердите email для входа в личный кабинет');
           return;
