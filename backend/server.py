@@ -2660,7 +2660,7 @@ async def api_admin_create_user(
     if not email or not password:
         raise HTTPException(status_code=400, detail="Email и пароль обязательны")
 
-    if role not in ["client", "admin", "superadmin"]:
+    if role not in ["client", "employee", "superadmin"]:
         raise HTTPException(status_code=400, detail="Недопустимая роль")
 
     existing = UserDB.get_by_email(email)
@@ -2685,7 +2685,7 @@ async def api_admin_update_user(
         values = []
 
         if "role" in data:
-            if data["role"] not in ["client", "admin", "superadmin"]:
+            if data["role"] not in ["client", "employee", "superadmin"]:
                 raise HTTPException(status_code=400, detail="Недопустимая роль")
             updates.append("role = ?")
             values.append(data["role"])

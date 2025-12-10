@@ -10,7 +10,7 @@ import { Mail, Lock, User, ArrowRight, LogIn, UserPlus } from 'lucide-react';
 const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, register, isAuthenticated, loading: authLoading } = useAuth();
+  const { login, register, isAuthenticated, user, loading: authLoading } = useAuth();
 
   const [mode, setMode] = useState('login'); // 'login' or 'register'
   const [email, setEmail] = useState('');
@@ -18,13 +18,25 @@ const LoginPage = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Функция определения редиректа по роли
+  const getRedirectByRole = (role) => {
+    switch (role) {
+      case 'superadmin':
+      case 'employee':
+        return '/employee';
+      case 'client':
+      default:
+        return '/cabinet';
+    }
+  };
+
   // Редирект если уже авторизован
   useEffect(() => {
-    if (!authLoading && isAuthenticated) {
-      const from = location.state?.from || '/cabinet';
+    if (!authLoading && isAuthenticated && user) {
+      const from = location.state?.from || getRedirectByRole(user.role);
       navigate(from, { replace: true });
     }
-  }, [isAuthenticated, authLoading, navigate, location]);
+  }, [isAuthenticated, authLoading, navigate, location, user]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -47,14 +59,17 @@ const LoginPage = () => {
 
     setLoading(true);
     try {
+      let result;
       if (mode === 'login') {
-        await login(email, password);
+        result = await login(email, password);
         toast.success('Добро пожаловать!');
       } else {
-        await register(email, password);
+        result = await register(email, password);
         toast.success('Регистрация успешна!');
       }
-      const from = location.state?.from || '/cabinet';
+      // Редирект в зависимости от роли
+      const userRole = result?.user?.role || 'client';
+      const from = location.state?.from || getRedirectByRole(userRole);
       navigate(from, { replace: true });
     } catch (error) {
       toast.error(error.message);

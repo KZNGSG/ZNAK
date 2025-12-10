@@ -97,13 +97,13 @@ const AdminUsersPage = () => {
 
   const roleLabels = {
     client: 'Клиент',
-    admin: 'Админ',
-    superadmin: 'Супер-админ'
+    employee: 'Сотрудник',
+    superadmin: 'Суперадмин'
   };
 
   const roleColors = {
     client: 'bg-gray-500/20 text-gray-400',
-    admin: 'bg-blue-500/20 text-blue-400',
+    employee: 'bg-blue-500/20 text-blue-400',
     superadmin: 'bg-yellow-500/20 text-yellow-400'
   };
 
@@ -256,7 +256,7 @@ const AdminUsersPage = () => {
                   className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
                 >
                   <option value="client">Клиент</option>
-                  <option value="admin">Админ</option>
+                  <option value="employee">Сотрудник</option>
                   <option value="superadmin">Супер-админ</option>
                 </select>
               </div>
@@ -316,7 +316,7 @@ const AdminUsersPage = () => {
                   className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
                 >
                   <option value="client">Клиент</option>
-                  <option value="admin">Админ</option>
+                  <option value="employee">Сотрудник</option>
                   <option value="superadmin">Супер-админ</option>
                 </select>
               </div>
