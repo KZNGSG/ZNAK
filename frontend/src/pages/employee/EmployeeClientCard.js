@@ -132,7 +132,7 @@ const EmployeeClientCard = () => {
 
   const getStatusBadge = (status) => {
     const styles = {
-      lead: { bg: 'bg-blue-500/10', border: 'border-blue-500/20', text: 'text-blue-400', icon: TrendingUp, label: 'Лид' },
+      lead: { bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', text: 'text-yellow-400', icon: TrendingUp, label: 'Лид' },
       active: { bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', text: 'text-emerald-400', icon: UserCheck, label: 'Активный' },
       regular: { bg: 'bg-amber-500/10', border: 'border-amber-500/20', text: 'text-amber-400', icon: Star, label: 'Постоянный' },
       inactive: { bg: 'bg-slate-500/10', border: 'border-slate-500/20', text: 'text-slate-400', icon: UserX, label: 'Неактивный' }
@@ -191,7 +191,7 @@ const EmployeeClientCard = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-10 w-10 border-2 border-slate-700 border-t-blue-500"></div>
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-slate-700 border-t-yellow-500"></div>
           <p className="text-slate-500 text-sm">Загрузка...</p>
         </div>
       </div>
@@ -289,7 +289,7 @@ const EmployeeClientCard = () => {
               </button>
               <button
                 onClick={handleSave}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-900 bg-yellow-500 hover:bg-yellow-600 rounded-xl transition-colors"
               >
                 <Save className="w-4 h-4" />
                 Сохранить
@@ -314,7 +314,7 @@ const EmployeeClientCard = () => {
                     type="text"
                     value={editData.contact_name || ''}
                     onChange={(e) => setEditData({ ...editData, contact_name: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white focus:outline-none focus:border-blue-500/50"
+                    className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white focus:outline-none focus:border-yellow-500/50"
                   />
                 </div>
                 <div>
@@ -323,7 +323,7 @@ const EmployeeClientCard = () => {
                     type="text"
                     value={editData.contact_position || ''}
                     onChange={(e) => setEditData({ ...editData, contact_position: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white focus:outline-none focus:border-blue-500/50"
+                    className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white focus:outline-none focus:border-yellow-500/50"
                   />
                 </div>
                 <div>
@@ -332,7 +332,7 @@ const EmployeeClientCard = () => {
                     type="tel"
                     value={editData.contact_phone || ''}
                     onChange={(e) => setEditData({ ...editData, contact_phone: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white focus:outline-none focus:border-blue-500/50"
+                    className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white focus:outline-none focus:border-yellow-500/50"
                   />
                 </div>
                 <div>
@@ -341,7 +341,7 @@ const EmployeeClientCard = () => {
                     type="email"
                     value={editData.contact_email || ''}
                     onChange={(e) => setEditData({ ...editData, contact_email: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white focus:outline-none focus:border-blue-500/50"
+                    className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white focus:outline-none focus:border-yellow-500/50"
                   />
                 </div>
                 <div>
@@ -350,7 +350,7 @@ const EmployeeClientCard = () => {
                     type="text"
                     value={editData.company_name || ''}
                     onChange={(e) => setEditData({ ...editData, company_name: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white focus:outline-none focus:border-blue-500/50"
+                    className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white focus:outline-none focus:border-yellow-500/50"
                   />
                 </div>
                 <div>
@@ -359,7 +359,7 @@ const EmployeeClientCard = () => {
                     type="text"
                     value={editData.inn || ''}
                     onChange={(e) => setEditData({ ...editData, inn: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white focus:outline-none focus:border-blue-500/50"
+                    className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white focus:outline-none focus:border-yellow-500/50"
                   />
                 </div>
                 <div>
@@ -368,7 +368,7 @@ const EmployeeClientCard = () => {
                     type="text"
                     value={editData.ogrn || ''}
                     onChange={(e) => setEditData({ ...editData, ogrn: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white focus:outline-none focus:border-blue-500/50"
+                    className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white focus:outline-none focus:border-yellow-500/50"
                   />
                 </div>
                 <div>
@@ -377,7 +377,7 @@ const EmployeeClientCard = () => {
                     type="text"
                     value={editData.kpp || ''}
                     onChange={(e) => setEditData({ ...editData, kpp: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white focus:outline-none focus:border-blue-500/50"
+                    className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white focus:outline-none focus:border-yellow-500/50"
                   />
                 </div>
                 <div className="md:col-span-2">
@@ -386,7 +386,7 @@ const EmployeeClientCard = () => {
                     type="text"
                     value={editData.address || ''}
                     onChange={(e) => setEditData({ ...editData, address: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white focus:outline-none focus:border-blue-500/50"
+                    className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white focus:outline-none focus:border-yellow-500/50"
                   />
                 </div>
                 <div className="md:col-span-2">
@@ -395,7 +395,7 @@ const EmployeeClientCard = () => {
                     value={editData.comment || ''}
                     onChange={(e) => setEditData({ ...editData, comment: e.target.value })}
                     rows={3}
-                    className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white focus:outline-none focus:border-blue-500/50 resize-none"
+                    className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white focus:outline-none focus:border-yellow-500/50 resize-none"
                   />
                 </div>
               </div>
@@ -411,14 +411,14 @@ const EmployeeClientCard = () => {
                   </div>
                   <div className="flex items-center gap-3 text-slate-300">
                     <Phone className="w-4 h-4 text-slate-500" />
-                    <a href={`tel:${client.contact_phone}`} className="hover:text-blue-400 transition-colors">
+                    <a href={`tel:${client.contact_phone}`} className="hover:text-yellow-400 transition-colors">
                       {client.contact_phone}
                     </a>
                   </div>
                   {client.contact_email && (
                     <div className="flex items-center gap-3 text-slate-300">
                       <Mail className="w-4 h-4 text-slate-500" />
-                      <a href={`mailto:${client.contact_email}`} className="hover:text-blue-400 transition-colors">
+                      <a href={`mailto:${client.contact_email}`} className="hover:text-yellow-400 transition-colors">
                         {client.contact_email}
                       </a>
                     </div>
@@ -491,7 +491,7 @@ const EmployeeClientCard = () => {
               </div>
               <button
                 onClick={() => setShowInteractionForm(!showInteractionForm)}
-                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 rounded-lg transition-colors"
+                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-yellow-400 hover:text-yellow-300 bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/20 rounded-lg transition-colors"
               >
                 <Plus className="w-4 h-4" />
                 Добавить
@@ -513,7 +513,7 @@ const EmployeeClientCard = () => {
                             onClick={() => setNewInteraction({ ...newInteraction, type: type.value })}
                             className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg border transition-colors ${
                               newInteraction.type === type.value
-                                ? 'bg-blue-500/20 border-blue-500/30 text-blue-400'
+                                ? 'bg-yellow-500/20 border-yellow-500/30 text-yellow-400'
                                 : 'bg-slate-700/30 border-slate-600/30 text-slate-400 hover:bg-slate-700/50'
                             }`}
                           >
@@ -531,7 +531,7 @@ const EmployeeClientCard = () => {
                       value={newInteraction.subject}
                       onChange={(e) => setNewInteraction({ ...newInteraction, subject: e.target.value })}
                       placeholder="Краткая тема"
-                      className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/50"
+                      className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-yellow-500/50"
                     />
                   </div>
                 </div>
@@ -542,7 +542,7 @@ const EmployeeClientCard = () => {
                     onChange={(e) => setNewInteraction({ ...newInteraction, description: e.target.value })}
                     placeholder="Подробное описание..."
                     rows={3}
-                    className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/50 resize-none"
+                    className="w-full px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-yellow-500/50 resize-none"
                   />
                 </div>
                 <div className="flex justify-end gap-2">
@@ -554,7 +554,7 @@ const EmployeeClientCard = () => {
                   </button>
                   <button
                     onClick={handleAddInteraction}
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors"
+                    className="px-4 py-2 text-sm font-medium text-gray-900 bg-yellow-500 hover:bg-yellow-600 rounded-lg transition-colors"
                   >
                     Сохранить
                   </button>
@@ -610,7 +610,7 @@ const EmployeeClientCard = () => {
             <div className="space-y-2">
               <Link
                 to={`/employee/clients/${id}/quote`}
-                className="flex items-center gap-3 w-full px-4 py-3 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 rounded-xl transition-colors text-sm font-medium"
+                className="flex items-center gap-3 w-full px-4 py-3 bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/20 text-yellow-400 rounded-xl transition-colors text-sm font-medium"
               >
                 <FileText className="w-5 h-5" />
                 Создать КП

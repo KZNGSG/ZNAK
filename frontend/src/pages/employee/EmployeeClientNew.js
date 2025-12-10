@@ -149,7 +149,7 @@ const EmployeeClientNew = () => {
                 value={formData.contact_name}
                 onChange={(e) => handleChange('contact_name', e.target.value)}
                 placeholder="Иван Иванов"
-                className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/50"
+                className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-yellow-500/50"
                 required
               />
             </div>
@@ -160,7 +160,7 @@ const EmployeeClientNew = () => {
                 value={formData.contact_position}
                 onChange={(e) => handleChange('contact_position', e.target.value)}
                 placeholder="Директор"
-                className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/50"
+                className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-yellow-500/50"
               />
             </div>
             <div>
@@ -174,7 +174,7 @@ const EmployeeClientNew = () => {
                   value={formData.contact_phone}
                   onChange={(e) => handleChange('contact_phone', e.target.value)}
                   placeholder="+7 999 123-45-67"
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/50"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-yellow-500/50"
                   required
                 />
               </div>
@@ -188,7 +188,7 @@ const EmployeeClientNew = () => {
                   value={formData.contact_email}
                   onChange={(e) => handleChange('contact_email', e.target.value)}
                   placeholder="ivan@company.ru"
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/50"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-yellow-500/50"
                 />
               </div>
             </div>
@@ -213,7 +213,7 @@ const EmployeeClientNew = () => {
                   onChange={(e) => handleChange('inn', e.target.value.replace(/\D/g, ''))}
                   placeholder="7712345678"
                   maxLength={12}
-                  className="flex-1 px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/50"
+                  className="flex-1 px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-yellow-500/50"
                 />
                 <button
                   type="button"
@@ -235,7 +235,7 @@ const EmployeeClientNew = () => {
               <select
                 value={formData.company_type}
                 onChange={(e) => handleChange('company_type', e.target.value)}
-                className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white focus:outline-none focus:border-blue-500/50"
+                className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white focus:outline-none focus:border-yellow-500/50"
               >
                 <option value="LEGAL">Юридическое лицо</option>
                 <option value="INDIVIDUAL">ИП</option>
@@ -249,7 +249,7 @@ const EmployeeClientNew = () => {
                 value={formData.company_name}
                 onChange={(e) => handleChange('company_name', e.target.value)}
                 placeholder="ООО «Компания»"
-                className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/50"
+                className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-yellow-500/50"
               />
             </div>
 
@@ -261,7 +261,7 @@ const EmployeeClientNew = () => {
                 onChange={(e) => handleChange('kpp', e.target.value.replace(/\D/g, ''))}
                 placeholder="771201001"
                 maxLength={9}
-                className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/50"
+                className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-yellow-500/50"
               />
             </div>
 
@@ -273,7 +273,7 @@ const EmployeeClientNew = () => {
                 onChange={(e) => handleChange('ogrn', e.target.value.replace(/\D/g, ''))}
                 placeholder="1177746123456"
                 maxLength={15}
-                className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/50"
+                className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-yellow-500/50"
               />
             </div>
 
@@ -286,7 +286,7 @@ const EmployeeClientNew = () => {
                   value={formData.address}
                   onChange={(e) => handleChange('address', e.target.value)}
                   placeholder="г. Москва, ул. Примерная, д. 1"
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/50"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-yellow-500/50"
                 />
               </div>
             </div>
@@ -307,7 +307,7 @@ const EmployeeClientNew = () => {
               onChange={(e) => handleChange('comment', e.target.value)}
               placeholder="Любые заметки о клиенте..."
               rows={4}
-              className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/50 resize-none"
+              className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-yellow-500/50 resize-none"
             />
           </div>
         </div>
@@ -324,7 +324,7 @@ const EmployeeClientNew = () => {
           <button
             type="submit"
             disabled={loading}
-            className="flex items-center gap-2 px-6 py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-xl transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-6 py-2.5 bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-medium rounded-xl transition-colors disabled:opacity-50"
           >
             {loading ? (
               <>
