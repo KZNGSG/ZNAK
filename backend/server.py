@@ -3403,11 +3403,28 @@ async def api_employee_get_clients(
     search: Optional[str] = None,
     user: Dict = Depends(require_employee)
 ):
-    """Получить всех клиентов"""
+    """
+    Получить клиентов.
+    - superadmin видит ВСЕХ клиентов
+    - employee видит только назначенных ему (assigned_manager_id)
+    """
+    is_superadmin = user.get("role") == "superadmin"
+
     if search:
+        # Для поиска пока показываем всем все результаты
+        # (можно добавить фильтрацию позже если нужно)
         clients = ClientDB.search(search)
+        # Фильтруем для обычного employee
+        if not is_superadmin:
+            clients = [c for c in clients if c.get('assigned_manager_id') == user["id"] or c.get('assigned_manager_id') is None]
     else:
-        clients = ClientDB.get_all(status=status)
+        if is_superadmin:
+            # Superadmin видит всех клиентов
+            clients = ClientDB.get_all(status=status)
+        else:
+            # Employee видит только своих клиентов
+            clients = ClientDB.get_all(status=status, manager_id=user["id"])
+
     return {"clients": clients}
 
 
@@ -3505,9 +3522,9 @@ async def api_employee_update_client(
 @app.delete("/api/employee/clients/{client_id}")
 async def api_employee_delete_client(
     client_id: int,
-    user: Dict = Depends(require_employee)
+    user: Dict = Depends(require_superadmin)
 ):
-    """Удалить клиента"""
+    """Удалить клиента (только для superadmin)"""
     success = ClientDB.delete(client_id)
     if not success:
         raise HTTPException(status_code=404, detail="Клиент не найден")

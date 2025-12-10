@@ -15,11 +15,12 @@ from typing import Optional
 # SMTP настройки Beget
 # ВАЖНО: Все credentials должны быть в .env файле!
 SMTP_HOST = os.getenv('SMTP_HOST', 'smtp.beget.com')
-SMTP_PORT = int(os.getenv('SMTP_PORT', '2525'))  # 2525 альтернативный порт
+SMTP_PORT = int(os.getenv('SMTP_PORT', '465'))  # 465 для SSL
 SMTP_USER = os.getenv('SMTP_USER', '')
 SMTP_PASSWORD = os.getenv('SMTP_PASSWORD', '')  # ОБЯЗАТЕЛЬНО установить в .env
-SMTP_FROM = os.getenv('SMTP_FROM', '')
+SMTP_FROM = os.getenv('SMTP_FROM', '') or SMTP_USER
 SMTP_FROM_NAME = os.getenv('SMTP_FROM_NAME', 'Про.Маркируй')
+SMTP_USE_TLS = os.getenv('SMTP_USE_TLS', 'false').lower() == 'true'  # false = use SSL
 
 # URL сайта для ссылок в письмах
 SITE_URL = os.getenv('SITE_URL', 'https://promarkirui.ru')
@@ -43,16 +44,19 @@ def send_email(to_email: str, subject: str, html_body: str, text_body: str = Non
     Returns:
         True если отправлено успешно
     """
+    from email.header import Header
+    from email.utils import formataddr
+
     # Проверяем конфигурацию SMTP
-    if not SMTP_USER or not SMTP_PASSWORD or not SMTP_FROM:
-        print(f"[EMAIL ERROR] SMTP not configured! SMTP_USER={bool(SMTP_USER)}, SMTP_PASSWORD={bool(SMTP_PASSWORD)}, SMTP_FROM={bool(SMTP_FROM)}")
-        print("[EMAIL ERROR] Please set SMTP_USER, SMTP_PASSWORD, SMTP_FROM in .env file")
+    if not SMTP_USER or not SMTP_PASSWORD:
+        print(f"[EMAIL ERROR] SMTP not configured! SMTP_USER={bool(SMTP_USER)}, SMTP_PASSWORD={bool(SMTP_PASSWORD)}")
+        print("[EMAIL ERROR] Please set SMTP_USER, SMTP_PASSWORD in .env file")
         return False
 
     try:
         msg = MIMEMultipart('alternative')
-        msg['Subject'] = subject
-        msg['From'] = f'{SMTP_FROM_NAME} <{SMTP_FROM}>'
+        msg['Subject'] = Header(subject, 'utf-8')
+        msg['From'] = formataddr((str(Header(SMTP_FROM_NAME, 'utf-8')), SMTP_FROM))
         msg['To'] = to_email
 
         # Текстовая версия
@@ -64,16 +68,22 @@ def send_email(to_email: str, subject: str, html_body: str, text_body: str = Non
         part2 = MIMEText(html_body, 'html', 'utf-8')
         msg.attach(part2)
 
-        print(f"[EMAIL] Connecting to SMTP server {SMTP_HOST}:{SMTP_PORT}...")
+        print(f"[EMAIL] Connecting to SMTP server {SMTP_HOST}:{SMTP_PORT} (SSL={not SMTP_USE_TLS})...")
 
-        # Подключаемся к SMTP серверу
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=30) as server:
-            server.set_debuglevel(0)  # Поставьте 1 для детального дебага SMTP
-            server.starttls()  # Включаем шифрование
-            print(f"[EMAIL] Logging in as {SMTP_USER}...")
-            server.login(SMTP_USER, SMTP_PASSWORD)
-            print(f"[EMAIL] Sending email to {to_email}...")
-            server.sendmail(SMTP_FROM, to_email, msg.as_string())
+        # Подключаемся к SMTP серверу - используем тот же подход что и server.py
+        if SMTP_USE_TLS:
+            # TLS на порту 587 или 2525
+            server = smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=30)
+            server.starttls()
+        else:
+            # SSL на порту 465 (по умолчанию для Beget)
+            server = smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=30)
+
+        print(f"[EMAIL] Logging in as {SMTP_USER}...")
+        server.login(SMTP_USER, SMTP_PASSWORD)
+        print(f"[EMAIL] Sending email to {to_email}...")
+        server.send_message(msg)
+        server.quit()
 
         print(f"[EMAIL SUCCESS] Email sent successfully to {to_email}")
         return True
