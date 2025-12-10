@@ -52,13 +52,17 @@ const LoginPage = () => {
     }
   };
 
-  // Редирект если уже авторизован И email подтверждён
+  // Редирект если уже авторизован
+  // Сотрудники (employee/superadmin) НЕ требуют подтверждения email
   useEffect(() => {
     if (!authLoading && isAuthenticated && user) {
-      if (user.email_verified) {
+      const isStaff = ['employee', 'superadmin'].includes(user.role);
+      if (isStaff || user.email_verified) {
+        // Сотрудники или клиенты с подтверждённым email - редирект
         const from = location.state?.from || getRedirectByRole(user.role);
         navigate(from, { replace: true });
       } else {
+        // Только клиенты без подтверждённого email видят блок верификации
         setShowEmailNotVerified(true);
       }
     }

@@ -13,11 +13,12 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 # SMTP настройки Beget
+# ВАЖНО: Все credentials должны быть в .env файле!
 SMTP_HOST = os.getenv('SMTP_HOST', 'smtp.beget.com')
 SMTP_PORT = int(os.getenv('SMTP_PORT', '2525'))  # 2525 альтернативный порт
-SMTP_USER = os.getenv('SMTP_USER', 'info@promarkirui.ru')
-SMTP_PASSWORD = os.getenv('SMTP_PASSWORD', '&UDnQCJUE757')
-SMTP_FROM = os.getenv('SMTP_FROM', 'info@promarkirui.ru')
+SMTP_USER = os.getenv('SMTP_USER', '')
+SMTP_PASSWORD = os.getenv('SMTP_PASSWORD', '')  # ОБЯЗАТЕЛЬНО установить в .env
+SMTP_FROM = os.getenv('SMTP_FROM', '')
 SMTP_FROM_NAME = os.getenv('SMTP_FROM_NAME', 'Про.Маркируй')
 
 # URL сайта для ссылок в письмах
@@ -42,6 +43,12 @@ def send_email(to_email: str, subject: str, html_body: str, text_body: str = Non
     Returns:
         True если отправлено успешно
     """
+    # Проверяем конфигурацию SMTP
+    if not SMTP_USER or not SMTP_PASSWORD or not SMTP_FROM:
+        print(f"[EMAIL ERROR] SMTP not configured! SMTP_USER={bool(SMTP_USER)}, SMTP_PASSWORD={bool(SMTP_PASSWORD)}, SMTP_FROM={bool(SMTP_FROM)}")
+        print("[EMAIL ERROR] Please set SMTP_USER, SMTP_PASSWORD, SMTP_FROM in .env file")
+        return False
+
     try:
         msg = MIMEMultipart('alternative')
         msg['Subject'] = subject
@@ -57,17 +64,31 @@ def send_email(to_email: str, subject: str, html_body: str, text_body: str = Non
         part2 = MIMEText(html_body, 'html', 'utf-8')
         msg.attach(part2)
 
+        print(f"[EMAIL] Connecting to SMTP server {SMTP_HOST}:{SMTP_PORT}...")
+
         # Подключаемся к SMTP серверу
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=30) as server:
+            server.set_debuglevel(0)  # Поставьте 1 для детального дебага SMTP
             server.starttls()  # Включаем шифрование
+            print(f"[EMAIL] Logging in as {SMTP_USER}...")
             server.login(SMTP_USER, SMTP_PASSWORD)
+            print(f"[EMAIL] Sending email to {to_email}...")
             server.sendmail(SMTP_FROM, to_email, msg.as_string())
 
-        print(f"Email sent successfully to {to_email}")
+        print(f"[EMAIL SUCCESS] Email sent successfully to {to_email}")
         return True
 
+    except smtplib.SMTPAuthenticationError as e:
+        print(f"[EMAIL ERROR] SMTP Authentication failed for {SMTP_USER}: {e}")
+        return False
+    except smtplib.SMTPConnectError as e:
+        print(f"[EMAIL ERROR] Could not connect to SMTP server {SMTP_HOST}:{SMTP_PORT}: {e}")
+        return False
+    except smtplib.SMTPException as e:
+        print(f"[EMAIL ERROR] SMTP error sending to {to_email}: {e}")
+        return False
     except Exception as e:
-        print(f"Failed to send email to {to_email}: {e}")
+        print(f"[EMAIL ERROR] Unexpected error sending to {to_email}: {type(e).__name__}: {e}")
         return False
 
 
