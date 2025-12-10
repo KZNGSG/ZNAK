@@ -11,6 +11,10 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
 from typing import Optional
+from dotenv import load_dotenv
+
+# Загружаем .env файл
+load_dotenv()
 
 # SMTP настройки Beget
 # ВАЖНО: Все credentials должны быть в .env файле!
