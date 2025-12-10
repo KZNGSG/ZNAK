@@ -71,10 +71,10 @@ const EmployeeDashboard = () => {
 
   const getStatusBadge = (status) => {
     const styles = {
-      new: { bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', text: 'text-yellow-400', icon: CircleDot, label: 'Новая' },
-      processing: { bg: 'bg-amber-500/10', border: 'border-amber-500/20', text: 'text-amber-400', icon: Clock, label: 'В работе' },
-      completed: { bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', text: 'text-emerald-400', icon: CheckCircle2, label: 'Завершена' },
-      cancelled: { bg: 'bg-slate-500/10', border: 'border-slate-500/20', text: 'text-slate-400', icon: XCircle, label: 'Отменена' }
+      new: { bg: 'bg-yellow-100', border: 'border-yellow-200', text: 'text-yellow-700', icon: CircleDot, label: 'Новая' },
+      processing: { bg: 'bg-amber-100', border: 'border-amber-200', text: 'text-amber-700', icon: Clock, label: 'В работе' },
+      completed: { bg: 'bg-emerald-100', border: 'border-emerald-200', text: 'text-emerald-700', icon: CheckCircle2, label: 'Завершена' },
+      cancelled: { bg: 'bg-gray-100', border: 'border-gray-200', text: 'text-gray-600', icon: XCircle, label: 'Отменена' }
     };
     const style = styles[status] || styles.new;
     const Icon = style.icon;
@@ -116,8 +116,8 @@ const EmployeeDashboard = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-10 w-10 border-2 border-slate-700 border-t-yellow-500"></div>
-          <p className="text-slate-500 text-sm">Загрузка данных...</p>
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-200 border-t-yellow-500"></div>
+          <p className="text-gray-500 text-sm">Загрузка данных...</p>
         </div>
       </div>
     );
@@ -155,10 +155,17 @@ const EmployeeDashboard = () => {
   ];
 
   const colorStyles = {
-    yellow: 'from-yellow-500/20 to-yellow-600/5 border-yellow-500/20 text-yellow-400',
-    amber: 'from-amber-500/20 to-amber-600/5 border-amber-500/20 text-amber-400',
-    emerald: 'from-emerald-500/20 to-emerald-600/5 border-emerald-500/20 text-emerald-400',
-    purple: 'from-purple-500/20 to-purple-600/5 border-purple-500/20 text-purple-400'
+    yellow: 'bg-yellow-50 border-yellow-200 text-yellow-600',
+    amber: 'bg-amber-50 border-amber-200 text-amber-600',
+    emerald: 'bg-emerald-50 border-emerald-200 text-emerald-600',
+    purple: 'bg-purple-50 border-purple-200 text-purple-600'
+  };
+
+  const iconBgStyles = {
+    yellow: 'bg-yellow-100 text-yellow-600',
+    amber: 'bg-amber-100 text-amber-600',
+    emerald: 'bg-emerald-100 text-emerald-600',
+    purple: 'bg-purple-100 text-purple-600'
   };
 
   return (
@@ -166,8 +173,8 @@ const EmployeeDashboard = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-white">Панель менеджера</h1>
-          <p className="text-slate-500 mt-1">Обзор заявок и клиентов</p>
+          <h1 className="text-2xl font-semibold text-gray-900">Панель менеджера</h1>
+          <p className="text-gray-500 mt-1">Обзор заявок и клиентов</p>
         </div>
         <Link
           to="/employee/clients/new"
@@ -186,60 +193,60 @@ const EmployeeDashboard = () => {
             <Link
               key={index}
               to={stat.link}
-              className={`group relative overflow-hidden rounded-xl border bg-gradient-to-br ${colorStyles[stat.color]} p-5 transition-all hover:scale-[1.02]`}
+              className={`group relative overflow-hidden rounded-xl border ${colorStyles[stat.color]} p-5 transition-all hover:shadow-md`}
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-slate-400 text-sm">{stat.label}</p>
-                  <p className="text-3xl font-semibold text-white mt-1">{stat.value}</p>
+                  <p className="text-gray-600 text-sm">{stat.label}</p>
+                  <p className="text-3xl font-semibold text-gray-900 mt-1">{stat.value}</p>
                 </div>
-                <div className={`p-2 rounded-lg bg-slate-900/50 ${colorStyles[stat.color].split(' ').pop()}`}>
+                <div className={`p-2 rounded-lg ${iconBgStyles[stat.color]}`}>
                   <Icon className="w-5 h-5" strokeWidth={1.5} />
                 </div>
               </div>
-              <ArrowRight className="absolute bottom-4 right-4 w-4 h-4 text-slate-600 group-hover:text-slate-400 group-hover:translate-x-1 transition-all" />
+              <ArrowRight className="absolute bottom-4 right-4 w-4 h-4 text-gray-300 group-hover:text-gray-500 group-hover:translate-x-1 transition-all" />
             </Link>
           );
         })}
       </div>
 
       {/* Recent Callbacks */}
-      <div className="bg-slate-900/50 border border-slate-800/50 rounded-xl overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800/50">
-          <h2 className="text-lg font-medium text-white">Последние заявки</h2>
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+          <h2 className="text-lg font-medium text-gray-900">Последние заявки</h2>
           <Link
             to="/employee/inbox"
-            className="text-sm text-yellow-400 hover:text-yellow-300 transition-colors"
+            className="text-sm text-yellow-600 hover:text-yellow-700 transition-colors"
           >
             Все заявки
           </Link>
         </div>
 
         {stats?.recent_callbacks?.length > 0 ? (
-          <div className="divide-y divide-slate-800/50">
+          <div className="divide-y divide-gray-100">
             {stats.recent_callbacks.map((callback) => (
-              <div key={callback.id} className="px-5 py-4 hover:bg-slate-800/30 transition-colors">
+              <div key={callback.id} className="px-5 py-4 hover:bg-gray-50 transition-colors">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2">
                       {getStatusBadge(callback.status)}
-                      <span className="text-xs text-slate-500">
+                      <span className="text-xs text-gray-500">
                         {getSourceLabel(callback.source)}
                       </span>
-                      <span className="text-xs text-slate-600">
+                      <span className="text-xs text-gray-400">
                         {formatDate(callback.created_at)}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-white font-medium">{callback.contact_name}</span>
+                      <span className="text-gray-900 font-medium">{callback.contact_name}</span>
                       {callback.company_name && (
-                        <span className="text-slate-500 text-sm flex items-center gap-1">
+                        <span className="text-gray-500 text-sm flex items-center gap-1">
                           <Building2 className="w-3.5 h-3.5" />
                           {callback.company_name}
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-slate-400">
+                    <div className="flex items-center gap-4 text-sm text-gray-500">
                       <span className="flex items-center gap-1.5">
                         <Phone className="w-3.5 h-3.5" />
                         {callback.contact_phone}
@@ -256,7 +263,7 @@ const EmployeeDashboard = () => {
                     {callback.status === 'new' && (
                       <button
                         onClick={() => handleAssignCallback(callback.id)}
-                        className="px-3 py-1.5 text-xs font-medium text-yellow-400 hover:text-yellow-300 bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/20 rounded-lg transition-colors"
+                        className="px-3 py-1.5 text-xs font-medium text-yellow-700 hover:text-yellow-800 bg-yellow-100 hover:bg-yellow-200 border border-yellow-200 rounded-lg transition-colors"
                       >
                         Взять в работу
                       </button>
@@ -264,7 +271,7 @@ const EmployeeDashboard = () => {
                     {(callback.status === 'new' || callback.status === 'processing') && (
                       <button
                         onClick={() => handleConvertCallback(callback.id)}
-                        className="px-3 py-1.5 text-xs font-medium text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-lg transition-colors"
+                        className="px-3 py-1.5 text-xs font-medium text-emerald-700 hover:text-emerald-800 bg-emerald-100 hover:bg-emerald-200 border border-emerald-200 rounded-lg transition-colors"
                       >
                         Создать клиента
                       </button>
@@ -276,8 +283,8 @@ const EmployeeDashboard = () => {
           </div>
         ) : (
           <div className="px-5 py-12 text-center">
-            <Inbox className="w-12 h-12 text-slate-700 mx-auto mb-3" />
-            <p className="text-slate-500">Нет заявок</p>
+            <Inbox className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500">Нет заявок</p>
           </div>
         )}
       </div>

@@ -121,74 +121,74 @@ const EmployeeClientNew = () => {
       <div className="flex items-center gap-4 mb-6">
         <button
           onClick={() => navigate('/employee/clients')}
-          className="p-2 text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-lg transition-colors"
+          className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-2xl font-semibold text-white">Новый клиент</h1>
-          <p className="text-slate-500 mt-1">Создание карточки клиента</p>
+          <h1 className="text-2xl font-semibold text-gray-900">Новый клиент</h1>
+          <p className="text-gray-500 mt-1">Создание карточки клиента</p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Contact Info */}
-        <div className="bg-slate-900/50 border border-slate-800/50 rounded-xl p-6">
+        <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
-            <User className="w-5 h-5 text-slate-500" />
-            <h2 className="text-lg font-medium text-white">Контактная информация</h2>
+            <User className="w-5 h-5 text-gray-400" />
+            <h2 className="text-lg font-medium text-gray-900">Контактная информация</h2>
           </div>
 
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-slate-400 mb-1.5">
-                Имя контакта <span className="text-red-400">*</span>
+              <label className="block text-sm text-gray-600 mb-1.5">
+                Имя контакта <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 value={formData.contact_name}
                 onChange={(e) => handleChange('contact_name', e.target.value)}
                 placeholder="Иван Иванов"
-                className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-yellow-500/50"
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-yellow-500"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm text-slate-400 mb-1.5">Должность</label>
+              <label className="block text-sm text-gray-600 mb-1.5">Должность</label>
               <input
                 type="text"
                 value={formData.contact_position}
                 onChange={(e) => handleChange('contact_position', e.target.value)}
                 placeholder="Директор"
-                className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-yellow-500/50"
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-yellow-500"
               />
             </div>
             <div>
-              <label className="block text-sm text-slate-400 mb-1.5">
-                Телефон <span className="text-red-400">*</span>
+              <label className="block text-sm text-gray-600 mb-1.5">
+                Телефон <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="tel"
                   value={formData.contact_phone}
                   onChange={(e) => handleChange('contact_phone', e.target.value)}
                   placeholder="+7 999 123-45-67"
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-yellow-500/50"
+                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-yellow-500"
                   required
                 />
               </div>
             </div>
             <div>
-              <label className="block text-sm text-slate-400 mb-1.5">Email</label>
+              <label className="block text-sm text-gray-600 mb-1.5">Email</label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="email"
                   value={formData.contact_email}
                   onChange={(e) => handleChange('contact_email', e.target.value)}
                   placeholder="ivan@company.ru"
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-yellow-500/50"
+                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-yellow-500"
                 />
               </div>
             </div>
@@ -196,16 +196,16 @@ const EmployeeClientNew = () => {
         </div>
 
         {/* Company Info */}
-        <div className="bg-slate-900/50 border border-slate-800/50 rounded-xl p-6">
+        <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
-            <Building2 className="w-5 h-5 text-slate-500" />
-            <h2 className="text-lg font-medium text-white">Данные компании</h2>
+            <Building2 className="w-5 h-5 text-gray-400" />
+            <h2 className="text-lg font-medium text-gray-900">Данные компании</h2>
           </div>
 
           <div className="grid md:grid-cols-2 gap-4">
             {/* INN with lookup */}
             <div>
-              <label className="block text-sm text-slate-400 mb-1.5">ИНН</label>
+              <label className="block text-sm text-gray-600 mb-1.5">ИНН</label>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -213,13 +213,13 @@ const EmployeeClientNew = () => {
                   onChange={(e) => handleChange('inn', e.target.value.replace(/\D/g, ''))}
                   placeholder="7712345678"
                   maxLength={12}
-                  className="flex-1 px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-yellow-500/50"
+                  className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-yellow-500"
                 />
                 <button
                   type="button"
                   onClick={handleInnLookup}
                   disabled={innLoading}
-                  className="px-4 py-2.5 bg-slate-700/50 hover:bg-slate-700 text-slate-300 rounded-xl transition-colors disabled:opacity-50"
+                  className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl transition-colors disabled:opacity-50"
                 >
                   {innLoading ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
@@ -231,11 +231,11 @@ const EmployeeClientNew = () => {
             </div>
 
             <div>
-              <label className="block text-sm text-slate-400 mb-1.5">Тип</label>
+              <label className="block text-sm text-gray-600 mb-1.5">Тип</label>
               <select
                 value={formData.company_type}
                 onChange={(e) => handleChange('company_type', e.target.value)}
-                className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white focus:outline-none focus:border-yellow-500/50"
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:border-yellow-500"
               >
                 <option value="LEGAL">Юридическое лицо</option>
                 <option value="INDIVIDUAL">ИП</option>
@@ -243,50 +243,50 @@ const EmployeeClientNew = () => {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm text-slate-400 mb-1.5">Название компании</label>
+              <label className="block text-sm text-gray-600 mb-1.5">Название компании</label>
               <input
                 type="text"
                 value={formData.company_name}
                 onChange={(e) => handleChange('company_name', e.target.value)}
                 placeholder="ООО «Компания»"
-                className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-yellow-500/50"
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-yellow-500"
               />
             </div>
 
             <div>
-              <label className="block text-sm text-slate-400 mb-1.5">КПП</label>
+              <label className="block text-sm text-gray-600 mb-1.5">КПП</label>
               <input
                 type="text"
                 value={formData.kpp}
                 onChange={(e) => handleChange('kpp', e.target.value.replace(/\D/g, ''))}
                 placeholder="771201001"
                 maxLength={9}
-                className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-yellow-500/50"
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-yellow-500"
               />
             </div>
 
             <div>
-              <label className="block text-sm text-slate-400 mb-1.5">ОГРН</label>
+              <label className="block text-sm text-gray-600 mb-1.5">ОГРН</label>
               <input
                 type="text"
                 value={formData.ogrn}
                 onChange={(e) => handleChange('ogrn', e.target.value.replace(/\D/g, ''))}
                 placeholder="1177746123456"
                 maxLength={15}
-                className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-yellow-500/50"
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-yellow-500"
               />
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm text-slate-400 mb-1.5">Адрес</label>
+              <label className="block text-sm text-gray-600 mb-1.5">Адрес</label>
               <div className="relative">
-                <MapPin className="absolute left-3 top-3 w-4 h-4 text-slate-500" />
+                <MapPin className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
                   value={formData.address}
                   onChange={(e) => handleChange('address', e.target.value)}
                   placeholder="г. Москва, ул. Примерная, д. 1"
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-yellow-500/50"
+                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-yellow-500"
                 />
               </div>
             </div>
@@ -294,20 +294,20 @@ const EmployeeClientNew = () => {
         </div>
 
         {/* Additional Info */}
-        <div className="bg-slate-900/50 border border-slate-800/50 rounded-xl p-6">
+        <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
-            <FileText className="w-5 h-5 text-slate-500" />
-            <h2 className="text-lg font-medium text-white">Дополнительно</h2>
+            <FileText className="w-5 h-5 text-gray-400" />
+            <h2 className="text-lg font-medium text-gray-900">Дополнительно</h2>
           </div>
 
           <div>
-            <label className="block text-sm text-slate-400 mb-1.5">Комментарий</label>
+            <label className="block text-sm text-gray-600 mb-1.5">Комментарий</label>
             <textarea
               value={formData.comment}
               onChange={(e) => handleChange('comment', e.target.value)}
               placeholder="Любые заметки о клиенте..."
               rows={4}
-              className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-yellow-500/50 resize-none"
+              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-yellow-500 resize-none"
             />
           </div>
         </div>
@@ -317,7 +317,7 @@ const EmployeeClientNew = () => {
           <button
             type="button"
             onClick={() => navigate('/employee/clients')}
-            className="px-6 py-2.5 text-slate-400 hover:text-slate-200 transition-colors"
+            className="px-6 py-2.5 text-gray-500 hover:text-gray-700 transition-colors"
           >
             Отмена
           </button>
