@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
-import { Mail, Lock, User, ArrowRight, LogIn, UserPlus, Building2, Phone, AlertCircle, Send } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, LogIn, UserPlus, Building2, Phone, AlertCircle, Send, MapPin, Search } from 'lucide-react';
+
+const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -18,10 +20,21 @@ const LoginPage = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Новые поля для регистрации
+  // Поля для регистрации
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [inn, setInn] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [city, setCity] = useState('');
+  const [region, setRegion] = useState('');
+
+  // Автодополнение компаний
+  const [searchQuery, setSearchQuery] = useState('');
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const suggestionsRef = useRef(null);
+  const searchTimeout = useRef(null);
 
   // Состояние для неподтверждённого email
   const [showEmailNotVerified, setShowEmailNotVerified] = useState(false);
@@ -50,6 +63,101 @@ const LoginPage = () => {
       }
     }
   }, [isAuthenticated, authLoading, navigate, location, user]);
+
+  // Закрытие выпадающего списка при клике вне
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (suggestionsRef.current && !suggestionsRef.current.contains(event.target)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Поиск компаний через DaData
+  const searchCompanies = async (query) => {
+    if (query.length < 4) {
+      setSuggestions([]);
+      return;
+    }
+
+    setSearchLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/api/company/suggest`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inn: query })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSuggestions(data.suggestions || []);
+        setShowSuggestions(true);
+      }
+    } catch (error) {
+      console.error('Company search error:', error);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  // Обработка ввода в поле поиска компании
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+
+    // Debounce поиска
+    if (searchTimeout.current) {
+      clearTimeout(searchTimeout.current);
+    }
+
+    searchTimeout.current = setTimeout(() => {
+      searchCompanies(value);
+    }, 300);
+  };
+
+  // Выбор компании из списка
+  const selectCompany = (company) => {
+    setInn(company.inn || '');
+    setCompanyName(company.name || '');
+    setSearchQuery(company.name || '');
+
+    // Парсим адрес для получения города и региона
+    const address = company.address || '';
+    const addressParts = address.split(',').map(s => s.trim());
+
+    // Ищем регион и город в адресе
+    let foundRegion = '';
+    let foundCity = '';
+
+    for (const part of addressParts) {
+      const lowerPart = part.toLowerCase();
+      // Проверяем на регион/область/край/республика
+      if (lowerPart.includes('область') || lowerPart.includes('край') ||
+          lowerPart.includes('республика') || lowerPart.includes('округ') ||
+          lowerPart.includes('обл') || lowerPart.includes('респ')) {
+        foundRegion = part;
+      }
+      // Проверяем на город
+      if (lowerPart.startsWith('г ') || lowerPart.startsWith('г.') ||
+          lowerPart.includes('город')) {
+        foundCity = part.replace(/^г\.?\s*/i, '').replace(/город\s*/i, '');
+      }
+    }
+
+    // Если город не найден, берём первую часть после индекса
+    if (!foundCity && addressParts.length > 1) {
+      const secondPart = addressParts[1];
+      if (secondPart && !secondPart.match(/^\d/)) {
+        foundCity = secondPart.replace(/^г\.?\s*/i, '');
+      }
+    }
+
+    setRegion(foundRegion);
+    setCity(foundCity);
+    setShowSuggestions(false);
+  };
 
   const formatPhone = (value) => {
     let cleaned = value.replace(/\D/g, '');
@@ -83,7 +191,7 @@ const LoginPage = () => {
         return;
       }
       if (!inn || (inn.length !== 10 && inn.length !== 12)) {
-        toast.error('ИНН должен содержать 10 или 12 цифр');
+        toast.error('Выберите компанию из списка или введите ИНН (10 или 12 цифр)');
         return;
       }
       if (password !== confirmPassword) {
@@ -102,8 +210,9 @@ const LoginPage = () => {
       if (mode === 'login') {
         result = await login(email, password);
 
-        // Проверяем подтверждение email
-        if (!result.user.email_verified) {
+        // Проверяем подтверждение email (только для клиентов, не для сотрудников)
+        const isStaff = ['employee', 'superadmin'].includes(result.user.role);
+        if (!isStaff && !result.user.email_verified) {
           setShowEmailNotVerified(true);
           toast.warning('Подтвердите email для входа в личный кабинет');
           return;
@@ -117,7 +226,10 @@ const LoginPage = () => {
         result = await register(email, password, {
           name: fullName,
           phone: phone,
-          inn: inn
+          inn: inn,
+          company_name: companyName,
+          city: city,
+          region: region
         });
         toast.success('Регистрация успешна! Проверьте почту для подтверждения.');
         setShowEmailNotVerified(true);
@@ -284,25 +396,87 @@ const LoginPage = () => {
                   </div>
                 </div>
 
-                {/* ИНН / ОГРН */}
-                <div>
-                  <Label htmlFor="inn" className="text-sm font-medium text-gray-700">
-                    ИНН или ОГРН компании <span className="text-red-500">*</span>
+                {/* Поиск компании */}
+                <div className="relative" ref={suggestionsRef}>
+                  <Label htmlFor="companySearch" className="text-sm font-medium text-gray-700">
+                    Компания (ИНН или название) <span className="text-red-500">*</span>
                   </Label>
                   <div className="relative mt-1">
-                    <Building2 size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     <Input
-                      id="inn"
+                      id="companySearch"
                       type="text"
-                      value={inn}
-                      onChange={(e) => setInn(e.target.value.replace(/\D/g, '').slice(0, 15))}
-                      placeholder="1234567890"
-                      className="pl-10"
-                      maxLength={15}
+                      value={searchQuery}
+                      onChange={handleSearchChange}
+                      onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                      placeholder="Начните вводить ИНН или название..."
+                      className="pl-10 pr-10"
                     />
+                    {searchLoading && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-500"></div>
+                      </div>
+                    )}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">10 цифр для ИП, 12 для юр. лица</p>
+
+                  {/* Выпадающий список */}
+                  {showSuggestions && suggestions.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-64 overflow-y-auto">
+                      {suggestions.map((company, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => selectCompany(company)}
+                          className="w-full px-4 py-3 text-left hover:bg-yellow-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                        >
+                          <div className="font-medium text-gray-900 text-sm">{company.name}</div>
+                          <div className="text-xs text-gray-500 mt-0.5">
+                            ИНН: {company.inn}
+                            {company.address && (
+                              <span className="ml-2">{company.address.slice(0, 50)}...</span>
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  <p className="text-xs text-gray-500 mt-1">
+                    Введите минимум 4 символа для поиска
+                  </p>
                 </div>
+
+                {/* ИНН (показываем выбранный) */}
+                {inn && (
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-3">
+                    <div className="flex items-start gap-3">
+                      <Building2 size={18} className="text-green-600 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-gray-900 text-sm truncate">{companyName}</div>
+                        <div className="text-xs text-gray-600">ИНН: {inn}</div>
+                        {(city || region) && (
+                          <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
+                            <MapPin size={12} />
+                            {[region, city].filter(Boolean).join(', ')}
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setInn('');
+                          setCompanyName('');
+                          setCity('');
+                          setRegion('');
+                          setSearchQuery('');
+                        }}
+                        className="text-gray-400 hover:text-red-500 text-xs"
+                      >
+                        Изменить
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Телефон */}
                 <div>

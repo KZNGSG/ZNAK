@@ -2441,7 +2441,8 @@ async def generate_act(request: ActGenerateRequest):
 @app.post("/api/auth/register")
 async def api_register(data: UserRegister):
     """Регистрация нового пользователя"""
-    return register_user(data.email, data.password, name=data.name, phone=data.phone, inn=data.inn)
+    return register_user(data.email, data.password, name=data.name, phone=data.phone, inn=data.inn,
+                         company_name=data.company_name, city=data.city, region=data.region)
 
 
 @app.post("/api/auth/login")
@@ -2464,6 +2465,8 @@ async def api_get_me(user: Dict = Depends(require_auth)):
             "phone": full_user.get("phone"),
             "inn": full_user.get("inn"),
             "company_name": full_user.get("company_name"),
+            "city": full_user.get("city"),
+            "region": full_user.get("region"),
             "email_verified": bool(full_user.get("email_verified", False))
         }
     return user

@@ -91,6 +91,14 @@ def init_database():
             cursor.execute('ALTER TABLE users ADD COLUMN company_name TEXT')
         except sqlite3.OperationalError:
             pass
+        try:
+            cursor.execute('ALTER TABLE users ADD COLUMN city TEXT')
+        except sqlite3.OperationalError:
+            pass
+        try:
+            cursor.execute('ALTER TABLE users ADD COLUMN region TEXT')
+        except sqlite3.OperationalError:
+            pass
 
         # Таблица компаний (клиентов)
         cursor.execute('''
@@ -397,13 +405,14 @@ class UserDB:
     """Операции с пользователями"""
 
     @staticmethod
-    def create(email: str, password: str, role: str = 'client', name: str = None, phone: str = None, inn: str = None) -> int:
+    def create(email: str, password: str, role: str = 'client', name: str = None, phone: str = None,
+               inn: str = None, company_name: str = None, city: str = None, region: str = None) -> int:
         """Создать пользователя"""
         with get_db() as conn:
             cursor = conn.cursor()
             cursor.execute(
-                'INSERT INTO users (email, password_hash, role, name, phone, inn) VALUES (?, ?, ?, ?, ?, ?)',
-                (email.lower(), hash_password(password), role, name, phone, inn)
+                'INSERT INTO users (email, password_hash, role, name, phone, inn, company_name, city, region) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                (email.lower(), hash_password(password), role, name, phone, inn, company_name, city, region)
             )
             return cursor.lastrowid
 

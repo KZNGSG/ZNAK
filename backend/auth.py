@@ -32,6 +32,9 @@ class UserRegister(BaseModel):
     name: Optional[str] = None
     phone: Optional[str] = None
     inn: Optional[str] = None
+    company_name: Optional[str] = None
+    city: Optional[str] = None
+    region: Optional[str] = None
 
 
 class UserLogin(BaseModel):
@@ -175,7 +178,8 @@ async def require_employee(user: Dict = Depends(require_auth)) -> Dict:
 
 # ======================== СЕРВИСНЫЕ ФУНКЦИИ ========================
 
-def register_user(email: str, password: str, name: str = None, phone: str = None, inn: str = None) -> Dict:
+def register_user(email: str, password: str, name: str = None, phone: str = None, inn: str = None,
+                  company_name: str = None, city: str = None, region: str = None) -> Dict:
     """Зарегистрировать нового пользователя"""
     # Проверяем, не занят ли email
     existing = UserDB.get_by_email(email)
@@ -193,7 +197,8 @@ def register_user(email: str, password: str, name: str = None, phone: str = None
         )
 
     # Создаём пользователя с дополнительными данными
-    user_id = UserDB.create(email, password, name=name, phone=phone, inn=inn)
+    user_id = UserDB.create(email, password, name=name, phone=phone, inn=inn,
+                            company_name=company_name, city=city, region=region)
     user = UserDB.get_by_id(user_id)
 
     # Генерируем токен верификации и отправляем email
@@ -218,6 +223,9 @@ def register_user(email: str, password: str, name: str = None, phone: str = None
             "name": user.get("name"),
             "phone": user.get("phone"),
             "inn": user.get("inn"),
+            "company_name": user.get("company_name"),
+            "city": user.get("city"),
+            "region": user.get("region"),
             "email_verified": False
         },
         "message": "Письмо с подтверждением отправлено на вашу почту"
@@ -253,6 +261,9 @@ def login_user(email: str, password: str) -> Dict:
             "name": user.get("name"),
             "phone": user.get("phone"),
             "inn": user.get("inn"),
+            "company_name": user.get("company_name"),
+            "city": user.get("city"),
+            "region": user.get("region"),
             "email_verified": bool(user.get('email_verified', False))
         }
     }
