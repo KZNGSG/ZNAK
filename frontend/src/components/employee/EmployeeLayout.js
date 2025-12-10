@@ -14,7 +14,8 @@ import {
   Search,
   Menu,
   X,
-  UserCog
+  UserCog,
+  BarChart3
 } from 'lucide-react';
 
 const EmployeeLayout = ({ children }) => {
@@ -30,12 +31,18 @@ const EmployeeLayout = ({ children }) => {
   };
 
   const menuItems = [
-    {
+    // Аналитика для superadmin вместо обычной главной
+    ...(isSuperAdmin ? [{
+      path: '/employee/analytics',
+      icon: BarChart3,
+      label: 'Аналитика',
+      description: 'Статистика и воронка'
+    }] : [{
       path: '/employee',
       icon: LayoutDashboard,
       label: 'Главная',
       description: 'Обзор и статистика'
-    },
+    }]),
     {
       path: '/employee/inbox',
       icon: Inbox,
@@ -48,13 +55,27 @@ const EmployeeLayout = ({ children }) => {
       label: 'Клиенты',
       description: 'База клиентов'
     },
-    // Управление сотрудниками только для superadmin
-    ...(isSuperAdmin ? [{
-      path: '/employee/staff',
-      icon: UserCog,
-      label: 'Сотрудники',
-      description: 'Управление пользователями'
-    }] : [])
+    // КП и Договоры только для superadmin
+    ...(isSuperAdmin ? [
+      {
+        path: '/employee/quotes',
+        icon: FileText,
+        label: 'Все КП',
+        description: 'Коммерческие предложения'
+      },
+      {
+        path: '/employee/contracts',
+        icon: FileCheck,
+        label: 'Договоры',
+        description: 'Все договоры'
+      },
+      {
+        path: '/employee/staff',
+        icon: UserCog,
+        label: 'Сотрудники',
+        description: 'Управление пользователями'
+      }
+    ] : [])
   ];
 
   const NavItem = ({ item, collapsed }) => {
