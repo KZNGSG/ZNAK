@@ -14,19 +14,24 @@ import {
   UserCheck,
   Star,
   UserX,
-  MoreHorizontal
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const EmployeeClients = () => {
-  const { authFetch } = useEmployeeAuth();
+  const { authFetch, isSuperAdmin } = useEmployeeAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [clientToDelete, setClientToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchClients();
@@ -116,6 +121,38 @@ const EmployeeClients = () => {
       month: 'short',
       year: 'numeric'
     });
+  };
+
+  const handleDeleteClick = (e, client) => {
+    e.stopPropagation();
+    setClientToDelete(client);
+    setShowDeleteModal(true);
+  };
+
+  const handleDelete = async () => {
+    if (!clientToDelete) return;
+
+    setDeleting(true);
+    try {
+      const response = await authFetch(`${API_URL}/api/employee/clients/${clientToDelete.id}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        toast.success('Клиент удалён');
+        setClients(clients.filter(c => c.id !== clientToDelete.id));
+        setShowDeleteModal(false);
+        setClientToDelete(null);
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || 'Ошибка удаления');
+      }
+    } catch (error) {
+      console.error('Delete failed:', error);
+      toast.error('Ошибка удаления клиента');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const statusOptions = [
@@ -266,15 +303,26 @@ const EmployeeClients = () => {
                       {formatDate(client.created_at)}
                     </td>
                     <td className="px-5 py-4 text-right">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/employee/clients/${client.id}`);
-                        }}
-                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                      >
-                        <ArrowUpRight className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center justify-end gap-1">
+                        {isSuperAdmin && (
+                          <button
+                            onClick={(e) => handleDeleteClick(e, client)}
+                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Удалить клиента"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/employee/clients/${client.id}`);
+                          }}
+                          className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                        >
+                          <ArrowUpRight className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -296,6 +344,52 @@ const EmployeeClients = () => {
             <UserPlus className="w-4 h-4" />
             Создать клиента
           </Link>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
+            <div className="flex items-start gap-4 mb-6">
+              <div className="p-3 bg-red-100 rounded-xl">
+                <AlertTriangle className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Удалить клиента?</h3>
+                <p className="text-sm text-gray-500">Это действие нельзя отменить</p>
+              </div>
+            </div>
+            {clientToDelete && (
+              <div className="mb-6 p-4 bg-gray-50 rounded-xl">
+                <div className="font-medium text-gray-900">{clientToDelete.contact_name}</div>
+                {clientToDelete.company_name && (
+                  <div className="text-sm text-gray-500 mt-1">{clientToDelete.company_name}</div>
+                )}
+                {clientToDelete.contact_phone && (
+                  <div className="text-sm text-gray-500">{clientToDelete.contact_phone}</div>
+                )}
+              </div>
+            )}
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setClientToDelete(null);
+                }}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:bg-red-400 rounded-xl transition-colors"
+              >
+                {deleting ? 'Удаление...' : 'Удалить'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
