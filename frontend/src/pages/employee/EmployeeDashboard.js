@@ -71,7 +71,7 @@ const EmployeeDashboard = () => {
 
   const getStatusBadge = (status) => {
     const styles = {
-      new: { bg: 'bg-blue-500/10', border: 'border-blue-500/20', text: 'text-blue-400', icon: CircleDot, label: 'Новая' },
+      new: { bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', text: 'text-yellow-400', icon: CircleDot, label: 'Новая' },
       processing: { bg: 'bg-amber-500/10', border: 'border-amber-500/20', text: 'text-amber-400', icon: Clock, label: 'В работе' },
       completed: { bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', text: 'text-emerald-400', icon: CheckCircle2, label: 'Завершена' },
       cancelled: { bg: 'bg-slate-500/10', border: 'border-slate-500/20', text: 'text-slate-400', icon: XCircle, label: 'Отменена' }
@@ -116,7 +116,7 @@ const EmployeeDashboard = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-10 w-10 border-2 border-slate-700 border-t-blue-500"></div>
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-slate-700 border-t-yellow-500"></div>
           <p className="text-slate-500 text-sm">Загрузка данных...</p>
         </div>
       </div>
@@ -128,7 +128,7 @@ const EmployeeDashboard = () => {
       label: 'Новые заявки',
       value: stats?.new_callbacks || 0,
       icon: Inbox,
-      color: 'blue',
+      color: 'yellow',
       link: '/employee/inbox?status=new'
     },
     {
@@ -155,7 +155,7 @@ const EmployeeDashboard = () => {
   ];
 
   const colorStyles = {
-    blue: 'from-blue-500/20 to-blue-600/5 border-blue-500/20 text-blue-400',
+    yellow: 'from-yellow-500/20 to-yellow-600/5 border-yellow-500/20 text-yellow-400',
     amber: 'from-amber-500/20 to-amber-600/5 border-amber-500/20 text-amber-400',
     emerald: 'from-emerald-500/20 to-emerald-600/5 border-emerald-500/20 text-emerald-400',
     purple: 'from-purple-500/20 to-purple-600/5 border-purple-500/20 text-purple-400'
@@ -171,7 +171,7 @@ const EmployeeDashboard = () => {
         </div>
         <Link
           to="/employee/clients/new"
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-xl transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-yellow-500 hover:bg-yellow-600 text-gray-900 text-sm font-medium rounded-xl transition-colors"
         >
           <UserPlus className="w-4 h-4" />
           Новый клиент
@@ -209,7 +209,7 @@ const EmployeeDashboard = () => {
           <h2 className="text-lg font-medium text-white">Последние заявки</h2>
           <Link
             to="/employee/inbox"
-            className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+            className="text-sm text-yellow-400 hover:text-yellow-300 transition-colors"
           >
             Все заявки
           </Link>
@@ -256,7 +256,7 @@ const EmployeeDashboard = () => {
                     {callback.status === 'new' && (
                       <button
                         onClick={() => handleAssignCallback(callback.id)}
-                        className="px-3 py-1.5 text-xs font-medium text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 rounded-lg transition-colors"
+                        className="px-3 py-1.5 text-xs font-medium text-yellow-400 hover:text-yellow-300 bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/20 rounded-lg transition-colors"
                       >
                         Взять в работу
                       </button>

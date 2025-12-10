@@ -83,7 +83,7 @@ const EmployeeClients = () => {
 
   const getStatusBadge = (status) => {
     const styles = {
-      lead: { bg: 'bg-blue-500/10', border: 'border-blue-500/20', text: 'text-blue-400', icon: TrendingUp, label: 'Лид' },
+      lead: { bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', text: 'text-yellow-400', icon: TrendingUp, label: 'Лид' },
       active: { bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', text: 'text-emerald-400', icon: UserCheck, label: 'Активный' },
       regular: { bg: 'bg-amber-500/10', border: 'border-amber-500/20', text: 'text-amber-400', icon: Star, label: 'Постоянный' },
       inactive: { bg: 'bg-slate-500/10', border: 'border-slate-500/20', text: 'text-slate-400', icon: UserX, label: 'Неактивный' }
@@ -130,7 +130,7 @@ const EmployeeClients = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-10 w-10 border-2 border-slate-700 border-t-blue-500"></div>
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-slate-700 border-t-yellow-500"></div>
           <p className="text-slate-500 text-sm">Загрузка клиентов...</p>
         </div>
       </div>
@@ -147,7 +147,7 @@ const EmployeeClients = () => {
         </div>
         <Link
           to="/employee/clients/new"
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-xl transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-yellow-500 hover:bg-yellow-600 text-gray-900 text-sm font-medium rounded-xl transition-colors"
         >
           <UserPlus className="w-4 h-4" />
           Новый клиент
@@ -165,7 +165,7 @@ const EmployeeClients = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             placeholder="Поиск по имени, компании, телефону, ИНН..."
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50"
+            className="w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-yellow-500/50 focus:ring-1 focus:ring-yellow-500/50"
           />
         </div>
         <button
@@ -185,7 +185,7 @@ const EmployeeClients = () => {
             onClick={() => handleStatusChange(option.value)}
             className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
               statusFilter === option.value
-                ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
                 : 'bg-slate-800/50 text-slate-400 border border-slate-700/50 hover:bg-slate-700/50'
             }`}
           >
@@ -291,7 +291,7 @@ const EmployeeClients = () => {
           </p>
           <Link
             to="/employee/clients/new"
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-xl transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-yellow-500 hover:bg-yellow-600 text-gray-900 text-sm font-medium rounded-xl transition-colors"
           >
             <UserPlus className="w-4 h-4" />
             Создать клиента

@@ -73,18 +73,18 @@ const EmployeeLayout = ({ children }) => {
         className={`
           group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200
           ${isActive
-            ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+            ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
             : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 border border-transparent'
           }
         `}
       >
         <Icon
-          className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-blue-400' : 'text-slate-500 group-hover:text-slate-300'}`}
+          className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-yellow-400' : 'text-slate-500 group-hover:text-slate-300'}`}
           strokeWidth={1.5}
         />
         {!collapsed && (
           <div className="flex-1 min-w-0">
-            <div className={`text-sm font-medium ${isActive ? 'text-blue-400' : ''}`}>
+            <div className={`text-sm font-medium ${isActive ? 'text-yellow-400' : ''}`}>
               {item.label}
             </div>
             <div className="text-xs text-slate-600 truncate">
@@ -120,8 +120,8 @@ const EmployeeLayout = ({ children }) => {
         <div className="h-16 flex items-center justify-between px-4 border-b border-slate-800/50">
           {!sidebarCollapsed && (
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
-                <span className="text-white font-bold text-sm">M</span>
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-yellow-400 to-yellow-500 flex items-center justify-center">
+                <span className="text-gray-900 font-bold text-sm">M</span>
               </div>
               <div>
                 <div className="text-sm font-semibold text-white">Менеджер</div>
@@ -215,7 +215,7 @@ const EmployeeLayout = ({ children }) => {
             {/* Notifications */}
             <button className="relative p-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 rounded-lg transition-colors">
               <Bell className="w-5 h-5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-blue-500 rounded-full"></span>
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-yellow-400 rounded-full"></span>
             </button>
           </div>
         </header>

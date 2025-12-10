@@ -98,7 +98,7 @@ const EmployeeInbox = () => {
 
   const getStatusBadge = (status) => {
     const styles = {
-      new: { bg: 'bg-blue-500/10', border: 'border-blue-500/20', text: 'text-blue-400', icon: CircleDot, label: 'Новая' },
+      new: { bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', text: 'text-yellow-400', icon: CircleDot, label: 'Новая' },
       processing: { bg: 'bg-amber-500/10', border: 'border-amber-500/20', text: 'text-amber-400', icon: Clock, label: 'В работе' },
       completed: { bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', text: 'text-emerald-400', icon: CheckCircle2, label: 'Завершена' },
       cancelled: { bg: 'bg-slate-500/10', border: 'border-slate-500/20', text: 'text-slate-400', icon: XCircle, label: 'Отменена' }
@@ -147,7 +147,7 @@ const EmployeeInbox = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-10 w-10 border-2 border-slate-700 border-t-blue-500"></div>
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-slate-700 border-t-yellow-500"></div>
           <p className="text-slate-500 text-sm">Загрузка заявок...</p>
         </div>
       </div>
@@ -173,7 +173,7 @@ const EmployeeInbox = () => {
             onClick={() => handleStatusChange(option.value)}
             className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
               statusFilter === option.value
-                ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
                 : 'bg-slate-800/50 text-slate-400 border border-slate-700/50 hover:bg-slate-700/50'
             }`}
           >
@@ -205,14 +205,14 @@ const EmployeeInbox = () => {
                   <div className="space-y-1.5 text-sm">
                     <div className="flex items-center gap-2 text-slate-400">
                       <Phone className="w-4 h-4 text-slate-500" />
-                      <a href={`tel:${callback.contact_phone}`} className="hover:text-blue-400 transition-colors">
+                      <a href={`tel:${callback.contact_phone}`} className="hover:text-yellow-400 transition-colors">
                         {callback.contact_phone}
                       </a>
                     </div>
                     {callback.contact_email && (
                       <div className="flex items-center gap-2 text-slate-400">
                         <Mail className="w-4 h-4 text-slate-500" />
-                        <a href={`mailto:${callback.contact_email}`} className="hover:text-blue-400 transition-colors">
+                        <a href={`mailto:${callback.contact_email}`} className="hover:text-yellow-400 transition-colors">
                           {callback.contact_email}
                         </a>
                       </div>
@@ -263,7 +263,7 @@ const EmployeeInbox = () => {
                   {callback.status === 'new' && (
                     <button
                       onClick={() => handleAssignCallback(callback.id)}
-                      className="px-3 py-1.5 text-sm font-medium text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 rounded-lg transition-colors"
+                      className="px-3 py-1.5 text-sm font-medium text-yellow-400 hover:text-yellow-300 bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/20 rounded-lg transition-colors"
                     >
                       Взять в работу
                     </button>
@@ -289,7 +289,7 @@ const EmployeeInbox = () => {
                 {(callback.status === 'new' || callback.status === 'processing') && !callback.client_id && (
                   <button
                     onClick={() => handleConvertCallback(callback.id)}
-                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-900 bg-yellow-500 hover:bg-yellow-600 rounded-lg transition-colors"
                   >
                     <UserPlus className="w-4 h-4" />
                     Создать клиента
