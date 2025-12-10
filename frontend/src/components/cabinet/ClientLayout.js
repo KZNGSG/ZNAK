@@ -1,0 +1,220 @@
+import React, { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import {
+  LayoutDashboard,
+  FileCheck,
+  FileText,
+  ShoppingCart,
+  UserCircle,
+  ChevronLeft,
+  ChevronRight,
+  LogOut,
+  Bell,
+  Menu,
+  X
+} from 'lucide-react';
+
+const ClientLayout = ({ children }) => {
+  const { user, logout } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  const menuItems = [
+    {
+      path: '/cabinet',
+      icon: LayoutDashboard,
+      label: 'Главная',
+      description: 'Обзор и приветствие'
+    },
+    {
+      path: '/cabinet/contracts',
+      icon: FileCheck,
+      label: 'Договоры',
+      description: 'Мои договоры'
+    },
+    {
+      path: '/cabinet/quotes',
+      icon: FileText,
+      label: 'КП',
+      description: 'Коммерческие предложения'
+    },
+    {
+      path: '/cabinet/services',
+      icon: ShoppingCart,
+      label: 'Заказать услуги',
+      description: 'Оформить заказ'
+    },
+    {
+      path: '/cabinet/profile',
+      icon: UserCircle,
+      label: 'Профиль',
+      description: 'Настройки аккаунта'
+    }
+  ];
+
+  const NavItem = ({ item, collapsed }) => {
+    const isActive = location.pathname === item.path ||
+      (item.path !== '/cabinet' && location.pathname.startsWith(item.path));
+    const Icon = item.icon;
+
+    return (
+      <Link
+        to={item.path}
+        onClick={() => setMobileMenuOpen(false)}
+        className={`
+          group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200
+          ${isActive
+            ? 'bg-yellow-500/10 text-yellow-600 border border-yellow-500/30'
+            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 border border-transparent'
+          }
+        `}
+      >
+        <Icon
+          className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-yellow-600' : 'text-gray-400 group-hover:text-gray-600'}`}
+          strokeWidth={1.5}
+        />
+        {!collapsed && (
+          <div className="flex-1 min-w-0">
+            <div className={`text-sm font-medium ${isActive ? 'text-yellow-600' : ''}`}>
+              {item.label}
+            </div>
+            <div className="text-xs text-gray-400 truncate">
+              {item.description}
+            </div>
+          </div>
+        )}
+      </Link>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Mobile menu overlay */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-40 lg:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`
+          fixed lg:static inset-y-0 left-0 z-50
+          ${sidebarCollapsed ? 'w-[72px]' : 'w-64'}
+          ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          bg-white border-r border-gray-200
+          transition-all duration-300 flex flex-col
+        `}
+      >
+        {/* Header */}
+        <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200">
+          {!sidebarCollapsed && (
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-yellow-400 to-yellow-500 flex items-center justify-center">
+                <span className="text-gray-900 font-bold text-sm">П</span>
+              </div>
+              <div>
+                <div className="text-sm font-semibold text-gray-900">Личный кабинет</div>
+                <div className="text-[10px] text-gray-400 uppercase tracking-wider">Pro.Markiruj</div>
+              </div>
+            </div>
+          )}
+          <button
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="hidden lg:flex p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+          </button>
+          <button
+            onClick={() => setMobileMenuOpen(false)}
+            className="lg:hidden p-2 text-gray-400 hover:text-gray-600"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+          {menuItems.map((item) => (
+            <NavItem key={item.path} item={item} collapsed={sidebarCollapsed} />
+          ))}
+        </nav>
+
+        {/* User section */}
+        <div className="border-t border-gray-200 p-3">
+          {!sidebarCollapsed ? (
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-500 flex items-center justify-center">
+                <span className="text-white text-sm font-medium">
+                  {user?.email?.charAt(0).toUpperCase()}
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm text-gray-900 truncate">{user?.email}</div>
+                <div className="text-xs text-gray-400">Клиент</div>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                title="Выйти"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handleLogout}
+              className="w-full flex justify-center p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+              title="Выйти"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      </aside>
+
+      {/* Main content area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Top bar */}
+        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 lg:px-6">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="lg:hidden p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <h1 className="text-lg font-semibold text-gray-900 hidden sm:block">
+              Про.Маркируй
+            </h1>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Notifications */}
+            <button className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+              <Bell className="w-5 h-5" />
+            </button>
+          </div>
+        </header>
+
+        {/* Page content */}
+        <main className="flex-1 overflow-auto">
+          <div className="p-4 lg:p-6">
+            {children}
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+};
+
+export default ClientLayout;

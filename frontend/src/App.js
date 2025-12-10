@@ -16,11 +16,18 @@ import ConsultationPage from './pages/ConsultationPage';
 import ChecklistPage from './pages/ChecklistPage';
 import ScannerPage from './pages/ScannerPage';
 import KnowledgePage from './pages/KnowledgePage';
-import AccountPage from './pages/AccountPage';
 import QuotePage from './pages/QuotePage';
 import LoginPage from './pages/LoginPage';
-import CabinetPage from './pages/CabinetPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
+
+// Client cabinet pages
+import ClientLayout from './components/cabinet/ClientLayout';
+import ClientRoute from './components/cabinet/ClientRoute';
+import ClientDashboard from './pages/cabinet/ClientDashboard';
+import ClientContracts from './pages/cabinet/ClientContracts';
+import ClientQuotes from './pages/cabinet/ClientQuotes';
+import ClientServices from './pages/cabinet/ClientServices';
+import ClientProfile from './pages/cabinet/ClientProfile';
 
 // Admin pages
 import AdminLoginPage from './pages/admin/AdminLoginPage';
@@ -77,10 +84,35 @@ function App() {
                 <Route path="/checklist" element={<MainLayout><ChecklistPage /></MainLayout>} />
                 <Route path="/scanner" element={<MainLayout><ScannerPage /></MainLayout>} />
                 <Route path="/knowledge" element={<MainLayout><KnowledgePage /></MainLayout>} />
-                <Route path="/account" element={<MainLayout><AccountPage /></MainLayout>} />
                 <Route path="/login" element={<MainLayout><LoginPage /></MainLayout>} />
-                <Route path="/cabinet" element={<MainLayout><CabinetPage /></MainLayout>} />
                 <Route path="/verify-email" element={<MainLayout><VerifyEmailPage /></MainLayout>} />
+
+                {/* Client cabinet routes */}
+                <Route path="/cabinet" element={
+                  <ClientRoute>
+                    <ClientLayout><ClientDashboard /></ClientLayout>
+                  </ClientRoute>
+                } />
+                <Route path="/cabinet/contracts" element={
+                  <ClientRoute>
+                    <ClientLayout><ClientContracts /></ClientLayout>
+                  </ClientRoute>
+                } />
+                <Route path="/cabinet/quotes" element={
+                  <ClientRoute>
+                    <ClientLayout><ClientQuotes /></ClientLayout>
+                  </ClientRoute>
+                } />
+                <Route path="/cabinet/services" element={
+                  <ClientRoute>
+                    <ClientLayout><ClientServices /></ClientLayout>
+                  </ClientRoute>
+                } />
+                <Route path="/cabinet/profile" element={
+                  <ClientRoute>
+                    <ClientLayout><ClientProfile /></ClientLayout>
+                  </ClientRoute>
+                } />
 
                 {/* Admin routes */}
                 <Route path="/admin/login" element={<AdminLoginPage />} />
