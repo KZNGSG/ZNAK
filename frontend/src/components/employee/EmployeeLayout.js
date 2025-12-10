@@ -15,7 +15,8 @@ import {
   Menu,
   X,
   UserCog,
-  BarChart3
+  BarChart3,
+  Settings
 } from 'lucide-react';
 
 const EmployeeLayout = ({ children }) => {
@@ -74,6 +75,12 @@ const EmployeeLayout = ({ children }) => {
         icon: UserCog,
         label: 'Сотрудники',
         description: 'Управление пользователями'
+      },
+      {
+        path: '/employee/settings',
+        icon: Settings,
+        label: 'Настройки',
+        description: 'Уведомления и SLA'
       }
     ] : [])
   ];

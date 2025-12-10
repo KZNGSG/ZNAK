@@ -257,6 +257,41 @@ def init_database():
         except:
             pass
 
+        # Таблица настроек уведомлений
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS notification_settings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT NOT NULL,
+                is_active BOOLEAN DEFAULT 1,
+                notify_new_callback BOOLEAN DEFAULT 1,
+                notify_overdue BOOLEAN DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+
+        # Таблица системных настроек CRM
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS crm_settings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                key TEXT UNIQUE NOT NULL,
+                value TEXT NOT NULL,
+                description TEXT,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+
+        # Инициализируем настройки SLA по умолчанию
+        cursor.execute('''
+            INSERT OR IGNORE INTO crm_settings (key, value, description)
+            VALUES ('sla_hours', '24', 'Время на обработку заявки в часах')
+        ''')
+
+        # Миграция: добавляем sla_deadline в callbacks если нет
+        try:
+            cursor.execute('ALTER TABLE callbacks ADD COLUMN sla_deadline TIMESTAMP')
+        except:
+            pass
+
         # Индексы для быстрого поиска
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_companies_inn ON companies(inn)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_companies_user ON companies(user_id)')
@@ -268,6 +303,7 @@ def init_database():
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_clients_status ON clients(status)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_interactions_client ON client_interactions(client_id)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_callbacks_assigned ON callbacks(assigned_to)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_callbacks_sla ON callbacks(sla_deadline)')
 
         print("Database initialized successfully!")
 
@@ -644,16 +680,25 @@ class CallbackDB:
 
     @staticmethod
     def create(data: Dict) -> int:
-        """Создать заявку на звонок"""
+        """Создать заявку на звонок с автоматическим SLA"""
         import json
+
+        # Получаем SLA часы из настроек
+        sla_hours = 24  # default
+        try:
+            from database import CRMSettingsDB
+            sla_hours = CRMSettingsDB.get_sla_hours()
+        except:
+            pass
 
         with get_db() as conn:
             cursor = conn.cursor()
             cursor.execute('''
                 INSERT INTO callbacks (
                     user_id, company_inn, company_name, contact_name,
-                    contact_phone, contact_email, products_json, comment, source
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    contact_phone, contact_email, products_json, comment, source,
+                    sla_deadline
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '+' || ? || ' hours'))
             ''', (
                 data.get('user_id'),
                 data.get('company_inn'),
@@ -663,7 +708,8 @@ class CallbackDB:
                 data.get('contact_email'),
                 json.dumps(data.get('products', []), ensure_ascii=False),
                 data.get('comment'),
-                data.get('source', 'unknown')
+                data.get('source', 'unknown'),
+                sla_hours
             ))
             return cursor.lastrowid
 
@@ -1051,6 +1097,186 @@ class CallbackDBExtended(CallbackDB):
         })
 
         return client_id
+
+
+class NotificationSettingsDB:
+    """Операции с настройками уведомлений"""
+
+    @staticmethod
+    def get_all() -> List[Dict]:
+        """Получить все настройки уведомлений"""
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM notification_settings ORDER BY id')
+            return [dict(row) for row in cursor.fetchall()]
+
+    @staticmethod
+    def get_active_emails(notification_type: str = 'new_callback') -> List[str]:
+        """Получить список активных email для типа уведомления"""
+        with get_db() as conn:
+            cursor = conn.cursor()
+            if notification_type == 'new_callback':
+                cursor.execute(
+                    'SELECT email FROM notification_settings WHERE is_active = 1 AND notify_new_callback = 1'
+                )
+            elif notification_type == 'overdue':
+                cursor.execute(
+                    'SELECT email FROM notification_settings WHERE is_active = 1 AND notify_overdue = 1'
+                )
+            else:
+                cursor.execute('SELECT email FROM notification_settings WHERE is_active = 1')
+            return [row['email'] for row in cursor.fetchall()]
+
+    @staticmethod
+    def add(email: str, notify_new_callback: bool = True, notify_overdue: bool = True) -> int:
+        """Добавить email для уведомлений"""
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO notification_settings (email, notify_new_callback, notify_overdue)
+                VALUES (?, ?, ?)
+            ''', (email, notify_new_callback, notify_overdue))
+            return cursor.lastrowid
+
+    @staticmethod
+    def update(notification_id: int, data: Dict) -> bool:
+        """Обновить настройку уведомления"""
+        with get_db() as conn:
+            cursor = conn.cursor()
+            fields = []
+            values = []
+            for key in ['email', 'is_active', 'notify_new_callback', 'notify_overdue']:
+                if key in data:
+                    fields.append(f'{key} = ?')
+                    values.append(data[key])
+            if not fields:
+                return False
+            values.append(notification_id)
+            cursor.execute(
+                f'UPDATE notification_settings SET {", ".join(fields)} WHERE id = ?',
+                values
+            )
+            return cursor.rowcount > 0
+
+    @staticmethod
+    def delete(notification_id: int) -> bool:
+        """Удалить настройку уведомления"""
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM notification_settings WHERE id = ?', (notification_id,))
+            return cursor.rowcount > 0
+
+
+class CRMSettingsDB:
+    """Операции с системными настройками CRM"""
+
+    @staticmethod
+    def get(key: str, default: str = None) -> Optional[str]:
+        """Получить значение настройки"""
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT value FROM crm_settings WHERE key = ?', (key,))
+            row = cursor.fetchone()
+            return row['value'] if row else default
+
+    @staticmethod
+    def get_all() -> Dict[str, str]:
+        """Получить все настройки"""
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT key, value, description FROM crm_settings')
+            return {row['key']: {'value': row['value'], 'description': row['description']} for row in cursor.fetchall()}
+
+    @staticmethod
+    def set(key: str, value: str, description: str = None) -> bool:
+        """Установить значение настройки"""
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO crm_settings (key, value, description, updated_at)
+                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = CURRENT_TIMESTAMP
+            ''', (key, value, description, value))
+            return True
+
+    @staticmethod
+    def get_sla_hours() -> int:
+        """Получить SLA в часах"""
+        value = CRMSettingsDB.get('sla_hours', '24')
+        return int(value)
+
+
+class CallbackSLADB:
+    """Операции с SLA для заявок"""
+
+    @staticmethod
+    def get_overdue(assigned_to: int = None) -> List[Dict]:
+        """Получить просроченные заявки"""
+        import json
+        with get_db() as conn:
+            cursor = conn.cursor()
+            query = '''
+                SELECT cb.*, u.email as assigned_email
+                FROM callbacks cb
+                LEFT JOIN users u ON cb.assigned_to = u.id
+                WHERE cb.status IN ('new', 'processing')
+                AND cb.sla_deadline IS NOT NULL
+                AND cb.sla_deadline < CURRENT_TIMESTAMP
+            '''
+            params = []
+            if assigned_to:
+                query += ' AND cb.assigned_to = ?'
+                params.append(assigned_to)
+            query += ' ORDER BY cb.sla_deadline ASC'
+            cursor.execute(query, params)
+            results = []
+            for row in cursor.fetchall():
+                item = dict(row)
+                item['products'] = json.loads(item['products_json']) if item.get('products_json') else []
+                if 'products_json' in item:
+                    del item['products_json']
+                item['is_overdue'] = True
+                results.append(item)
+            return results
+
+    @staticmethod
+    def get_overdue_count() -> int:
+        """Получить количество просроченных заявок"""
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT COUNT(*) as cnt FROM callbacks
+                WHERE status IN ('new', 'processing')
+                AND sla_deadline IS NOT NULL
+                AND sla_deadline < CURRENT_TIMESTAMP
+            ''')
+            return cursor.fetchone()['cnt']
+
+    @staticmethod
+    def set_sla_deadline(callback_id: int, hours: int = None):
+        """Установить SLA deadline для заявки"""
+        if hours is None:
+            hours = CRMSettingsDB.get_sla_hours()
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                UPDATE callbacks
+                SET sla_deadline = datetime(created_at, '+' || ? || ' hours')
+                WHERE id = ?
+            ''', (hours, callback_id))
+
+    @staticmethod
+    def update_all_missing_sla():
+        """Обновить SLA для всех заявок где он не установлен"""
+        hours = CRMSettingsDB.get_sla_hours()
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                UPDATE callbacks
+                SET sla_deadline = datetime(created_at, '+' || ? || ' hours')
+                WHERE sla_deadline IS NULL AND status IN ('new', 'processing')
+            ''', (hours,))
+            return cursor.rowcount
 
 
 # Инициализация БД при импорте модуля

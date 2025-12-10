@@ -19,7 +19,8 @@ import {
   XCircle,
   AlertCircle,
   Building2,
-  Phone
+  Phone,
+  AlertTriangle
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -138,6 +139,27 @@ const SuperadminDashboard = () => {
         </div>
       </div>
 
+      {/* Overdue Alert */}
+      {stats?.callbacks?.overdue > 0 && (
+        <Link
+          to="/employee/inbox?overdue=true"
+          className="block bg-red-50 border border-red-200 rounded-xl p-4 hover:bg-red-100 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-red-100 rounded-lg">
+              <AlertTriangle className="w-5 h-5 text-red-600" />
+            </div>
+            <div className="flex-1">
+              <div className="text-red-800 font-medium">Просроченные заявки!</div>
+              <div className="text-red-600 text-sm">
+                {stats.callbacks.overdue} {stats.callbacks.overdue === 1 ? 'заявка' : 'заявок'} требует внимания
+              </div>
+            </div>
+            <ArrowRight className="w-5 h-5 text-red-400" />
+          </div>
+        </Link>
+      )}
+
       {/* Main KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Заявки */}
@@ -150,10 +172,16 @@ const SuperadminDashboard = () => {
           </div>
           <div className="text-2xl font-bold text-gray-900">{stats?.callbacks?.period || 0}</div>
           <div className="text-sm text-gray-500 mt-1">Новых заявок</div>
-          <div className="flex items-center gap-2 mt-2 text-xs">
+          <div className="flex items-center gap-2 mt-2 text-xs flex-wrap">
             <span className="text-yellow-600 font-medium">{stats?.callbacks?.new || 0} новых</span>
             <span className="text-gray-300">|</span>
             <span className="text-blue-600">{stats?.callbacks?.processing || 0} в работе</span>
+            {stats?.callbacks?.overdue > 0 && (
+              <>
+                <span className="text-gray-300">|</span>
+                <span className="text-red-600 font-medium">{stats.callbacks.overdue} просрочено</span>
+              </>
+            )}
           </div>
         </div>
 
