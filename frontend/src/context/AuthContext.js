@@ -91,6 +91,13 @@ export const AuthProvider = ({ children }) => {
     }
 
     localStorage.setItem('auth_token', data.access_token);
+
+    // Для сотрудников и суперадминов также сохраняем employee_token
+    // чтобы работала авторизация в панели сотрудника
+    if (['employee', 'superadmin'].includes(data.user.role)) {
+      localStorage.setItem('employee_token', data.access_token);
+    }
+
     setToken(data.access_token);
     setUser(data.user);
     return data;
@@ -99,6 +106,7 @@ export const AuthProvider = ({ children }) => {
   // Выход
   const logout = () => {
     localStorage.removeItem('auth_token');
+    localStorage.removeItem('employee_token');
     setToken(null);
     setUser(null);
   };
