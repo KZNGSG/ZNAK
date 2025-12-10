@@ -19,6 +19,8 @@ import KnowledgePage from './pages/KnowledgePage';
 import QuotePage from './pages/QuotePage';
 import LoginPage from './pages/LoginPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 
 // Client cabinet pages
 import ClientLayout from './components/cabinet/ClientLayout';
@@ -87,6 +89,8 @@ function App() {
                 <Route path="/knowledge" element={<MainLayout><KnowledgePage /></MainLayout>} />
                 <Route path="/login" element={<MainLayout><LoginPage /></MainLayout>} />
                 <Route path="/verify-email" element={<MainLayout><VerifyEmailPage /></MainLayout>} />
+                <Route path="/forgot-password" element={<MainLayout><ForgotPasswordPage /></MainLayout>} />
+                <Route path="/reset-password" element={<MainLayout><ResetPasswordPage /></MainLayout>} />
 
                 {/* Client cabinet routes */}
                 <Route path="/cabinet" element={

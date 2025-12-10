@@ -2491,6 +2491,84 @@ async def api_resend_verification(user: Dict = Depends(require_auth)):
     return resend_verification_email(user["id"], user["email"])
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    password: str
+
+
+@app.post("/api/auth/forgot-password")
+async def api_forgot_password(data: ForgotPasswordRequest):
+    """Запрос на сброс пароля - отправляет письмо с ссылкой"""
+    from database import UserDB, PasswordResetDB
+    from email_service import generate_verification_token, send_password_reset_email
+
+    # Ищем пользователя по email
+    user = UserDB.get_by_email(data.email.lower().strip())
+
+    # Всегда возвращаем успех, чтобы не раскрывать существование email
+    if not user:
+        return {"success": True, "message": "Если указанный email зарегистрирован, вы получите письмо с инструкциями"}
+
+    if not user.get('is_active'):
+        return {"success": True, "message": "Если указанный email зарегистрирован, вы получите письмо с инструкциями"}
+
+    # Генерируем токен и сохраняем
+    token = generate_verification_token()
+    PasswordResetDB.create_token(user['id'], token)
+
+    # Отправляем письмо
+    email_sent = send_password_reset_email(user['email'], token)
+
+    if not email_sent:
+        print(f"[PASSWORD RESET] Failed to send email to {user['email']}")
+
+    return {"success": True, "message": "Если указанный email зарегистрирован, вы получите письмо с инструкциями"}
+
+
+@app.get("/api/auth/verify-reset-token")
+async def api_verify_reset_token(token: str):
+    """Проверка токена сброса пароля (для валидации перед показом формы)"""
+    from database import PasswordResetDB
+
+    token_data = PasswordResetDB.verify_token(token)
+
+    if not token_data:
+        raise HTTPException(
+            status_code=400,
+            detail="Недействительная или истёкшая ссылка сброса пароля"
+        )
+
+    return {"valid": True, "email": token_data['email']}
+
+
+@app.post("/api/auth/reset-password")
+async def api_reset_password(data: ResetPasswordRequest):
+    """Установка нового пароля по токену"""
+    from database import PasswordResetDB
+
+    # Валидация пароля
+    if len(data.password) < 6:
+        raise HTTPException(
+            status_code=400,
+            detail="Пароль должен быть не менее 6 символов"
+        )
+
+    # Сбрасываем пароль
+    success = PasswordResetDB.use_token(data.token, data.password)
+
+    if not success:
+        raise HTTPException(
+            status_code=400,
+            detail="Недействительная или истёкшая ссылка сброса пароля"
+        )
+
+    return {"success": True, "message": "Пароль успешно изменён. Теперь вы можете войти с новым паролем."}
+
+
 # ======================== ЛИЧНЫЙ КАБИНЕТ ========================
 
 @app.get("/api/cabinet/quotes")
