@@ -162,8 +162,7 @@ const EmployeeLayout = ({ children }) => {
               <div className="flex-1 min-w-0">
                 <div className="text-sm text-slate-200 truncate">{user?.email}</div>
                 <div className="text-xs text-slate-500">
-                  {user?.role === 'superadmin' ? 'Супер-админ' :
-                   user?.role === 'admin' ? 'Администратор' : 'Менеджер'}
+                  {user?.role === 'superadmin' ? 'Супер-админ' : 'Сотрудник'}
                 </div>
               </div>
               <button

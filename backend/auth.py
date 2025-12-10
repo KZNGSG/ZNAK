@@ -141,11 +141,11 @@ async def require_auth(
 
 
 async def require_admin(user: Dict = Depends(require_auth)) -> Dict:
-    """Требовать права администратора"""
-    if user["role"] not in ["admin", "superadmin"]:
+    """Требовать права администратора (сотрудник или суперадмин)"""
+    if user["role"] not in ["employee", "superadmin"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Требуются права администратора"
+            detail="Требуются права сотрудника"
         )
     return user
 
@@ -161,8 +161,8 @@ async def require_superadmin(user: Dict = Depends(require_auth)) -> Dict:
 
 
 async def require_employee(user: Dict = Depends(require_auth)) -> Dict:
-    """Требовать права сотрудника (employee, admin, superadmin)"""
-    if user["role"] not in ["employee", "admin", "superadmin"]:
+    """Требовать права сотрудника (employee или superadmin)"""
+    if user["role"] not in ["employee", "superadmin"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Требуются права сотрудника"
@@ -294,12 +294,12 @@ def resend_verification_email(user_id: int, email: str) -> Dict:
     }
 
 
-def create_admin_user(email: str, password: str, role: str = "admin") -> Dict:
-    """Создать администратора (только для суперадмина)"""
-    if role not in ["admin", "superadmin"]:
+def create_staff_user(email: str, password: str, role: str = "employee") -> Dict:
+    """Создать сотрудника (только для суперадмина)"""
+    if role not in ["employee", "superadmin"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Недопустимая роль"
+            detail="Недопустимая роль. Допустимы: employee, superadmin"
         )
 
     existing = UserDB.get_by_email(email)
@@ -311,3 +311,7 @@ def create_admin_user(email: str, password: str, role: str = "admin") -> Dict:
 
     user_id = UserDB.create(email, password, role)
     return {"id": user_id, "email": email, "role": role}
+
+
+# Для обратной совместимости
+create_admin_user = create_staff_user

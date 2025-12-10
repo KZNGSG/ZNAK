@@ -33,8 +33,8 @@ export const EmployeeAuthProvider = ({ children }) => {
 
       if (response.ok) {
         const userData = await response.json();
-        // Проверяем роль: employee, admin или superadmin
-        if (['employee', 'admin', 'superadmin'].includes(userData.role)) {
+        // Проверяем роль: employee или superadmin
+        if (['employee', 'superadmin'].includes(userData.role)) {
           setUser(userData);
           setToken(savedToken);
         } else {
@@ -75,7 +75,7 @@ export const EmployeeAuthProvider = ({ children }) => {
     }
 
     // Проверяем роль
-    if (!['employee', 'admin', 'superadmin'].includes(data.user.role)) {
+    if (!['employee', 'superadmin'].includes(data.user.role)) {
       throw new Error('Доступ запрещён. Требуются права сотрудника.');
     }
 
@@ -108,8 +108,8 @@ export const EmployeeAuthProvider = ({ children }) => {
     token,
     loading,
     isAuthenticated: !!user,
-    isEmployee: ['employee', 'admin', 'superadmin'].includes(user?.role),
-    isAdmin: ['admin', 'superadmin'].includes(user?.role),
+    isEmployee: ['employee', 'superadmin'].includes(user?.role),
+    isSuperAdmin: user?.role === 'superadmin',
     login,
     logout,
     authFetch

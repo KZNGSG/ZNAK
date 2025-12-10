@@ -47,7 +47,7 @@ def init_database():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 email TEXT UNIQUE NOT NULL,
                 password_hash TEXT NOT NULL,
-                role TEXT DEFAULT 'client',  -- client, admin, superadmin
+                role TEXT DEFAULT 'client',  -- client, employee, superadmin
                 is_active BOOLEAN DEFAULT 1,
                 email_verified BOOLEAN DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

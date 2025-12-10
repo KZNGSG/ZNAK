@@ -33,7 +33,8 @@ export const AdminAuthProvider = ({ children }) => {
 
       if (response.ok) {
         const userData = await response.json();
-        if (userData.role === 'admin' || userData.role === 'superadmin') {
+        // Сотрудник или суперадмин могут войти в админку
+        if (userData.role === 'employee' || userData.role === 'superadmin') {
           setUser(userData);
           setToken(savedToken);
         } else {
@@ -73,8 +74,8 @@ export const AdminAuthProvider = ({ children }) => {
       throw new Error(data.detail || 'Ошибка входа');
     }
 
-    if (data.user.role !== 'admin' && data.user.role !== 'superadmin') {
-      throw new Error('Доступ запрещён. Требуются права администратора.');
+    if (data.user.role !== 'employee' && data.user.role !== 'superadmin') {
+      throw new Error('Доступ запрещён. Требуются права сотрудника.');
     }
 
     localStorage.setItem('admin_token', data.access_token);
@@ -106,7 +107,7 @@ export const AdminAuthProvider = ({ children }) => {
     token,
     loading,
     isAuthenticated: !!user,
-    isAdmin: user?.role === 'admin' || user?.role === 'superadmin',
+    isAdmin: user?.role === 'employee' || user?.role === 'superadmin',
     isSuperAdmin: user?.role === 'superadmin',
     login,
     logout,
