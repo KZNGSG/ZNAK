@@ -2441,7 +2441,7 @@ async def generate_act(request: ActGenerateRequest):
 @app.post("/api/auth/register")
 async def api_register(data: UserRegister):
     """Регистрация нового пользователя"""
-    return register_user(data.email, data.password)
+    return register_user(data.email, data.password, name=data.name, phone=data.phone, inn=data.inn)
 
 
 @app.post("/api/auth/login")
@@ -2453,6 +2453,19 @@ async def api_login(data: UserLogin):
 @app.get("/api/auth/me")
 async def api_get_me(user: Dict = Depends(require_auth)):
     """Получить данные текущего пользователя"""
+    # Получаем полные данные пользователя из БД
+    full_user = UserDB.get_by_id(user["id"])
+    if full_user:
+        return {
+            "id": full_user["id"],
+            "email": full_user["email"],
+            "role": full_user["role"],
+            "name": full_user.get("name"),
+            "phone": full_user.get("phone"),
+            "inn": full_user.get("inn"),
+            "company_name": full_user.get("company_name"),
+            "email_verified": bool(full_user.get("email_verified", False))
+        }
     return user
 
 

@@ -29,6 +29,9 @@ security = HTTPBearer(auto_error=False)
 class UserRegister(BaseModel):
     email: EmailStr
     password: str
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    inn: Optional[str] = None
 
 
 class UserLogin(BaseModel):
@@ -172,7 +175,7 @@ async def require_employee(user: Dict = Depends(require_auth)) -> Dict:
 
 # ======================== СЕРВИСНЫЕ ФУНКЦИИ ========================
 
-def register_user(email: str, password: str) -> Dict:
+def register_user(email: str, password: str, name: str = None, phone: str = None, inn: str = None) -> Dict:
     """Зарегистрировать нового пользователя"""
     # Проверяем, не занят ли email
     existing = UserDB.get_by_email(email)
@@ -189,8 +192,8 @@ def register_user(email: str, password: str) -> Dict:
             detail="Пароль должен быть не менее 6 символов"
         )
 
-    # Создаём пользователя
-    user_id = UserDB.create(email, password)
+    # Создаём пользователя с дополнительными данными
+    user_id = UserDB.create(email, password, name=name, phone=phone, inn=inn)
     user = UserDB.get_by_id(user_id)
 
     # Генерируем токен верификации и отправляем email
@@ -212,6 +215,9 @@ def register_user(email: str, password: str) -> Dict:
             "id": user["id"],
             "email": user["email"],
             "role": user["role"],
+            "name": user.get("name"),
+            "phone": user.get("phone"),
+            "inn": user.get("inn"),
             "email_verified": False
         },
         "message": "Письмо с подтверждением отправлено на вашу почту"
@@ -244,6 +250,9 @@ def login_user(email: str, password: str) -> Dict:
             "id": user["id"],
             "email": user["email"],
             "role": user["role"],
+            "name": user.get("name"),
+            "phone": user.get("phone"),
+            "inn": user.get("inn"),
             "email_verified": bool(user.get('email_verified', False))
         }
     }
