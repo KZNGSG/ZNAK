@@ -13,7 +13,7 @@ from fastapi import HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr
 
-from database import UserDB, EmailVerificationDB, verify_password
+from database import UserDB, EmailVerificationDB, ClientDB, verify_password
 from email_service import generate_verification_token, send_verification_email
 
 # Секретный ключ для JWT - ОБЯЗАТЕЛЬНО установить в .env!
@@ -204,6 +204,25 @@ def register_user(email: str, password: str, name: str = None, phone: str = None
     user_id = UserDB.create(email, password, name=name, phone=phone, inn=inn,
                             company_name=company_name, city=city, region=region)
     user = UserDB.get_by_id(user_id)
+
+    # Создаём запись клиента в CRM для видимости менеджерам
+    try:
+        client_data = {
+            'contact_name': name or email.split('@')[0],  # Имя или часть email
+            'contact_phone': phone or 'Не указан',
+            'contact_email': email,
+            'inn': inn,
+            'company_name': company_name,
+            'source': 'website',  # Регистрация с сайта
+            'status': 'lead',
+            'user_id': user_id,  # Связь с аккаунтом пользователя
+            'comment': f'Самостоятельная регистрация. Город: {city or "не указан"}, Регион: {region or "не указан"}'
+        }
+        ClientDB.create(client_data)
+        print(f"[AUTH] Created client record for user {email}")
+    except Exception as e:
+        print(f"[AUTH WARNING] Failed to create client record for {email}: {e}")
+        # Не прерываем регистрацию если клиент не создался
 
     # Генерируем токен верификации и отправляем email
     verification_token = generate_verification_token()
