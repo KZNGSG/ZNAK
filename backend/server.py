@@ -22,10 +22,11 @@ from document_generator import generate_contract_pdf, generate_quote_pdf, genera
 # Импорт авторизации и БД
 from auth import (
     UserRegister, UserLogin, register_user, login_user,
-    get_current_user, require_auth, require_admin, require_superadmin
+    get_current_user, require_auth, require_admin, require_superadmin, require_employee
 )
 from database import (
     CompanyDB, QuoteDB, ContractDB, CallbackDB, UserDB,
+    ClientDB, InteractionDB, CallbackDBExtended,
     get_next_contract_number, get_db
 )
 
@@ -2757,6 +2758,402 @@ async def api_admin_get_stats(user: Dict = Depends(require_admin)):
         "pending_callbacks": new_callbacks,
         "recent_callbacks": recent_callbacks
     }
+
+
+# ======================== EMPLOYEE DASHBOARD API ========================
+
+# Pydantic модели для Employee API
+class ClientCreate(BaseModel):
+    contact_name: str
+    contact_phone: str
+    contact_email: Optional[str] = None
+    contact_position: Optional[str] = None
+    company_name: Optional[str] = None
+    company_type: Optional[str] = None  # LEGAL или INDIVIDUAL
+    inn: Optional[str] = None
+    kpp: Optional[str] = None
+    ogrn: Optional[str] = None
+    address: Optional[str] = None
+    comment: Optional[str] = None
+    source: Optional[str] = "manual"
+    status: Optional[str] = "lead"
+    products: Optional[List[Dict]] = []
+
+class ClientUpdate(BaseModel):
+    contact_name: Optional[str] = None
+    contact_phone: Optional[str] = None
+    contact_email: Optional[str] = None
+    contact_position: Optional[str] = None
+    company_name: Optional[str] = None
+    company_type: Optional[str] = None
+    inn: Optional[str] = None
+    kpp: Optional[str] = None
+    ogrn: Optional[str] = None
+    address: Optional[str] = None
+    comment: Optional[str] = None
+    status: Optional[str] = None
+    products: Optional[List[Dict]] = None
+
+class InteractionCreate(BaseModel):
+    type: str  # call, email, meeting, document_sent, note
+    subject: Optional[str] = None
+    description: Optional[str] = None
+
+
+# --- Статистика для дашборда ---
+@app.get("/api/employee/stats")
+async def api_employee_stats(user: Dict = Depends(require_employee)):
+    """Статистика для Employee Dashboard"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        # Новые заявки
+        cursor.execute("SELECT COUNT(*) as cnt FROM callbacks WHERE status = 'new'")
+        new_callbacks = cursor.fetchone()['cnt']
+
+        # Заявки в работе
+        cursor.execute("SELECT COUNT(*) as cnt FROM callbacks WHERE status = 'processing'")
+        processing_callbacks = cursor.fetchone()['cnt']
+
+        # Всего клиентов
+        client_stats = ClientDB.get_stats()
+
+        # Последние заявки
+        cursor.execute('''
+            SELECT id, contact_name, contact_phone, contact_email, company_name,
+                   status, source, created_at
+            FROM callbacks
+            ORDER BY created_at DESC
+            LIMIT 10
+        ''')
+        recent_callbacks = [dict(row) for row in cursor.fetchall()]
+
+    return {
+        "new_callbacks": new_callbacks,
+        "processing_callbacks": processing_callbacks,
+        "clients": client_stats,
+        "recent_callbacks": recent_callbacks
+    }
+
+
+# --- Заявки (Callbacks) ---
+@app.get("/api/employee/callbacks")
+async def api_employee_get_callbacks(
+    status: Optional[str] = None,
+    user: Dict = Depends(require_employee)
+):
+    """Получить все заявки"""
+    callbacks = CallbackDBExtended.get_all_extended(status=status)
+    return {"callbacks": callbacks}
+
+
+@app.get("/api/employee/callbacks/{callback_id}")
+async def api_employee_get_callback(
+    callback_id: int,
+    user: Dict = Depends(require_employee)
+):
+    """Получить заявку по ID"""
+    callback = CallbackDBExtended.get_by_id(callback_id)
+    if not callback:
+        raise HTTPException(status_code=404, detail="Заявка не найдена")
+    return callback
+
+
+@app.put("/api/employee/callbacks/{callback_id}/assign")
+async def api_employee_assign_callback(
+    callback_id: int,
+    user: Dict = Depends(require_employee)
+):
+    """Взять заявку в работу"""
+    success = CallbackDBExtended.assign_to(callback_id, user["id"])
+    if not success:
+        raise HTTPException(status_code=404, detail="Заявка не найдена")
+    return {"success": True, "message": "Заявка взята в работу"}
+
+
+@app.put("/api/employee/callbacks/{callback_id}/status")
+async def api_employee_update_callback_status(
+    callback_id: int,
+    status: str,
+    user: Dict = Depends(require_employee)
+):
+    """Обновить статус заявки"""
+    if status not in ['new', 'processing', 'completed', 'cancelled']:
+        raise HTTPException(status_code=400, detail="Недопустимый статус")
+
+    CallbackDB.update_status(callback_id, status)
+    return {"success": True}
+
+
+@app.post("/api/employee/callbacks/{callback_id}/convert")
+async def api_employee_convert_callback(
+    callback_id: int,
+    user: Dict = Depends(require_employee)
+):
+    """Конвертировать заявку в клиента"""
+    client_id = CallbackDBExtended.convert_to_client(callback_id, user["id"])
+    if not client_id:
+        raise HTTPException(status_code=404, detail="Заявка не найдена")
+
+    # Обновляем статус заявки
+    CallbackDB.update_status(callback_id, 'completed')
+
+    return {"success": True, "client_id": client_id}
+
+
+# --- Клиенты ---
+@app.get("/api/employee/clients")
+async def api_employee_get_clients(
+    status: Optional[str] = None,
+    search: Optional[str] = None,
+    user: Dict = Depends(require_employee)
+):
+    """Получить всех клиентов"""
+    if search:
+        clients = ClientDB.search(search)
+    else:
+        clients = ClientDB.get_all(status=status)
+    return {"clients": clients}
+
+
+@app.post("/api/employee/clients")
+async def api_employee_create_client(
+    data: ClientCreate,
+    user: Dict = Depends(require_employee)
+):
+    """Создать нового клиента"""
+    client_id = ClientDB.create(data.model_dump(), user["id"])
+
+    # Добавляем запись в историю
+    InteractionDB.create({
+        'client_id': client_id,
+        'manager_id': user["id"],
+        'type': 'note',
+        'subject': 'Клиент создан',
+        'description': f'Клиент создан вручную. Источник: {data.source}'
+    })
+
+    return {"success": True, "client_id": client_id}
+
+
+@app.get("/api/employee/clients/{client_id}")
+async def api_employee_get_client(
+    client_id: int,
+    user: Dict = Depends(require_employee)
+):
+    """Получить клиента по ID с историей"""
+    client = ClientDB.get_by_id(client_id)
+    if not client:
+        raise HTTPException(status_code=404, detail="Клиент не найден")
+
+    # Получаем историю взаимодействий
+    history = InteractionDB.get_by_client(client_id)
+
+    # Получаем документы клиента (КП, договоры)
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        # КП
+        cursor.execute('''
+            SELECT id, quote_number, total_amount, status, created_at
+            FROM quotes WHERE client_id = ?
+            ORDER BY created_at DESC
+        ''', (client_id,))
+        quotes = [dict(row) for row in cursor.fetchall()]
+
+        # Договоры
+        cursor.execute('''
+            SELECT id, contract_number, total_amount, status, created_at
+            FROM contracts WHERE client_id = ?
+            ORDER BY created_at DESC
+        ''', (client_id,))
+        contracts = [dict(row) for row in cursor.fetchall()]
+
+    return {
+        **client,
+        "history": history,
+        "quotes": quotes,
+        "contracts": contracts
+    }
+
+
+@app.put("/api/employee/clients/{client_id}")
+async def api_employee_update_client(
+    client_id: int,
+    data: ClientUpdate,
+    user: Dict = Depends(require_employee)
+):
+    """Обновить клиента"""
+    # Фильтруем None значения
+    update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+
+    if not update_data:
+        raise HTTPException(status_code=400, detail="Нет данных для обновления")
+
+    success = ClientDB.update(client_id, update_data)
+    if not success:
+        raise HTTPException(status_code=404, detail="Клиент не найден")
+
+    # Логируем изменение статуса
+    if 'status' in update_data:
+        InteractionDB.create({
+            'client_id': client_id,
+            'manager_id': user["id"],
+            'type': 'note',
+            'subject': 'Статус изменён',
+            'description': f'Новый статус: {update_data["status"]}'
+        })
+
+    return {"success": True}
+
+
+@app.delete("/api/employee/clients/{client_id}")
+async def api_employee_delete_client(
+    client_id: int,
+    user: Dict = Depends(require_employee)
+):
+    """Удалить клиента"""
+    success = ClientDB.delete(client_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Клиент не найден")
+    return {"success": True}
+
+
+# --- История взаимодействий ---
+@app.get("/api/employee/clients/{client_id}/history")
+async def api_employee_get_client_history(
+    client_id: int,
+    user: Dict = Depends(require_employee)
+):
+    """Получить историю взаимодействий с клиентом"""
+    history = InteractionDB.get_by_client(client_id)
+    return {"history": history}
+
+
+@app.post("/api/employee/clients/{client_id}/history")
+async def api_employee_add_interaction(
+    client_id: int,
+    data: InteractionCreate,
+    user: Dict = Depends(require_employee)
+):
+    """Добавить запись в историю взаимодействий"""
+    # Проверяем существование клиента
+    client = ClientDB.get_by_id(client_id)
+    if not client:
+        raise HTTPException(status_code=404, detail="Клиент не найден")
+
+    interaction_id = InteractionDB.create({
+        'client_id': client_id,
+        'manager_id': user["id"],
+        'type': data.type,
+        'subject': data.subject,
+        'description': data.description
+    })
+
+    return {"success": True, "interaction_id": interaction_id}
+
+
+# --- КП для клиента ---
+@app.post("/api/employee/clients/{client_id}/quote")
+async def api_employee_create_client_quote(
+    client_id: int,
+    services: List[Dict],
+    background_tasks: BackgroundTasks,
+    user: Dict = Depends(require_employee)
+):
+    """Создать КП для клиента"""
+    client = ClientDB.get_by_id(client_id)
+    if not client:
+        raise HTTPException(status_code=404, detail="Клиент не найден")
+
+    # Рассчитываем сумму
+    total_amount = sum(s.get('price', 0) * s.get('quantity', 1) for s in services)
+
+    # Создаём или получаем компанию
+    company_id = None
+    if client.get('inn'):
+        company_data = {
+            'inn': client['inn'],
+            'kpp': client.get('kpp'),
+            'ogrn': client.get('ogrn'),
+            'name': client.get('company_name', client['contact_name']),
+            'type': client.get('company_type', 'LEGAL'),
+            'address': client.get('address')
+        }
+        company_id = CompanyDB.create(company_data)
+
+    # Создаём КП
+    from datetime import timedelta
+    valid_until = (datetime.now() + timedelta(days=14)).date()
+
+    quote_data = {
+        'user_id': client.get('user_id'),
+        'company_id': company_id,
+        'services': services,
+        'total_amount': total_amount,
+        'contact_name': client['contact_name'],
+        'contact_phone': client['contact_phone'],
+        'contact_email': client.get('contact_email'),
+        'valid_until': valid_until.isoformat()
+    }
+
+    result = QuoteDB.create(quote_data)
+
+    # Связываем КП с клиентом
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            'UPDATE quotes SET client_id = ? WHERE id = ?',
+            (client_id, result['id'])
+        )
+
+    # Добавляем в историю
+    InteractionDB.create({
+        'client_id': client_id,
+        'manager_id': user["id"],
+        'type': 'quote_created',
+        'subject': f'Создано КП {result["quote_number"]}',
+        'description': f'Сумма: {total_amount:,.0f} ₽',
+        'quote_id': result['id']
+    })
+
+    return {
+        "success": True,
+        "quote_id": result['id'],
+        "quote_number": result['quote_number'],
+        "total_amount": total_amount
+    }
+
+
+# --- Отправка документов ---
+@app.post("/api/employee/clients/{client_id}/send-documents")
+async def api_employee_send_documents(
+    client_id: int,
+    document_type: str,  # quote, contract, invoice
+    document_id: int,
+    background_tasks: BackgroundTasks,
+    user: Dict = Depends(require_employee)
+):
+    """Отправить документы клиенту на email"""
+    client = ClientDB.get_by_id(client_id)
+    if not client:
+        raise HTTPException(status_code=404, detail="Клиент не найден")
+
+    if not client.get('contact_email'):
+        raise HTTPException(status_code=400, detail="У клиента не указан email")
+
+    # TODO: Интеграция с email_service для отправки документов
+    # Пока просто логируем
+
+    InteractionDB.create({
+        'client_id': client_id,
+        'manager_id': user["id"],
+        'type': 'email',
+        'subject': f'Отправлен {document_type}',
+        'description': f'Документ #{document_id} отправлен на {client["contact_email"]}'
+    })
+
+    return {"success": True, "message": f"Документ отправлен на {client['contact_email']}"}
 
 
 # ======================== ТЕСТ ТН ВЭД ========================

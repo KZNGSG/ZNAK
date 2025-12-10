@@ -160,6 +160,16 @@ async def require_superadmin(user: Dict = Depends(require_auth)) -> Dict:
     return user
 
 
+async def require_employee(user: Dict = Depends(require_auth)) -> Dict:
+    """Требовать права сотрудника (employee, admin, superadmin)"""
+    if user["role"] not in ["employee", "admin", "superadmin"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Требуются права сотрудника"
+        )
+    return user
+
+
 # ======================== СЕРВИСНЫЕ ФУНКЦИИ ========================
 
 def register_user(email: str, password: str) -> Dict:
