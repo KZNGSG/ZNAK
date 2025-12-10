@@ -3620,6 +3620,110 @@ async def api_employee_create_client_quote(
     }
 
 
+# --- Полное КП для клиента (с товарами и услугами как у клиента) ---
+class EmployeeQuoteFullRequest(BaseModel):
+    company: Dict
+    products: List[Dict] = []
+    services: List[Dict]
+    contact_name: str
+    contact_phone: str
+    contact_email: Optional[str] = None
+
+
+@app.post("/api/employee/clients/{client_id}/quote/full")
+async def api_employee_create_client_quote_full(
+    client_id: int,
+    request: EmployeeQuoteFullRequest,
+    background_tasks: BackgroundTasks,
+    user: Dict = Depends(require_employee)
+):
+    """Создать полное КП для клиента (как в клиентском интерфейсе)"""
+    client = ClientDB.get_by_id(client_id)
+    if not client:
+        raise HTTPException(status_code=404, detail="Клиент не найден")
+
+    # Рассчитываем сумму услуг
+    services_breakdown = []
+    total_amount = 0
+
+    for service in request.services:
+        quantity = service.get('quantity', 1)
+        price = service.get('price', 0)
+        subtotal = price * quantity
+        total_amount += subtotal
+
+        services_breakdown.append({
+            'id': service.get('id'),
+            'name': service.get('name'),
+            'description': service.get('description', ''),
+            'price': price,
+            'unit': service.get('unit', 'шт'),
+            'quantity': quantity,
+            'subtotal': subtotal
+        })
+
+    # Создаём или получаем компанию
+    company_id = None
+    if request.company.get('inn'):
+        company_data = {
+            'inn': request.company.get('inn'),
+            'kpp': request.company.get('kpp'),
+            'ogrn': request.company.get('ogrn'),
+            'name': request.company.get('name', client['contact_name']),
+            'type': client.get('company_type', 'LEGAL'),
+            'address': request.company.get('address')
+        }
+        company_id = CompanyDB.create(company_data)
+
+    # Создаём КП
+    from datetime import timedelta
+    valid_until = (datetime.now() + timedelta(days=14)).date()
+
+    quote_data = {
+        'user_id': client.get('user_id'),
+        'company_id': company_id,
+        'services': request.services,
+        'total_amount': total_amount,
+        'contact_name': request.contact_name,
+        'contact_phone': request.contact_phone,
+        'contact_email': request.contact_email,
+        'valid_until': valid_until.isoformat()
+    }
+
+    result = QuoteDB.create(quote_data)
+
+    # Связываем КП с клиентом
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            'UPDATE quotes SET client_id = ? WHERE id = ?',
+            (client_id, result['id'])
+        )
+
+    # Обновляем товары клиента если они переданы
+    if request.products:
+        ClientDB.update(client_id, {'products': request.products})
+
+    # Добавляем в историю
+    InteractionDB.create({
+        'client_id': client_id,
+        'manager_id': user["id"],
+        'type': 'quote_created',
+        'subject': f'Создано КП {result["quote_number"]}',
+        'description': f'Сумма: {total_amount:,.0f} ₽. Услуг: {len(request.services)}. Товаров: {len(request.products)}',
+        'quote_id': result['id']
+    })
+
+    return {
+        "success": True,
+        "quote_id": result['quote_number'],
+        "total_amount": total_amount,
+        "services_breakdown": services_breakdown,
+        "valid_until": valid_until.isoformat(),
+        "created_at": datetime.now().isoformat()
+    }
+
+
 # --- Договор для клиента ---
 @app.post("/api/employee/clients/{client_id}/contract")
 async def api_employee_create_client_contract(

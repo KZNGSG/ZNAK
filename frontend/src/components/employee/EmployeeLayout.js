@@ -16,7 +16,8 @@ import {
   X,
   UserCog,
   BarChart3,
-  Settings
+  Settings,
+  FolderOpen
 } from 'lucide-react';
 
 const EmployeeLayout = ({ children }) => {
@@ -55,6 +56,12 @@ const EmployeeLayout = ({ children }) => {
       icon: Users,
       label: 'Клиенты',
       description: 'База клиентов'
+    },
+    {
+      path: '/employee/documents',
+      icon: FolderOpen,
+      label: 'Документы',
+      description: 'КП, договоры, счета'
     },
     // КП и Договоры только для superadmin
     ...(isSuperAdmin ? [
