@@ -28,6 +28,7 @@ from auth import (
 from database import (
     CompanyDB, QuoteDB, ContractDB, CallbackDB, UserDB,
     ClientDB, InteractionDB, CallbackDBExtended,
+    NotificationSettingsDB, CRMSettingsDB, CallbackSLADB,
     get_next_contract_number, get_db
 )
 
@@ -1517,16 +1518,19 @@ def send_email(to_email: str, subject: str, body: str) -> bool:
         logger.error(f"Failed to send email: {str(e)}")
         return False
 
-def format_contact_email(data: ContactRequest) -> str:
+def format_contact_email(data: ContactRequest, callback_id: int = None) -> str:
     """Format contact form data into HTML email"""
     now = datetime.now().strftime("%d.%m.%Y %H:%M")
+    crm_url = os.getenv('SITE_URL', 'https://promarkirui.ru')
+    callback_link = f"{crm_url}/employee/inbox" if callback_id else ""
+
     return f"""
     <html>
         <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
             <div style="background: linear-gradient(135deg, #FFDA07 0%, #F5C300 100%); padding: 20px; border-radius: 12px 12px 0 0;">
-                <h2 style="margin: 0; color: #000;">Заявка на {data.request_type}</h2>
+                <h2 style="margin: 0; color: #000;">Заявка #{callback_id or 'N/A'} на {data.request_type}</h2>
             </div>
-            <div style="background: #fff; padding: 20px; border: 1px solid #eee; border-top: none; border-radius: 0 0 12px 12px;">
+            <div style="background: #fff; padding: 20px; border: 1px solid #eee; border-top: none;">
                 <table style="border-collapse: collapse; width: 100%; max-width: 600px;">
                     <tr>
                         <td style="padding: 12px; background-color: #f8f9fa; font-weight: bold; width: 150px;">Имя:</td>
@@ -1553,6 +1557,9 @@ def format_contact_email(data: ContactRequest) -> str:
                     Отправлено: {now}<br>
                     С согласием на обработку персональных данных
                 </p>
+            </div>
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 0 0 12px 12px; text-align: center; border: 1px solid #e5e7eb; border-top: none;">
+                <a href="{callback_link}" style="display: inline-block; background: #FFDA07; color: #000; text-decoration: none; padding: 10px 20px; border-radius: 8px; font-weight: bold;">Открыть в CRM</a>
             </div>
         </body>
     </html>
@@ -1678,12 +1685,26 @@ async def recommend_equipment(request: EquipmentRequest):
 
 @app.post("/api/contact/send")
 async def send_contact(request: ContactRequest, background_tasks: BackgroundTasks):
-    """Send contact form to email"""
+    """Send contact form to email and save to database"""
+
+    # Сохраняем заявку в БД
+    callback_data = {
+        "user_id": None,
+        "contact_name": request.name,
+        "contact_phone": request.phone,
+        "contact_email": request.email,
+        "company_inn": None,
+        "company_name": None,
+        "products": [],
+        "comment": f"Тип запроса: {request.request_type}\n{request.comment or ''}",
+        "source": "contact_form"
+    }
+    callback_id = CallbackDB.create(callback_data)
 
     # Отправляем на все адреса менеджеров
     contact_emails = os.getenv('CONTACT_TO_EMAIL', 'damirslk@mail.ru,turbin.ar8@gmail.com').split(',')
-    subject = f"Заявка на {request.request_type} от {request.name}"
-    body = format_contact_email(request)
+    subject = f"Заявка #{callback_id} на {request.request_type} от {request.name}"
+    body = format_contact_email(request, callback_id)
 
     # Send email to all managers in background
     for email in contact_emails:
@@ -1691,7 +1712,8 @@ async def send_contact(request: ContactRequest, background_tasks: BackgroundTask
 
     return {
         "status": "success",
-        "message": "Ваша заявка принята! Мы свяжемся с вами в ближайшее время."
+        "message": "Ваша заявка принята! Мы свяжемся с вами в ближайшее время.",
+        "callback_id": callback_id
     }
 
 # ======================== DADATA COMPANY LOOKUP ========================
@@ -2999,13 +3021,17 @@ async def api_superadmin_stats(
         ''')
         recent_contracts = [dict(row) for row in cursor.fetchall()]
 
+    # === ПРОСРОЧЕННЫЕ ЗАЯВКИ ===
+    overdue_count = CallbackSLADB.get_overdue_count()
+
     return {
         "period": period,
         "callbacks": {
             "new": new_callbacks,
             "processing": processing_callbacks,
             "period": period_callbacks,
-            "total": total_callbacks
+            "total": total_callbacks,
+            "overdue": overdue_count
         },
         "clients": {
             **client_stats,
@@ -3030,6 +3056,119 @@ async def api_superadmin_stats(
             "contracts": recent_contracts
         }
     }
+
+
+# --- Настройки уведомлений (Superadmin) ---
+@app.get("/api/superadmin/notifications")
+async def api_get_notification_settings(user: Dict = Depends(require_superadmin)):
+    """Получить настройки уведомлений"""
+    return {"notifications": NotificationSettingsDB.get_all()}
+
+
+@app.post("/api/superadmin/notifications")
+async def api_add_notification_setting(
+    data: Dict,
+    user: Dict = Depends(require_superadmin)
+):
+    """Добавить email для уведомлений"""
+    email = data.get("email")
+    if not email:
+        raise HTTPException(status_code=400, detail="Email обязателен")
+
+    notification_id = NotificationSettingsDB.add(
+        email=email,
+        notify_new_callback=data.get("notify_new_callback", True),
+        notify_overdue=data.get("notify_overdue", True)
+    )
+    return {"id": notification_id, "success": True}
+
+
+@app.put("/api/superadmin/notifications/{notification_id}")
+async def api_update_notification_setting(
+    notification_id: int,
+    data: Dict,
+    user: Dict = Depends(require_superadmin)
+):
+    """Обновить настройку уведомления"""
+    success = NotificationSettingsDB.update(notification_id, data)
+    return {"success": success}
+
+
+@app.delete("/api/superadmin/notifications/{notification_id}")
+async def api_delete_notification_setting(
+    notification_id: int,
+    user: Dict = Depends(require_superadmin)
+):
+    """Удалить настройку уведомления"""
+    success = NotificationSettingsDB.delete(notification_id)
+    return {"success": success}
+
+
+# --- Настройки CRM (SLA и др.) ---
+@app.get("/api/superadmin/settings")
+async def api_get_crm_settings(user: Dict = Depends(require_superadmin)):
+    """Получить все настройки CRM"""
+    return {"settings": CRMSettingsDB.get_all()}
+
+
+@app.put("/api/superadmin/settings/{key}")
+async def api_update_crm_setting(
+    key: str,
+    data: Dict,
+    user: Dict = Depends(require_superadmin)
+):
+    """Обновить настройку CRM"""
+    value = data.get("value")
+    if value is None:
+        raise HTTPException(status_code=400, detail="Значение обязательно")
+
+    CRMSettingsDB.set(key, str(value), data.get("description"))
+    return {"success": True}
+
+
+# --- Просроченные заявки ---
+@app.get("/api/employee/callbacks/overdue")
+async def api_get_overdue_callbacks(user: Dict = Depends(require_employee)):
+    """Получить просроченные заявки"""
+    # Superadmin видит все, employee только свои
+    if user['role'] == 'superadmin':
+        callbacks = CallbackSLADB.get_overdue()
+    else:
+        callbacks = CallbackSLADB.get_overdue(assigned_to=user['id'])
+
+    return {"callbacks": callbacks, "count": len(callbacks)}
+
+
+# --- Список менеджеров (для назначения заявок) ---
+@app.get("/api/employee/managers")
+async def api_get_managers(user: Dict = Depends(require_employee)):
+    """Получить список менеджеров для назначения заявок"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT id, email, role
+            FROM users
+            WHERE role IN ('employee', 'superadmin') AND is_active = 1
+            ORDER BY email
+        ''')
+        managers = [dict(row) for row in cursor.fetchall()]
+    return {"managers": managers}
+
+
+# --- Назначение заявки на конкретного менеджера (для Superadmin) ---
+@app.put("/api/superadmin/callbacks/{callback_id}/assign")
+async def api_superadmin_assign_callback(
+    callback_id: int,
+    data: Dict,
+    user: Dict = Depends(require_superadmin)
+):
+    """Назначить заявку на конкретного менеджера (только superadmin)"""
+    manager_id = data.get("manager_id")
+    if not manager_id:
+        raise HTTPException(status_code=400, detail="manager_id обязателен")
+
+    success = CallbackDBExtended.assign_to(callback_id, manager_id)
+    return {"success": success}
 
 
 # --- Список КП для менеджеров ---

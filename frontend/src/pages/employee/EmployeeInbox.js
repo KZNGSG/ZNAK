@@ -13,28 +13,42 @@ import {
   Filter,
   UserPlus,
   ArrowUpRight,
-  Package
+  Package,
+  AlertTriangle,
+  User,
+  ChevronDown
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const EmployeeInbox = () => {
-  const { authFetch } = useEmployeeAuth();
+  const { authFetch, isSuperAdmin, user } = useEmployeeAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [callbacks, setCallbacks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '');
+  const [showOverdue, setShowOverdue] = useState(searchParams.get('overdue') === 'true');
+  const [managers, setManagers] = useState([]);
+  const [assigningId, setAssigningId] = useState(null);
 
   useEffect(() => {
     fetchCallbacks();
-  }, [statusFilter]);
+    if (isSuperAdmin) {
+      fetchManagers();
+    }
+  }, [statusFilter, showOverdue, isSuperAdmin]);
 
   const fetchCallbacks = async () => {
     try {
-      const url = statusFilter
-        ? `${API_URL}/api/employee/callbacks?status=${statusFilter}`
-        : `${API_URL}/api/employee/callbacks`;
+      let url;
+      if (showOverdue) {
+        url = `${API_URL}/api/employee/callbacks/overdue`;
+      } else {
+        url = statusFilter
+          ? `${API_URL}/api/employee/callbacks?status=${statusFilter}`
+          : `${API_URL}/api/employee/callbacks`;
+      }
       const response = await authFetch(url);
       if (response.ok) {
         const data = await response.json();
@@ -47,13 +61,32 @@ const EmployeeInbox = () => {
     }
   };
 
+  const fetchManagers = async () => {
+    try {
+      const response = await authFetch(`${API_URL}/api/employee/managers`);
+      if (response.ok) {
+        const data = await response.json();
+        setManagers(data.managers || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch managers:', error);
+    }
+  };
+
   const handleStatusChange = (status) => {
+    setShowOverdue(false);
     setStatusFilter(status);
     if (status) {
       setSearchParams({ status });
     } else {
       setSearchParams({});
     }
+  };
+
+  const handleShowOverdue = () => {
+    setStatusFilter('');
+    setShowOverdue(true);
+    setSearchParams({ overdue: 'true' });
   };
 
   const handleConvertCallback = async (callbackId) => {
@@ -83,6 +116,22 @@ const EmployeeInbox = () => {
     }
   };
 
+  const handleAssignToManager = async (callbackId, managerId) => {
+    try {
+      const response = await authFetch(`${API_URL}/api/superadmin/callbacks/${callbackId}/assign`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ manager_id: managerId })
+      });
+      if (response.ok) {
+        setAssigningId(null);
+        fetchCallbacks();
+      }
+    } catch (error) {
+      console.error('Failed to assign callback:', error);
+    }
+  };
+
   const handleUpdateStatus = async (callbackId, newStatus) => {
     try {
       const response = await authFetch(`${API_URL}/api/employee/callbacks/${callbackId}/status?status=${newStatus}`, {
@@ -96,7 +145,16 @@ const EmployeeInbox = () => {
     }
   };
 
-  const getStatusBadge = (status) => {
+  const isOverdue = (callback) => {
+    if (!callback.sla_deadline || callback.status === 'completed' || callback.status === 'cancelled') {
+      return false;
+    }
+    return new Date(callback.sla_deadline) < new Date();
+  };
+
+  const getStatusBadge = (status, callback) => {
+    const overdue = isOverdue(callback);
+
     const styles = {
       new: { bg: 'bg-yellow-100', border: 'border-yellow-200', text: 'text-yellow-700', icon: CircleDot, label: 'Новая' },
       processing: { bg: 'bg-amber-100', border: 'border-amber-200', text: 'text-amber-700', icon: Clock, label: 'В работе' },
@@ -107,10 +165,18 @@ const EmployeeInbox = () => {
     const Icon = style.icon;
 
     return (
-      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium ${style.bg} ${style.border} ${style.text} border`}>
-        <Icon className="w-3.5 h-3.5" />
-        {style.label}
-      </span>
+      <div className="flex items-center gap-2">
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium ${style.bg} ${style.border} ${style.text} border`}>
+          <Icon className="w-3.5 h-3.5" />
+          {style.label}
+        </span>
+        {overdue && (
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-red-100 border border-red-200 text-red-700">
+            <AlertTriangle className="w-3 h-3" />
+            Просрочена
+          </span>
+        )}
+      </div>
     );
   };
 
@@ -172,7 +238,7 @@ const EmployeeInbox = () => {
             key={option.value}
             onClick={() => handleStatusChange(option.value)}
             className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-              statusFilter === option.value
+              statusFilter === option.value && !showOverdue
                 ? 'bg-yellow-100 text-yellow-700 border border-yellow-300'
                 : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
             }`}
@@ -180,6 +246,17 @@ const EmployeeInbox = () => {
             {option.label}
           </button>
         ))}
+        <button
+          onClick={handleShowOverdue}
+          className={`px-3 py-1.5 text-sm rounded-lg transition-colors flex items-center gap-1.5 ${
+            showOverdue
+              ? 'bg-red-100 text-red-700 border border-red-300'
+              : 'bg-white text-red-600 border border-gray-200 hover:bg-red-50'
+          }`}
+        >
+          <AlertTriangle className="w-3.5 h-3.5" />
+          Просроченные
+        </button>
       </div>
 
       {/* Callbacks List */}
@@ -188,15 +265,25 @@ const EmployeeInbox = () => {
           {callbacks.map((callback) => (
             <div
               key={callback.id}
-              className="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-md transition-all"
+              className={`bg-white border rounded-xl p-5 hover:shadow-md transition-all ${
+                isOverdue(callback) ? 'border-red-200 bg-red-50/30' : 'border-gray-200'
+              }`}
             >
               <div className="flex items-start justify-between gap-4 mb-4">
-                <div className="flex items-center gap-3">
-                  {getStatusBadge(callback.status)}
+                <div className="flex items-center gap-3 flex-wrap">
+                  {getStatusBadge(callback.status, callback)}
                   <span className="text-sm text-gray-500">{getSourceLabel(callback.source)}</span>
                   <span className="text-sm text-gray-400">{formatDate(callback.created_at)}</span>
                 </div>
-                <span className="text-sm text-gray-400">#{callback.id}</span>
+                <div className="flex items-center gap-2">
+                  {callback.assigned_email && (
+                    <span className="text-xs text-gray-500 flex items-center gap-1">
+                      <User className="w-3 h-3" />
+                      {callback.assigned_email.split('@')[0]}
+                    </span>
+                  )}
+                  <span className="text-sm text-gray-400">#{callback.id}</span>
+                </div>
               </div>
 
               <div className="grid md:grid-cols-2 gap-4 mb-4">
@@ -259,15 +346,50 @@ const EmployeeInbox = () => {
               )}
 
               <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   {callback.status === 'new' && (
-                    <button
-                      onClick={() => handleAssignCallback(callback.id)}
-                      className="px-3 py-1.5 text-sm font-medium text-yellow-700 hover:text-yellow-800 bg-yellow-100 hover:bg-yellow-200 border border-yellow-200 rounded-lg transition-colors"
-                    >
-                      Взять в работу
-                    </button>
+                    <>
+                      <button
+                        onClick={() => handleAssignCallback(callback.id)}
+                        className="px-3 py-1.5 text-sm font-medium text-yellow-700 hover:text-yellow-800 bg-yellow-100 hover:bg-yellow-200 border border-yellow-200 rounded-lg transition-colors"
+                      >
+                        Взять в работу
+                      </button>
+
+                      {/* Superadmin: assign to specific manager */}
+                      {isSuperAdmin && managers.length > 0 && (
+                        <div className="relative">
+                          <button
+                            onClick={() => setAssigningId(assigningId === callback.id ? null : callback.id)}
+                            className="px-3 py-1.5 text-sm font-medium text-blue-700 hover:text-blue-800 bg-blue-100 hover:bg-blue-200 border border-blue-200 rounded-lg transition-colors flex items-center gap-1"
+                          >
+                            <User className="w-3.5 h-3.5" />
+                            Назначить
+                            <ChevronDown className="w-3.5 h-3.5" />
+                          </button>
+
+                          {assigningId === callback.id && (
+                            <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 py-1 min-w-[200px]">
+                              {managers.map((manager) => (
+                                <button
+                                  key={manager.id}
+                                  onClick={() => handleAssignToManager(callback.id, manager.id)}
+                                  className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
+                                >
+                                  <User className="w-4 h-4 text-gray-400" />
+                                  <span className="truncate">{manager.email}</span>
+                                  {manager.role === 'superadmin' && (
+                                    <span className="text-xs text-purple-600 bg-purple-100 px-1.5 py-0.5 rounded">SA</span>
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
                   )}
+
                   {callback.status === 'processing' && (
                     <>
                       <button
@@ -315,7 +437,7 @@ const EmployeeInbox = () => {
           <Inbox className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-700 mb-2">Нет заявок</h3>
           <p className="text-gray-500">
-            {statusFilter ? 'Нет заявок с выбранным статусом' : 'Входящих заявок пока нет'}
+            {showOverdue ? 'Нет просроченных заявок' : statusFilter ? 'Нет заявок с выбранным статусом' : 'Входящих заявок пока нет'}
           </p>
         </div>
       )}
