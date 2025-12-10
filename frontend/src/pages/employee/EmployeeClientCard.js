@@ -24,7 +24,9 @@ import {
   UserX,
   Package,
   History,
-  ChevronDown
+  ChevronDown,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -42,10 +44,35 @@ const EmployeeClientCard = () => {
   const [newInteraction, setNewInteraction] = useState({ type: '', subject: '', description: '' });
   const [showInteractionForm, setShowInteractionForm] = useState(false);
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchClient();
   }, [id]);
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      const response = await authFetch(`${API_URL}/api/employee/clients/${id}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        toast.success('Клиент удалён');
+        navigate('/employee/clients');
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || 'Ошибка удаления');
+      }
+    } catch (error) {
+      console.error('Failed to delete client:', error);
+      toast.error('Ошибка удаления');
+    } finally {
+      setDeleting(false);
+      setShowDeleteModal(false);
+    }
+  };
 
   const fetchClient = async () => {
     try {
@@ -292,13 +319,22 @@ const EmployeeClientCard = () => {
           </div>
 
           {!editing ? (
-            <button
-              onClick={() => setEditing(true)}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
-            >
-              <Edit3 className="w-4 h-4" />
-              Редактировать
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setEditing(true)}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+              >
+                <Edit3 className="w-4 h-4" />
+                Редактировать
+              </button>
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+                Удалить
+              </button>
+            </div>
           ) : (
             <div className="flex items-center gap-2">
               <button
@@ -724,6 +760,47 @@ const EmployeeClientCard = () => {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowDeleteModal(false)} />
+          <div className="relative bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-xl">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="p-3 rounded-full bg-red-100">
+                <AlertTriangle className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Удалить клиента?</h3>
+                <p className="text-sm text-gray-500">Это действие нельзя отменить</p>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 rounded-xl p-4 mb-6">
+              <div className="font-medium text-gray-900">{client?.contact_name}</div>
+              {client?.company_name && (
+                <div className="text-sm text-gray-500">{client.company_name}</div>
+              )}
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:bg-red-400 rounded-xl transition-colors"
+              >
+                {deleting ? 'Удаление...' : 'Удалить'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
