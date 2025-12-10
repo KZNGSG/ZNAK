@@ -130,6 +130,27 @@ const EmployeeClientCard = () => {
     }
   };
 
+  const handleCreateContract = async (quoteId) => {
+    try {
+      const response = await authFetch(`${API_URL}/api/employee/clients/${id}/contract?quote_id=${quoteId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(`Договор ${data.contract_number} создан`);
+        fetchClient();
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || 'Ошибка создания договора');
+      }
+    } catch (error) {
+      console.error('Failed to create contract:', error);
+      toast.error('Ошибка создания договора');
+    }
+  };
+
   const getStatusBadge = (status) => {
     const styles = {
       lead: { bg: 'bg-yellow-100', border: 'border-yellow-200', text: 'text-yellow-700', icon: TrendingUp, label: 'Лид' },
@@ -653,8 +674,18 @@ const EmployeeClientCard = () => {
                       <span className="text-sm font-medium text-gray-900">{quote.quote_number}</span>
                       <span className="text-sm text-emerald-600">{quote.total_amount?.toLocaleString()} ₽</span>
                     </div>
-                    <div className="text-xs text-gray-400">
-                      {new Date(quote.created_at).toLocaleDateString('ru-RU')}
+                    <div className="flex items-center justify-between">
+                      <div className="text-xs text-gray-400">
+                        {new Date(quote.created_at).toLocaleDateString('ru-RU')}
+                      </div>
+                      {quote.status !== 'accepted' && (
+                        <button
+                          onClick={() => handleCreateContract(quote.id)}
+                          className="text-xs text-yellow-600 hover:text-yellow-700 font-medium"
+                        >
+                          Создать договор
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
