@@ -13,11 +13,12 @@ import {
   Bell,
   Search,
   Menu,
-  X
+  X,
+  UserCog
 } from 'lucide-react';
 
 const EmployeeLayout = ({ children }) => {
-  const { user, logout } = useEmployeeAuth();
+  const { user, logout, isSuperAdmin } = useEmployeeAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -47,18 +48,13 @@ const EmployeeLayout = ({ children }) => {
       label: 'Клиенты',
       description: 'База клиентов'
     },
-    {
-      path: '/employee/quotes',
-      icon: FileText,
-      label: 'КП',
-      description: 'Коммерческие предложения'
-    },
-    {
-      path: '/employee/contracts',
-      icon: FileCheck,
-      label: 'Договоры',
-      description: 'Договоры и акты'
-    }
+    // Управление сотрудниками только для superadmin
+    ...(isSuperAdmin ? [{
+      path: '/employee/staff',
+      icon: UserCog,
+      label: 'Сотрудники',
+      description: 'Управление пользователями'
+    }] : [])
   ];
 
   const NavItem = ({ item, collapsed }) => {

@@ -13,6 +13,7 @@ from email.utils import formataddr
 import logging
 import httpx
 import uuid
+import json
 from datetime import datetime
 from urllib.parse import quote as url_quote
 
@@ -3121,6 +3122,95 @@ async def api_employee_create_client_quote(
         "success": True,
         "quote_id": result['id'],
         "quote_number": result['quote_number'],
+        "total_amount": total_amount
+    }
+
+
+# --- Договор для клиента ---
+@app.post("/api/employee/clients/{client_id}/contract")
+async def api_employee_create_client_contract(
+    client_id: int,
+    quote_id: int = None,
+    services: List[Dict] = None,
+    user: Dict = Depends(require_employee)
+):
+    """Создать договор для клиента (из КП или напрямую)"""
+    client = ClientDB.get_by_id(client_id)
+    if not client:
+        raise HTTPException(status_code=404, detail="Клиент не найден")
+
+    # Если указан quote_id - создаём договор из КП
+    if quote_id:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT * FROM quotes WHERE id = ? AND client_id = ?
+            ''', (quote_id, client_id))
+            quote = cursor.fetchone()
+            if not quote:
+                raise HTTPException(status_code=404, detail="КП не найдено")
+            quote = dict(quote)
+            services_data = json.loads(quote['services_json'])
+            total_amount = quote['total_amount']
+            company_id = quote['company_id']
+    elif services:
+        # Создаём напрямую из списка услуг
+        total_amount = sum(s.get('price', 0) * s.get('quantity', 1) for s in services)
+        services_data = services
+        # Создаём или получаем компанию
+        company_id = None
+        if client.get('inn'):
+            company_data = {
+                'inn': client['inn'],
+                'kpp': client.get('kpp'),
+                'ogrn': client.get('ogrn'),
+                'name': client.get('company_name', client['contact_name']),
+                'type': client.get('company_type', 'LEGAL'),
+                'address': client.get('address')
+            }
+            company_id = CompanyDB.create(company_data)
+    else:
+        raise HTTPException(status_code=400, detail="Укажите quote_id или services")
+
+    # Создаём договор
+    contract_data = {
+        'quote_id': quote_id,
+        'user_id': client.get('user_id'),
+        'company_id': company_id,
+        'services': services_data,
+        'total_amount': total_amount
+    }
+
+    result = ContractDB.create(contract_data)
+
+    # Связываем договор с клиентом
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            'UPDATE contracts SET client_id = ? WHERE id = ?',
+            (client_id, result['id'])
+        )
+        # Обновляем статус КП если был указан
+        if quote_id:
+            cursor.execute(
+                'UPDATE quotes SET status = ? WHERE id = ?',
+                ('accepted', quote_id)
+            )
+
+    # Добавляем в историю
+    InteractionDB.create({
+        'client_id': client_id,
+        'manager_id': user["id"],
+        'type': 'contract_created',
+        'subject': f'Создан договор {result["contract_number"]}',
+        'description': f'Сумма: {total_amount:,.0f} ₽' + (f' (из КП #{quote_id})' if quote_id else ''),
+        'contract_id': result['id']
+    })
+
+    return {
+        "success": True,
+        "contract_id": result['id'],
+        "contract_number": result['contract_number'],
         "total_amount": total_amount
     }
 
