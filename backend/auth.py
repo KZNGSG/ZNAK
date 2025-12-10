@@ -16,8 +16,12 @@ from pydantic import BaseModel, EmailStr
 from database import UserDB, EmailVerificationDB, verify_password
 from email_service import generate_verification_token, send_verification_email
 
-# Секретный ключ для JWT (в проде брать из .env)
-SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'promarkirui-super-secret-key-change-in-production')
+# Секретный ключ для JWT - ОБЯЗАТЕЛЬНО установить в .env!
+SECRET_KEY = os.getenv('JWT_SECRET_KEY', '')
+if not SECRET_KEY:
+    import warnings
+    warnings.warn("JWT_SECRET_KEY not set! Using insecure default for development only.", RuntimeWarning)
+    SECRET_KEY = 'dev-only-insecure-key-do-not-use-in-production'
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_HOURS = 24 * 7  # 7 дней
 

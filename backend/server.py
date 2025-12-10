@@ -1482,13 +1482,18 @@ SERVICE_CATEGORIES = {
 
 def send_email(to_email: str, subject: str, body: str) -> bool:
     """Send email via SMTP with Beget configuration"""
-    # Beget SMTP defaults (порт 465 SSL - работает стабильно)
+    # Beget SMTP - все credentials из .env файла!
     smtp_host = os.getenv('SMTP_HOST', 'smtp.beget.com')
     smtp_port = os.getenv('SMTP_PORT', '465')
-    smtp_user = os.getenv('SMTP_USER', 'noreply@promarkirui.ru')
-    smtp_pass = os.getenv('SMTP_PASSWORD', 'wK2jnyo*t7jm')  # SMTP_PASSWORD (не SMTP_PASS)
-    smtp_from = os.getenv('SMTP_FROM', smtp_user)
+    smtp_user = os.getenv('SMTP_USER', '')
+    smtp_pass = os.getenv('SMTP_PASSWORD', '')  # ОБЯЗАТЕЛЬНО установить в .env
+    smtp_from = os.getenv('SMTP_FROM', '') or smtp_user
     smtp_use_tls = os.getenv('SMTP_USE_TLS', 'false').lower() == 'true'  # false = use SSL
+
+    # Проверяем конфигурацию
+    if not smtp_user or not smtp_pass:
+        logger.error(f"[EMAIL ERROR] SMTP not configured! Set SMTP_USER and SMTP_PASSWORD in .env")
+        return False
 
     # Log email attempt
     logger.info(f"Sending email to {to_email}, subject: {subject}")
