@@ -100,6 +100,16 @@ def init_database():
         except sqlite3.OperationalError:
             pass
 
+        # Миграция: поля для отслеживания приглашений и активности
+        try:
+            cursor.execute('ALTER TABLE users ADD COLUMN invitation_sent_at TIMESTAMP')
+        except sqlite3.OperationalError:
+            pass
+        try:
+            cursor.execute('ALTER TABLE users ADD COLUMN last_login TIMESTAMP')
+        except sqlite3.OperationalError:
+            pass
+
         # Таблица компаний (клиентов)
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS companies (

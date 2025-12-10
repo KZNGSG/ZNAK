@@ -2715,6 +2715,51 @@ async def api_admin_create_user(
     return {"id": user_id, "email": email, "role": role}
 
 
+@app.post("/api/admin/users/{user_id}/send-invitation")
+async def api_admin_send_invitation(
+    user_id: int,
+    data: Dict,
+    user: Dict = Depends(require_superadmin)
+):
+    """Отправить приглашение сотруднику на email"""
+    from email_service import send_staff_invitation_email
+
+    target_user = UserDB.get_by_id(user_id)
+    if not target_user:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+
+    if target_user['role'] not in ['employee', 'superadmin']:
+        raise HTTPException(status_code=400, detail="Приглашения отправляются только сотрудникам")
+
+    # Получаем пароль из запроса (временный пароль для письма)
+    temp_password = data.get('password', '')
+    if not temp_password:
+        raise HTTPException(status_code=400, detail="Укажите пароль для отправки в приглашении")
+
+    email_sent = send_staff_invitation_email(
+        to_email=target_user['email'],
+        password=temp_password,
+        role=target_user['role']
+    )
+
+    if not email_sent:
+        raise HTTPException(status_code=500, detail="Ошибка отправки email. Проверьте настройки SMTP.")
+
+    # Сохраняем время отправки приглашения
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            'UPDATE users SET invitation_sent_at = CURRENT_TIMESTAMP WHERE id = ?',
+            (user_id,)
+        )
+
+    return {"success": True, "message": "Приглашение отправлено"}
+
+
+# Защищённый email главного администратора - нельзя деактивировать/удалить/изменить роль
+PROTECTED_ADMIN_EMAIL = 'damirslk@mail.ru'
+
+
 @app.put("/api/admin/users/{user_id}")
 async def api_admin_update_user(
     user_id: int,
@@ -2722,6 +2767,15 @@ async def api_admin_update_user(
     current_user: Dict = Depends(require_superadmin)
 ):
     """Обновить пользователя (только для суперадмина)"""
+    # Проверяем, не пытаемся ли изменить защищённого админа
+    target_user = UserDB.get_by_id(user_id)
+    if target_user and target_user.get('email', '').lower() == PROTECTED_ADMIN_EMAIL:
+        # Запрещаем деактивацию и изменение роли для главного админа
+        if "is_active" in data and not data["is_active"]:
+            raise HTTPException(status_code=403, detail="Нельзя деактивировать главного администратора")
+        if "role" in data and data["role"] != "superadmin":
+            raise HTTPException(status_code=403, detail="Нельзя изменить роль главного администратора")
+
     with get_db() as conn:
         cursor = conn.cursor()
 
@@ -2756,6 +2810,11 @@ async def api_admin_delete_user(
     """Удалить пользователя (только для суперадмина)"""
     if user_id == current_user["id"]:
         raise HTTPException(status_code=400, detail="Нельзя удалить самого себя")
+
+    # Проверяем, не пытаемся ли удалить защищённого админа
+    target_user = UserDB.get_by_id(user_id)
+    if target_user and target_user.get('email', '').lower() == PROTECTED_ADMIN_EMAIL:
+        raise HTTPException(status_code=403, detail="Нельзя удалить главного администратора")
 
     with get_db() as conn:
         cursor = conn.cursor()

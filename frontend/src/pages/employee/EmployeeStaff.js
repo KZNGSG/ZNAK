@@ -13,7 +13,10 @@ import {
   X,
   Eye,
   EyeOff,
-  AlertCircle
+  AlertCircle,
+  Send,
+  CheckCircle,
+  Clock
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -27,6 +30,12 @@ const EmployeeStaff = () => {
   const [newUser, setNewUser] = useState({ email: '', password: '', role: 'employee' });
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Модальное окно для приглашения
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteUser, setInviteUser] = useState(null);
+  const [invitePassword, setInvitePassword] = useState('');
+  const [inviteSubmitting, setInviteSubmitting] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -136,6 +145,58 @@ const EmployeeStaff = () => {
     }
   };
 
+  // Открыть модальное окно приглашения
+  const openInviteModal = (user) => {
+    setInviteUser(user);
+    setInvitePassword('');
+    setShowInviteModal(true);
+  };
+
+  // Отправить приглашение
+  const handleSendInvitation = async (e) => {
+    e.preventDefault();
+    if (!invitePassword || invitePassword.length < 6) {
+      toast.error('Пароль должен быть минимум 6 символов');
+      return;
+    }
+
+    setInviteSubmitting(true);
+    try {
+      const response = await authFetch(`${API_URL}/api/admin/users/${inviteUser.id}/send-invitation`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: invitePassword })
+      });
+
+      if (response.ok) {
+        toast.success('Приглашение отправлено на ' + inviteUser.email);
+        setShowInviteModal(false);
+        setInviteUser(null);
+        setInvitePassword('');
+        fetchUsers();
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || 'Ошибка отправки');
+      }
+    } catch (error) {
+      console.error('Failed to send invitation:', error);
+      toast.error('Ошибка отправки приглашения');
+    } finally {
+      setInviteSubmitting(false);
+    }
+  };
+
+  // Получить статус приглашения
+  const getInvitationStatus = (user) => {
+    if (user.last_login) {
+      return { text: 'Активен', color: 'text-emerald-600', bg: 'bg-emerald-50', icon: CheckCircle };
+    }
+    if (user.invitation_sent_at) {
+      return { text: 'Ожидает входа', color: 'text-amber-600', bg: 'bg-amber-50', icon: Clock };
+    }
+    return { text: 'Не приглашён', color: 'text-gray-500', bg: 'bg-gray-50', icon: Mail };
+  };
+
   const getRoleBadge = (role) => {
     const styles = {
       superadmin: { bg: 'bg-purple-100', border: 'border-purple-200', text: 'text-purple-700', icon: ShieldCheck, label: 'Супер-админ' },
@@ -157,6 +218,9 @@ const EmployeeStaff = () => {
     if (!dateStr) return '';
     return new Date(dateStr).toLocaleDateString('ru-RU');
   };
+
+  // Защищённый email главного администратора - нельзя деактивировать/удалить
+  const PROTECTED_ADMIN_EMAIL = 'damirslk@mail.ru';
 
   // Фильтруем только сотрудников и superadmin
   const staffUsers = users.filter(u => ['employee', 'superadmin'].includes(u.role));
@@ -230,42 +294,75 @@ const EmployeeStaff = () => {
                       <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
                         {getRoleBadge(user.role)}
                         <span>Создан: {formatDate(user.created_at)}</span>
+                        {/* Статус приглашения */}
+                        {(() => {
+                          const status = getInvitationStatus(user);
+                          const StatusIcon = status.icon;
+                          return (
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs ${status.bg} ${status.color}`}>
+                              <StatusIcon className="w-3 h-3" />
+                              {status.text}
+                            </span>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2">
-                    {/* Role selector */}
-                    <select
-                      value={user.role}
-                      onChange={(e) => handleChangeRole(user.id, e.target.value)}
-                      className="px-3 py-1.5 text-sm bg-gray-50 border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:border-yellow-500"
-                    >
-                      <option value="employee">Сотрудник</option>
-                      <option value="superadmin">Супер-админ</option>
-                    </select>
+                    {/* Кнопка приглашения - не показываем для главного админа */}
+                    {user.email.toLowerCase() !== PROTECTED_ADMIN_EMAIL && (
+                      <button
+                        onClick={() => openInviteModal(user)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                        title="Отправить приглашение на email"
+                      >
+                        <Send className="w-4 h-4" />
+                        Пригласить
+                      </button>
+                    )}
 
-                    {/* Toggle Active */}
-                    <button
-                      onClick={() => handleToggleActive(user.id, user.is_active)}
-                      className={`p-2 rounded-lg transition-colors ${
-                        user.is_active
-                          ? 'text-emerald-600 hover:bg-emerald-50'
-                          : 'text-gray-400 hover:bg-gray-100'
-                      }`}
-                      title={user.is_active ? 'Деактивировать' : 'Активировать'}
-                    >
-                      {user.is_active ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
-                    </button>
+                    {/* Role selector - скрыт для защищённого админа */}
+                    {user.email.toLowerCase() !== PROTECTED_ADMIN_EMAIL ? (
+                      <select
+                        value={user.role}
+                        onChange={(e) => handleChangeRole(user.id, e.target.value)}
+                        className="px-3 py-1.5 text-sm bg-gray-50 border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:border-yellow-500"
+                      >
+                        <option value="employee">Сотрудник</option>
+                        <option value="superadmin">Супер-админ</option>
+                      </select>
+                    ) : (
+                      <span className="px-3 py-1.5 text-sm bg-purple-50 border border-purple-200 rounded-lg text-purple-700 font-medium">
+                        Главный админ
+                      </span>
+                    )}
 
-                    {/* Delete */}
-                    <button
-                      onClick={() => handleDeleteUser(user.id)}
-                      className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Удалить"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {/* Toggle Active - скрыт для защищённого админа */}
+                    {user.email.toLowerCase() !== PROTECTED_ADMIN_EMAIL && (
+                      <button
+                        onClick={() => handleToggleActive(user.id, user.is_active)}
+                        className={`p-2 rounded-lg transition-colors ${
+                          user.is_active
+                            ? 'text-emerald-600 hover:bg-emerald-50'
+                            : 'text-gray-400 hover:bg-gray-100'
+                        }`}
+                        title={user.is_active ? 'Деактивировать' : 'Активировать'}
+                      >
+                        {user.is_active ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
+                      </button>
+                    )}
+
+                    {/* Delete - скрыт для защищённого админа */}
+                    {user.email.toLowerCase() !== PROTECTED_ADMIN_EMAIL && (
+                      <button
+                        onClick={() => handleDeleteUser(user.id)}
+                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Удалить"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -306,8 +403,18 @@ const EmployeeStaff = () => {
                       )}
                     </div>
                   </div>
-                  <div className="text-xs text-gray-400">
-                    {formatDate(user.created_at)}
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-gray-400">
+                      {formatDate(user.created_at)}
+                    </span>
+                    {/* Delete button for clients */}
+                    <button
+                      onClick={() => handleDeleteUser(user.id)}
+                      className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Удалить клиента"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -395,6 +502,79 @@ const EmployeeStaff = () => {
                   className="flex-1 px-4 py-2.5 bg-yellow-500 hover:bg-yellow-600 text-gray-900 rounded-xl font-medium transition-colors disabled:opacity-50"
                 >
                   {submitting ? 'Создание...' : 'Создать'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Invite User Modal */}
+      {showInviteModal && inviteUser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-xl">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900">Отправить приглашение</h3>
+              <button
+                onClick={() => { setShowInviteModal(false); setInviteUser(null); }}
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSendInvitation} className="p-6 space-y-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <p className="text-sm text-blue-800">
+                  Приглашение будет отправлено на: <strong>{inviteUser.email}</strong>
+                </p>
+                <p className="text-xs text-blue-600 mt-1">
+                  В письме будут указаны email и пароль для входа
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Пароль для сотрудника
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={invitePassword}
+                    onChange={(e) => setInvitePassword(e.target.value)}
+                    placeholder="Введите пароль для отправки"
+                    className="w-full px-4 py-2.5 pr-12 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                    required
+                    minLength={6}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Этот пароль будет отправлен сотруднику в письме
+                </p>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => { setShowInviteModal(false); setInviteUser(null); }}
+                  className="flex-1 px-4 py-2.5 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium transition-colors"
+                >
+                  Отмена
+                </button>
+                <button
+                  type="submit"
+                  disabled={inviteSubmitting}
+                  className="flex-1 px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-medium transition-colors disabled:opacity-50 inline-flex items-center justify-center gap-2"
+                >
+                  <Send className="w-4 h-4" />
+                  {inviteSubmitting ? 'Отправка...' : 'Отправить'}
                 </button>
               </div>
             </form>

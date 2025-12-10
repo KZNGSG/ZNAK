@@ -238,6 +238,8 @@ def register_user(email: str, password: str, name: str = None, phone: str = None
 
 def login_user(email: str, password: str) -> Dict:
     """Войти в систему"""
+    from database import get_db
+
     user = UserDB.authenticate(email, password)
 
     if not user:
@@ -250,6 +252,14 @@ def login_user(email: str, password: str) -> Dict:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Аккаунт деактивирован"
+        )
+
+    # Обновляем last_login
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            'UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?',
+            (user["id"],)
         )
 
     # Генерируем токен
