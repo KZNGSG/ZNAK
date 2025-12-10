@@ -609,6 +609,16 @@ const LoginPage = () => {
         <p className="text-center text-xs text-gray-500 mt-6">
           Продолжая, вы соглашаетесь с условиями использования сервиса
         </p>
+
+        {/* Employee Login Link */}
+        <div className="text-center mt-4 pt-4 border-t border-gray-100">
+          <a
+            href="/employee/login"
+            className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            Вход для сотрудников →
+          </a>
+        </div>
       </div>
     </div>
   );
