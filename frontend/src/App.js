@@ -164,6 +164,11 @@ function App() {
                     <EmployeeLayout><EmployeeQuoteCreate /></EmployeeLayout>
                   </EmployeeRoute>
                 } />
+                <Route path="/employee/quote/new" element={
+                  <EmployeeRoute>
+                    <EmployeeLayout><QuotePage /></EmployeeLayout>
+                  </EmployeeRoute>
+                } />
                 <Route path="/employee/staff" element={
                   <EmployeeRoute>
                     <EmployeeLayout><EmployeeStaff /></EmployeeLayout>
