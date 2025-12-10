@@ -4,6 +4,7 @@ import './App.css';
 import { Toaster } from './components/ui/sonner';
 import { AuthProvider } from './context/AuthContext';
 import { AdminAuthProvider } from './context/AdminAuthContext';
+import { EmployeeAuthProvider } from './context/EmployeeAuthContext';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import HomePage from './pages/HomePage';
@@ -29,6 +30,16 @@ import AdminCallbacksPage from './pages/admin/AdminCallbacksPage';
 import AdminRoute from './components/admin/AdminRoute';
 import AdminLayout from './components/admin/AdminLayout';
 
+// Employee pages
+import EmployeeLoginPage from './pages/employee/EmployeeLoginPage';
+import EmployeeDashboard from './pages/employee/EmployeeDashboard';
+import EmployeeInbox from './pages/employee/EmployeeInbox';
+import EmployeeClients from './pages/employee/EmployeeClients';
+import EmployeeClientCard from './pages/employee/EmployeeClientCard';
+import EmployeeClientNew from './pages/employee/EmployeeClientNew';
+import EmployeeRoute from './components/employee/EmployeeRoute';
+import EmployeeLayout from './components/employee/EmployeeLayout';
+
 // Main layout wrapper
 const MainLayout = ({ children }) => (
   <>
@@ -44,46 +55,76 @@ function App() {
   return (
     <AuthProvider>
       <AdminAuthProvider>
-        <Router>
-          <div className="App">
-            <Toaster position="top-right" richColors />
-            <Routes>
-              {/* Main site routes */}
-              <Route path="/" element={<MainLayout><HomePage /></MainLayout>} />
-              <Route path="/check" element={<MainLayout><CheckProductPage /></MainLayout>} />
-              <Route path="/import" element={<MainLayout><ImportPage /></MainLayout>} />
-              <Route path="/equipment" element={<MainLayout><EquipmentPage /></MainLayout>} />
-              <Route path="/contact" element={<MainLayout><ContactPage /></MainLayout>} />
-              <Route path="/quote" element={<MainLayout><QuotePage /></MainLayout>} />
-              <Route path="/consultation" element={<MainLayout><ConsultationPage /></MainLayout>} />
-              <Route path="/checklist" element={<MainLayout><ChecklistPage /></MainLayout>} />
-              <Route path="/scanner" element={<MainLayout><ScannerPage /></MainLayout>} />
-              <Route path="/knowledge" element={<MainLayout><KnowledgePage /></MainLayout>} />
-              <Route path="/account" element={<MainLayout><AccountPage /></MainLayout>} />
-              <Route path="/login" element={<MainLayout><LoginPage /></MainLayout>} />
-              <Route path="/cabinet" element={<MainLayout><CabinetPage /></MainLayout>} />
-              <Route path="/verify-email" element={<MainLayout><VerifyEmailPage /></MainLayout>} />
+        <EmployeeAuthProvider>
+          <Router>
+            <div className="App">
+              <Toaster position="top-right" richColors />
+              <Routes>
+                {/* Main site routes */}
+                <Route path="/" element={<MainLayout><HomePage /></MainLayout>} />
+                <Route path="/check" element={<MainLayout><CheckProductPage /></MainLayout>} />
+                <Route path="/import" element={<MainLayout><ImportPage /></MainLayout>} />
+                <Route path="/equipment" element={<MainLayout><EquipmentPage /></MainLayout>} />
+                <Route path="/contact" element={<MainLayout><ContactPage /></MainLayout>} />
+                <Route path="/quote" element={<MainLayout><QuotePage /></MainLayout>} />
+                <Route path="/consultation" element={<MainLayout><ConsultationPage /></MainLayout>} />
+                <Route path="/checklist" element={<MainLayout><ChecklistPage /></MainLayout>} />
+                <Route path="/scanner" element={<MainLayout><ScannerPage /></MainLayout>} />
+                <Route path="/knowledge" element={<MainLayout><KnowledgePage /></MainLayout>} />
+                <Route path="/account" element={<MainLayout><AccountPage /></MainLayout>} />
+                <Route path="/login" element={<MainLayout><LoginPage /></MainLayout>} />
+                <Route path="/cabinet" element={<MainLayout><CabinetPage /></MainLayout>} />
+                <Route path="/verify-email" element={<MainLayout><VerifyEmailPage /></MainLayout>} />
 
-              {/* Admin routes */}
-              <Route path="/admin/login" element={<AdminLoginPage />} />
-              <Route path="/admin" element={
-                <AdminRoute>
-                  <AdminLayout><AdminDashboard /></AdminLayout>
-                </AdminRoute>
-              } />
-              <Route path="/admin/users" element={
-                <AdminRoute>
-                  <AdminLayout><AdminUsersPage /></AdminLayout>
-                </AdminRoute>
-              } />
-              <Route path="/admin/callbacks" element={
-                <AdminRoute>
-                  <AdminLayout><AdminCallbacksPage /></AdminLayout>
-                </AdminRoute>
-              } />
-            </Routes>
-          </div>
-        </Router>
+                {/* Admin routes */}
+                <Route path="/admin/login" element={<AdminLoginPage />} />
+                <Route path="/admin" element={
+                  <AdminRoute>
+                    <AdminLayout><AdminDashboard /></AdminLayout>
+                  </AdminRoute>
+                } />
+                <Route path="/admin/users" element={
+                  <AdminRoute>
+                    <AdminLayout><AdminUsersPage /></AdminLayout>
+                  </AdminRoute>
+                } />
+                <Route path="/admin/callbacks" element={
+                  <AdminRoute>
+                    <AdminLayout><AdminCallbacksPage /></AdminLayout>
+                  </AdminRoute>
+                } />
+
+                {/* Employee routes */}
+                <Route path="/employee/login" element={<EmployeeLoginPage />} />
+                <Route path="/employee" element={
+                  <EmployeeRoute>
+                    <EmployeeLayout><EmployeeDashboard /></EmployeeLayout>
+                  </EmployeeRoute>
+                } />
+                <Route path="/employee/inbox" element={
+                  <EmployeeRoute>
+                    <EmployeeLayout><EmployeeInbox /></EmployeeLayout>
+                  </EmployeeRoute>
+                } />
+                <Route path="/employee/clients" element={
+                  <EmployeeRoute>
+                    <EmployeeLayout><EmployeeClients /></EmployeeLayout>
+                  </EmployeeRoute>
+                } />
+                <Route path="/employee/clients/new" element={
+                  <EmployeeRoute>
+                    <EmployeeLayout><EmployeeClientNew /></EmployeeLayout>
+                  </EmployeeRoute>
+                } />
+                <Route path="/employee/clients/:id" element={
+                  <EmployeeRoute>
+                    <EmployeeLayout><EmployeeClientCard /></EmployeeLayout>
+                  </EmployeeRoute>
+                } />
+              </Routes>
+            </div>
+          </Router>
+        </EmployeeAuthProvider>
       </AdminAuthProvider>
     </AuthProvider>
   );
