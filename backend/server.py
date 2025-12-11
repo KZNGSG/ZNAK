@@ -3936,6 +3936,13 @@ async def api_employee_create_client_contract(
                     'address': client.get('address')
                 }
                 company_id = CompanyDB.create(company_data)
+
+            # Если всё ещё нет company_id - у клиента нет данных компании
+            if not company_id:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Заполните данные компании клиента (ИНН) перед созданием договора"
+                )
     elif services:
         # Создаём напрямую из списка услуг
         total_amount = sum(s.get('price', 0) * s.get('quantity', 1) for s in services)
@@ -3952,6 +3959,11 @@ async def api_employee_create_client_contract(
                 'address': client.get('address')
             }
             company_id = CompanyDB.create(company_data)
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Заполните данные компании клиента (ИНН) перед созданием договора"
+            )
     else:
         raise HTTPException(status_code=400, detail="Укажите quote_id или services")
 

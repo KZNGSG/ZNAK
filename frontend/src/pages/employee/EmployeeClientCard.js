@@ -169,8 +169,12 @@ const EmployeeClientCard = () => {
         toast.success(`Договор ${data.contract_number} создан`);
         fetchClient();
       } else {
-        const error = await response.json();
-        toast.error(error.detail || 'Ошибка создания договора');
+        try {
+          const error = await response.json();
+          toast.error(error.detail || 'Ошибка создания договора');
+        } catch {
+          toast.error('Ошибка создания договора');
+        }
       }
     } catch (error) {
       console.error('Failed to create contract:', error);
