@@ -3451,6 +3451,101 @@ async def api_employee_get_quotes(
     return {"quotes": quotes}
 
 
+# --- Обновить статус КП ---
+@app.put("/api/employee/quotes/{quote_id}/status")
+async def api_employee_update_quote_status(
+    quote_id: int,
+    request: Request,
+    user: Dict = Depends(require_employee)
+):
+    """Обновить статус КП"""
+    data = await request.json()
+    new_status = data.get('status')
+
+    if new_status not in ['created', 'sent', 'accepted', 'rejected']:
+        raise HTTPException(status_code=400, detail="Недопустимый статус")
+
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM quotes WHERE id = ?', (quote_id,))
+        quote = cursor.fetchone()
+        if not quote:
+            raise HTTPException(status_code=404, detail="КП не найдено")
+
+        cursor.execute(
+            'UPDATE quotes SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+            (new_status, quote_id)
+        )
+
+    return {"success": True, "status": new_status}
+
+
+# --- Скачать PDF КП ---
+@app.get("/api/employee/quotes/{quote_id}/pdf")
+async def api_employee_download_quote_pdf(
+    quote_id: int,
+    user: Dict = Depends(require_employee)
+):
+    """Скачать PDF КП"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM quotes WHERE id = ?', (quote_id,))
+        quote = cursor.fetchone()
+        if not quote:
+            raise HTTPException(status_code=404, detail="КП не найдено")
+        quote = dict(quote)
+
+        # Получаем данные компании
+        company = None
+        if quote.get('company_id'):
+            cursor.execute('SELECT * FROM companies WHERE id = ?', (quote['company_id'],))
+            company = cursor.fetchone()
+            if company:
+                company = dict(company)
+
+        # Получаем данные клиента
+        client = None
+        if quote.get('client_id'):
+            client = ClientDB.get_by_id(quote['client_id'])
+
+    # Подготавливаем данные для PDF
+    services = json.loads(quote['services_json']) if quote.get('services_json') else []
+
+    client_info = {
+        'inn': company.get('inn', '') if company else (client.get('inn', '') if client else ''),
+        'kpp': company.get('kpp', '') if company else (client.get('kpp', '') if client else ''),
+        'ogrn': company.get('ogrn', '') if company else (client.get('ogrn', '') if client else ''),
+        'name': company.get('name', '') if company else (client.get('company_name', '') if client else ''),
+        'address': company.get('address', '') if company else (client.get('address', '') if client else ''),
+        'management_name': company.get('management_name', '') if company else (client.get('director_name', '') if client else ''),
+        'management_post': company.get('management_post', 'Генеральный директор') if company else 'Генеральный директор',
+        'contact_name': client.get('contact_name', '') if client else '',
+        'contact_phone': client.get('contact_phone', '') if client else '',
+        'contact_email': client.get('contact_email', '') if client else ''
+    }
+
+    # Генерируем PDF
+    from document_generator import generate_quote_pdf
+    pdf_bytes = generate_quote_pdf(
+        client_info=client_info,
+        services=services,
+        total_amount=quote.get('total_amount', 0),
+        quote_number=quote['quote_number']
+    )
+
+    # URL-кодируем имя файла для кириллицы
+    filename = f"КП_{quote['quote_number']}.pdf"
+    filename_encoded = url_quote(filename)
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename*=UTF-8''{filename_encoded}"
+        }
+    )
+
+
 # --- Список договоров для менеджеров ---
 @app.get("/api/employee/contracts")
 async def api_employee_get_contracts(

@@ -14,16 +14,20 @@ import {
   XCircle,
   AlertCircle,
   ArrowUpDown,
-  Plus
+  Plus,
+  Download,
+  Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const STATUS_CONFIG = {
+  created: { label: 'Черновик', color: 'bg-gray-100 text-gray-600', icon: Clock },
   draft: { label: 'Черновик', color: 'bg-gray-100 text-gray-600', icon: Clock },
   sent: { label: 'Отправлено', color: 'bg-blue-100 text-blue-600', icon: AlertCircle },
   approved: { label: 'Одобрено', color: 'bg-green-100 text-green-600', icon: CheckCircle },
+  accepted: { label: 'Одобрено', color: 'bg-green-100 text-green-600', icon: CheckCircle },
   rejected: { label: 'Отклонено', color: 'bg-red-100 text-red-600', icon: XCircle }
 };
 
@@ -35,6 +39,7 @@ const EmployeeQuotes = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortField, setSortField] = useState('created_at');
   const [sortDirection, setSortDirection] = useState('desc');
+  const [downloadingId, setDownloadingId] = useState(null);
 
   useEffect(() => {
     fetchQuotes();
@@ -67,6 +72,52 @@ const EmployeeQuotes = () => {
     } else {
       setSortField(field);
       setSortDirection('desc');
+    }
+  };
+
+  const handleDownloadPdf = async (quoteId, quoteNumber) => {
+    setDownloadingId(quoteId);
+    try {
+      const response = await authFetch(`${API_URL}/api/employee/quotes/${quoteId}/pdf`);
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `КП_${quoteNumber}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        toast.success('КП скачано');
+      } else {
+        toast.error('Ошибка скачивания');
+      }
+    } catch (error) {
+      console.error('Failed to download PDF:', error);
+      toast.error('Ошибка скачивания');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  const handleStatusChange = async (quoteId, newStatus) => {
+    try {
+      const response = await authFetch(`${API_URL}/api/employee/quotes/${quoteId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (response.ok) {
+        toast.success('Статус обновлён');
+        fetchQuotes();
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || 'Ошибка обновления статуса');
+      }
+    } catch (error) {
+      console.error('Failed to update status:', error);
+      toast.error('Ошибка обновления статуса');
     }
   };
 
@@ -165,9 +216,9 @@ const EmployeeQuotes = () => {
               className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-yellow-500"
             >
               <option value="all">Все статусы</option>
-              <option value="draft">Черновик</option>
+              <option value="created">Черновик</option>
               <option value="sent">Отправлено</option>
-              <option value="approved">Одобрено</option>
+              <option value="accepted">Одобрено</option>
               <option value="rejected">Отклонено</option>
             </select>
           </div>
@@ -243,10 +294,20 @@ const EmployeeQuotes = () => {
                       </td>
                       <td className="px-4 py-3">
                         <div>
-                          <div className="flex items-center gap-2">
-                            <User className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm text-gray-900">{quote.client_name || '-'}</span>
-                          </div>
+                          {quote.client_id ? (
+                            <Link
+                              to={`/employee/clients/${quote.client_id}`}
+                              className="flex items-center gap-2 hover:text-yellow-600 transition-colors"
+                            >
+                              <User className="w-4 h-4 text-gray-400" />
+                              <span className="text-sm text-gray-900 hover:text-yellow-600">{quote.client_name || '-'}</span>
+                            </Link>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <User className="w-4 h-4 text-gray-400" />
+                              <span className="text-sm text-gray-900">{quote.client_name || '-'}</span>
+                            </div>
+                          )}
                           {quote.company_name && (
                             <div className="flex items-center gap-2 mt-1">
                               <Building2 className="w-4 h-4 text-gray-300" />
@@ -261,10 +322,16 @@ const EmployeeQuotes = () => {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full ${statusConfig.color}`}>
-                          <StatusIcon className="w-3 h-3" />
-                          {statusConfig.label}
-                        </span>
+                        <select
+                          value={quote.status}
+                          onChange={(e) => handleStatusChange(quote.id, e.target.value)}
+                          className={`text-xs font-medium rounded-full px-2.5 py-1 border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-yellow-500 ${statusConfig.color}`}
+                        >
+                          <option value="created">Черновик</option>
+                          <option value="sent">Отправлено</option>
+                          <option value="accepted">Одобрено</option>
+                          <option value="rejected">Отклонено</option>
+                        </select>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2 text-sm text-gray-500">
@@ -276,12 +343,29 @@ const EmployeeQuotes = () => {
                         <span className="text-sm text-gray-500">{quote.manager_email || '-'}</span>
                       </td>
                       <td className="px-4 py-3">
-                        <Link
-                          to={`/employee/clients/${quote.client_id}`}
-                          className="p-2 text-gray-400 hover:text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors inline-flex"
-                        >
-                          <ChevronRight className="w-4 h-4" />
-                        </Link>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleDownloadPdf(quote.id, quote.quote_number)}
+                            disabled={downloadingId === quote.id}
+                            className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors disabled:opacity-50"
+                            title="Скачать PDF"
+                          >
+                            {downloadingId === quote.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Download className="w-4 h-4" />
+                            )}
+                          </button>
+                          {quote.client_id && (
+                            <Link
+                              to={`/employee/clients/${quote.client_id}`}
+                              className="p-2 text-gray-400 hover:text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors"
+                              title="Карточка клиента"
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </Link>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -304,18 +388,22 @@ const EmployeeQuotes = () => {
       {/* Summary Stats */}
       {quotes.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {Object.entries(STATUS_CONFIG).map(([status, config]) => {
+          {[
+            { status: 'created', label: 'Черновик', color: 'bg-gray-100 text-gray-600', icon: Clock },
+            { status: 'sent', label: 'Отправлено', color: 'bg-blue-100 text-blue-600', icon: AlertCircle },
+            { status: 'accepted', label: 'Одобрено', color: 'bg-green-100 text-green-600', icon: CheckCircle },
+            { status: 'rejected', label: 'Отклонено', color: 'bg-red-100 text-red-600', icon: XCircle }
+          ].map(({ status, label, color, icon: Icon }) => {
             const count = quotes.filter(q => q.status === status).length;
-            const Icon = config.icon;
             return (
               <div key={status} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${config.color}`}>
+                  <div className={`p-2 rounded-lg ${color}`}>
                     <Icon className="w-4 h-4" />
                   </div>
                   <div>
                     <div className="text-2xl font-bold text-gray-900">{count}</div>
-                    <div className="text-xs text-gray-500">{config.label}</div>
+                    <div className="text-xs text-gray-500">{label}</div>
                   </div>
                 </div>
               </div>
