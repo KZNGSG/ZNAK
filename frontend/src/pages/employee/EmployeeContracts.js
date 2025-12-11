@@ -14,7 +14,9 @@ import {
   XCircle,
   PlayCircle,
   ArrowUpDown,
-  FileText
+  FileText,
+  Download,
+  Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -35,6 +37,7 @@ const EmployeeContracts = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortField, setSortField] = useState('created_at');
   const [sortDirection, setSortDirection] = useState('desc');
+  const [downloadingId, setDownloadingId] = useState(null);
 
   useEffect(() => {
     fetchContracts();
@@ -67,6 +70,52 @@ const EmployeeContracts = () => {
     } else {
       setSortField(field);
       setSortDirection('desc');
+    }
+  };
+
+  const handleDownloadPdf = async (contractId, contractNumber) => {
+    setDownloadingId(contractId);
+    try {
+      const response = await authFetch(`${API_URL}/api/employee/contracts/${contractId}/pdf`);
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Договор_${contractNumber}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        toast.success('Договор скачан');
+      } else {
+        toast.error('Ошибка скачивания');
+      }
+    } catch (error) {
+      console.error('Failed to download PDF:', error);
+      toast.error('Ошибка скачивания');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  const handleStatusChange = async (contractId, newStatus) => {
+    try {
+      const response = await authFetch(`${API_URL}/api/employee/contracts/${contractId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (response.ok) {
+        toast.success('Статус обновлён');
+        fetchContracts();
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || 'Ошибка обновления статуса');
+      }
+    } catch (error) {
+      console.error('Failed to update status:', error);
+      toast.error('Ошибка обновления статуса');
     }
   };
 
@@ -272,10 +321,20 @@ const EmployeeContracts = () => {
                       </td>
                       <td className="px-4 py-3">
                         <div>
-                          <div className="flex items-center gap-2">
-                            <User className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm text-gray-900">{contract.client_name || '-'}</span>
-                          </div>
+                          {contract.client_id ? (
+                            <Link
+                              to={`/employee/clients/${contract.client_id}`}
+                              className="flex items-center gap-2 hover:text-yellow-600 transition-colors"
+                            >
+                              <User className="w-4 h-4 text-gray-400" />
+                              <span className="text-sm text-gray-900 hover:text-yellow-600">{contract.client_name || '-'}</span>
+                            </Link>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <User className="w-4 h-4 text-gray-400" />
+                              <span className="text-sm text-gray-900">{contract.client_name || '-'}</span>
+                            </div>
+                          )}
                           {contract.company_name && (
                             <div className="flex items-center gap-2 mt-1">
                               <Building2 className="w-4 h-4 text-gray-300" />
@@ -300,10 +359,16 @@ const EmployeeContracts = () => {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full ${statusConfig.color}`}>
-                          <StatusIcon className="w-3 h-3" />
-                          {statusConfig.label}
-                        </span>
+                        <select
+                          value={contract.status}
+                          onChange={(e) => handleStatusChange(contract.id, e.target.value)}
+                          className={`text-xs font-medium rounded-full px-2.5 py-1 border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-yellow-500 ${statusConfig.color}`}
+                        >
+                          <option value="draft">Черновик</option>
+                          <option value="active">Активный</option>
+                          <option value="completed">Завершён</option>
+                          <option value="cancelled">Отменён</option>
+                        </select>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2 text-sm text-gray-500">
@@ -315,14 +380,29 @@ const EmployeeContracts = () => {
                         <span className="text-sm text-gray-500">{contract.manager_email || '-'}</span>
                       </td>
                       <td className="px-4 py-3">
-                        {contract.client_id && (
-                          <Link
-                            to={`/employee/clients/${contract.client_id}`}
-                            className="p-2 text-gray-400 hover:text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors inline-flex"
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleDownloadPdf(contract.id, contract.contract_number)}
+                            disabled={downloadingId === contract.id}
+                            className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors disabled:opacity-50"
+                            title="Скачать PDF"
                           >
-                            <ChevronRight className="w-4 h-4" />
-                          </Link>
-                        )}
+                            {downloadingId === contract.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Download className="w-4 h-4" />
+                            )}
+                          </button>
+                          {contract.client_id && (
+                            <Link
+                              to={`/employee/clients/${contract.client_id}`}
+                              className="p-2 text-gray-400 hover:text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors"
+                              title="Карточка клиента"
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </Link>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );

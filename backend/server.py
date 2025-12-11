@@ -4160,6 +4160,35 @@ async def api_employee_create_client_contract(
     }
 
 
+# --- Обновить статус договора ---
+@app.put("/api/employee/contracts/{contract_id}/status")
+async def api_employee_update_contract_status(
+    contract_id: int,
+    request: Request,
+    user: Dict = Depends(require_employee)
+):
+    """Обновить статус договора"""
+    data = await request.json()
+    new_status = data.get('status')
+
+    if new_status not in ['draft', 'active', 'completed', 'cancelled']:
+        raise HTTPException(status_code=400, detail="Недопустимый статус")
+
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM contracts WHERE id = ?', (contract_id,))
+        contract = cursor.fetchone()
+        if not contract:
+            raise HTTPException(status_code=404, detail="Договор не найден")
+
+        cursor.execute(
+            'UPDATE contracts SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+            (new_status, contract_id)
+        )
+
+    return {"success": True, "status": new_status}
+
+
 # --- Скачать PDF договора ---
 @app.get("/api/employee/contracts/{contract_id}/pdf")
 async def api_employee_download_contract_pdf(
