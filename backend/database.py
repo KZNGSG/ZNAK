@@ -1095,8 +1095,8 @@ class ClientDB:
                 INSERT INTO clients (
                     inn, kpp, ogrn, company_name, company_type,
                     contact_name, contact_phone, contact_email, contact_position,
-                    address, comment, source, status, assigned_manager_id, user_id, products_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    address, comment, source, status, assigned_manager_id, user_id, products_json, director_name
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 data.get('inn'),
                 data.get('kpp'),
@@ -1113,7 +1113,8 @@ class ClientDB:
                 data.get('status', 'lead'),
                 manager_id,
                 data.get('user_id'),
-                json.dumps(data.get('products', []), ensure_ascii=False)
+                json.dumps(data.get('products', []), ensure_ascii=False),
+                data.get('director_name')
             ))
             return cursor.lastrowid
 
@@ -1173,7 +1174,7 @@ class ClientDB:
             updateable_fields = [
                 'inn', 'kpp', 'ogrn', 'company_name', 'company_type',
                 'contact_name', 'contact_phone', 'contact_email', 'contact_position',
-                'address', 'comment', 'status', 'assigned_manager_id'
+                'address', 'comment', 'status', 'assigned_manager_id', 'director_name'
             ]
 
             for field in updateable_fields:
