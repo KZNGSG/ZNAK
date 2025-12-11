@@ -4476,16 +4476,16 @@ async def api_employee_download_contract_pdf(
     services = json.loads(contract['services_json']) if contract.get('services_json') else []
 
     client_info = {
-        'inn': company.get('inn', ''),
-        'kpp': company.get('kpp', ''),
-        'ogrn': company.get('ogrn', ''),
-        'name': company.get('name', ''),
-        'address': company.get('address', ''),
-        'management_name': company.get('management_name') or (client.get('director_name') if client else ''),
-        'management_post': company.get('management_post', 'Генеральный директор'),
-        'contact_name': client.get('contact_name', '') if client else '',
-        'contact_phone': client.get('contact_phone', '') if client else '',
-        'contact_email': client.get('contact_email', '') if client else ''
+        'inn': company.get('inn') or '',
+        'kpp': company.get('kpp') or '',
+        'ogrn': company.get('ogrn') or '',
+        'name': company.get('name') or '',
+        'address': company.get('address') or '',
+        'management_name': company.get('management_name') or (client.get('director_name') if client else None) or None,
+        'management_post': company.get('management_post') or 'Генеральный директор',
+        'contact_name': (client.get('contact_name') if client else None) or '',
+        'contact_phone': (client.get('contact_phone') if client else None) or '',
+        'contact_email': (client.get('contact_email') if client else None) or ''
     }
 
     # Генерируем PDF

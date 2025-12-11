@@ -349,12 +349,12 @@ def generate_contract_pdf(
     story.append(Spacer(1, 0.5*cm))
 
     # === ПРЕАМБУЛА ===
-    client_name = client_info.get('name', 'Наименование организации')
-    client_inn = client_info.get('inn', '')
-    client_kpp = client_info.get('kpp', '')
-    client_manager_name = client_info.get('management_name', 'ФИО руководителя')
-    client_manager_post = client_info.get('management_post', 'Генеральный директор')
-    client_basis = client_info.get('basis', 'Устава')
+    client_name = client_info.get('name') or 'Наименование организации'
+    client_inn = client_info.get('inn') or ''
+    client_kpp = client_info.get('kpp') or ''
+    client_manager_name = client_info.get('management_name') or 'ФИО руководителя'
+    client_manager_post = client_info.get('management_post') or 'Генеральный директор'
+    client_basis = client_info.get('basis') or 'Устава'
 
     preamble = f"""
     <b>Индивидуальный предприниматель Турбин Артём Анатольевич</b>, именуемый в дальнейшем
@@ -550,13 +550,16 @@ def generate_contract_pdf(
     table_data = [["№", "Наименование услуги", "Кол-во", "Ед.", "Цена, ₽", "Сумма, ₽"]]
 
     for idx, service in enumerate(services, 1):
+        price = service.get('price', 0)
+        quantity = service.get('quantity', 1)
+        subtotal = service.get('subtotal', price * quantity)
         table_data.append([
             str(idx),
             service.get('name', ''),
-            str(service.get('quantity', 1)),
+            str(quantity),
             service.get('unit', 'шт'),
-            format_price(service.get('price', 0)),
-            format_price(service.get('subtotal', 0)),
+            format_price(price),
+            format_price(subtotal),
         ])
 
     # Итого
@@ -666,13 +669,16 @@ def generate_contract_pdf(
     invoice_table_data = [["№", "Наименование", "Кол-во", "Ед.", "Цена, ₽", "Сумма, ₽"]]
 
     for idx, service in enumerate(services, 1):
+        price = service.get('price', 0)
+        quantity = service.get('quantity', 1)
+        subtotal = service.get('subtotal', price * quantity)
         invoice_table_data.append([
             str(idx),
             service.get('name', ''),
-            str(service.get('quantity', 1)),
+            str(quantity),
             service.get('unit', 'шт'),
-            format_price(service.get('price', 0)),
-            format_price(service.get('subtotal', 0)),
+            format_price(price),
+            format_price(subtotal),
         ])
 
     # Итого
@@ -1026,10 +1032,10 @@ def generate_act_pdf(
     story.append(Spacer(1, 0.5*cm))
 
     # Преамбула акта
-    client_name = client_info.get('name', 'Наименование организации')
-    client_inn = client_info.get('inn', '')
-    client_manager_name = client_info.get('management_name', 'ФИО руководителя')
-    client_manager_post = client_info.get('management_post', 'Генеральный директор')
+    client_name = client_info.get('name') or 'Наименование организации'
+    client_inn = client_info.get('inn') or ''
+    client_manager_name = client_info.get('management_name') or 'ФИО руководителя'
+    client_manager_post = client_info.get('management_post') or 'Генеральный директор'
 
     preamble = f"""
     <b>{EXECUTOR_INFO['name']}</b>, именуемый в дальнейшем «Исполнитель», с одной стороны, и
@@ -1057,13 +1063,16 @@ def generate_act_pdf(
     table_data = [["№", "Наименование услуги", "Кол-во", "Ед.", "Цена, ₽", "Сумма, ₽"]]
 
     for idx, service in enumerate(services, 1):
+        price = service.get('price', 0)
+        quantity = service.get('quantity', 1)
+        subtotal = service.get('subtotal', price * quantity)
         table_data.append([
             str(idx),
             service.get('name', ''),
-            str(service.get('quantity', 1)),
+            str(quantity),
             service.get('unit', 'шт'),
-            format_price(service.get('price', 0)),
-            format_price(service.get('subtotal', 0)),
+            format_price(price),
+            format_price(subtotal),
         ])
 
     # Итого
