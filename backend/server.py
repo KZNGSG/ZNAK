@@ -3621,13 +3621,13 @@ async def api_employee_get_callbacks(
             query += ' AND cb.status = ?'
             params.append(status)
 
-        # Фильтр по периоду
+        # Фильтр по периоду (используем localtime для корректного сравнения)
         if period == 'today':
-            query += " AND date(cb.created_at) = date('now')"
+            query += " AND date(cb.created_at, 'localtime') = date('now', 'localtime')"
         elif period == 'week':
-            query += " AND cb.created_at >= datetime('now', '-7 days')"
+            query += " AND cb.created_at >= datetime('now', '-7 days', 'localtime')"
         elif period == 'month':
-            query += " AND cb.created_at >= datetime('now', '-30 days')"
+            query += " AND cb.created_at >= datetime('now', '-30 days', 'localtime')"
 
         query += ' ORDER BY cb.created_at DESC'
         cursor.execute(query, params)

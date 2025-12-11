@@ -276,146 +276,142 @@ const EmployeeInbox = () => {
           <h1 className="text-2xl font-semibold text-gray-900">Входящие заявки</h1>
           <p className="text-gray-500 text-sm mt-0.5">Заявки с сайта на обратный звонок</p>
         </div>
+
+        {/* Period filter - moved to header right */}
+        <div className="flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-gray-400" />
+          <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => handlePeriodChange('')}
+              className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                periodFilter === ''
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Все
+            </button>
+            <button
+              onClick={() => handlePeriodChange('today')}
+              className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                periodFilter === 'today'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Сегодня
+            </button>
+            <button
+              onClick={() => handlePeriodChange('week')}
+              className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                periodFilter === 'week'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Неделя
+            </button>
+            <button
+              onClick={() => handlePeriodChange('month')}
+              className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                periodFilter === 'month'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Месяц
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Filters & Search */}
       <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
-        <div className="flex flex-col gap-3">
-          {/* Row 1: Status filters + Search */}
-          <div className="flex flex-col lg:flex-row lg:items-center gap-3">
-            {/* Filter tabs */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <button
-                onClick={() => handleStatusChange('')}
-                className={`px-3 py-1.5 text-sm rounded-lg transition-colors font-medium ${
-                  statusFilter === '' && !showOverdue
-                    ? 'bg-yellow-500 text-gray-900'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                Все
-                <span className="ml-1.5 text-xs opacity-70">{stats.total}</span>
-              </button>
-              <button
-                onClick={() => handleStatusChange('new')}
-                className={`px-3 py-1.5 text-sm rounded-lg transition-colors font-medium flex items-center gap-1.5 ${
-                  statusFilter === 'new'
-                    ? 'bg-yellow-500 text-gray-900'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                Новые
-                {stats.new > 0 && (
-                  <span className="px-1.5 py-0.5 text-xs bg-red-500 text-white rounded-full">{stats.new}</span>
-                )}
-              </button>
-              <button
-                onClick={() => handleStatusChange('processing')}
-                className={`px-3 py-1.5 text-sm rounded-lg transition-colors font-medium ${
-                  statusFilter === 'processing'
-                    ? 'bg-yellow-500 text-gray-900'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                В работе
-                <span className="ml-1.5 text-xs opacity-70">{stats.processing}</span>
-              </button>
-              <button
-                onClick={() => handleStatusChange('completed')}
-                className={`px-3 py-1.5 text-sm rounded-lg transition-colors font-medium ${
-                  statusFilter === 'completed'
-                    ? 'bg-yellow-500 text-gray-900'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                Завершённые
-              </button>
-              <button
-                onClick={() => handleStatusChange('cancelled')}
-                className={`px-3 py-1.5 text-sm rounded-lg transition-colors font-medium ${
-                  statusFilter === 'cancelled'
-                    ? 'bg-yellow-500 text-gray-900'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                Отменённые
-              </button>
-              {stats.overdue > 0 && (
-                <button
-                  onClick={handleShowOverdue}
-                  className={`px-3 py-1.5 text-sm rounded-lg transition-colors font-medium flex items-center gap-1.5 ${
-                    showOverdue
-                      ? 'bg-red-500 text-white'
-                      : 'bg-red-100 text-red-700 hover:bg-red-200'
-                  }`}
-                >
-                  <AlertTriangle className="w-3.5 h-3.5" />
-                  Просрочено
-                  <span className="text-xs">{stats.overdue}</span>
-                </button>
+        <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+          {/* Filter tabs */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <button
+              onClick={() => handleStatusChange('')}
+              className={`px-3 py-1.5 text-sm rounded-lg transition-colors font-medium ${
+                statusFilter === '' && !showOverdue
+                  ? 'bg-yellow-500 text-gray-900'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Все
+              <span className="ml-1.5 text-xs opacity-70">{stats.total}</span>
+            </button>
+            <button
+              onClick={() => handleStatusChange('new')}
+              className={`px-3 py-1.5 text-sm rounded-lg transition-colors font-medium flex items-center gap-1.5 ${
+                statusFilter === 'new'
+                  ? 'bg-yellow-500 text-gray-900'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Новые
+              {stats.new > 0 && (
+                <span className="px-1.5 py-0.5 text-xs bg-red-500 text-white rounded-full">{stats.new}</span>
               )}
-            </div>
-
-            {/* Search */}
-            <div className="flex-1 lg:max-w-xs">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Поиск по имени, телефону..."
-                  className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-yellow-500"
-                />
-              </div>
-            </div>
+            </button>
+            <button
+              onClick={() => handleStatusChange('processing')}
+              className={`px-3 py-1.5 text-sm rounded-lg transition-colors font-medium ${
+                statusFilter === 'processing'
+                  ? 'bg-yellow-500 text-gray-900'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              В работе
+              <span className="ml-1.5 text-xs opacity-70">{stats.processing}</span>
+            </button>
+            <button
+              onClick={() => handleStatusChange('completed')}
+              className={`px-3 py-1.5 text-sm rounded-lg transition-colors font-medium ${
+                statusFilter === 'completed'
+                  ? 'bg-yellow-500 text-gray-900'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Завершённые
+            </button>
+            <button
+              onClick={() => handleStatusChange('cancelled')}
+              className={`px-3 py-1.5 text-sm rounded-lg transition-colors font-medium ${
+                statusFilter === 'cancelled'
+                  ? 'bg-yellow-500 text-gray-900'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Отменённые
+            </button>
+            {stats.overdue > 0 && (
+              <button
+                onClick={handleShowOverdue}
+                className={`px-3 py-1.5 text-sm rounded-lg transition-colors font-medium flex items-center gap-1.5 ${
+                  showOverdue
+                    ? 'bg-red-500 text-white'
+                    : 'bg-red-100 text-red-700 hover:bg-red-200'
+                }`}
+              >
+                <AlertTriangle className="w-3.5 h-3.5" />
+                Просрочено
+                <span className="text-xs">{stats.overdue}</span>
+              </button>
+            )}
           </div>
 
-          {/* Row 2: Period filter */}
-          <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-gray-400" />
-            <span className="text-sm text-gray-500">Период:</span>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => handlePeriodChange('')}
-                className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
-                  periodFilter === ''
-                    ? 'bg-gray-200 text-gray-800'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                Все
-              </button>
-              <button
-                onClick={() => handlePeriodChange('today')}
-                className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
-                  periodFilter === 'today'
-                    ? 'bg-gray-200 text-gray-800'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                Сегодня
-              </button>
-              <button
-                onClick={() => handlePeriodChange('week')}
-                className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
-                  periodFilter === 'week'
-                    ? 'bg-gray-200 text-gray-800'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                Неделя
-              </button>
-              <button
-                onClick={() => handlePeriodChange('month')}
-                className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
-                  periodFilter === 'month'
-                    ? 'bg-gray-200 text-gray-800'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                Месяц
-              </button>
+          {/* Search */}
+          <div className="flex-1 lg:max-w-xs ml-auto">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Поиск по имени, телефону..."
+                className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-yellow-500"
+              />
             </div>
           </div>
         </div>
