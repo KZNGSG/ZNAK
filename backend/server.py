@@ -2821,7 +2821,11 @@ async def api_admin_get_users(user: Dict = Depends(require_admin)):
     """Получить всех пользователей (админка)"""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute('SELECT id, email, role, is_active, email_verified, created_at FROM users ORDER BY created_at DESC')
+        cursor.execute('''
+            SELECT id, email, role, is_active, email_verified, created_at,
+                   name, phone, last_login, invitation_sent_at
+            FROM users ORDER BY created_at DESC
+        ''')
         rows = cursor.fetchall()
         return [dict(row) for row in rows]
 
@@ -2926,6 +2930,14 @@ async def api_admin_update_user(
         if "is_active" in data:
             updates.append("is_active = ?")
             values.append(1 if data["is_active"] else 0)
+
+        if "name" in data:
+            updates.append("name = ?")
+            values.append(data["name"])
+
+        if "phone" in data:
+            updates.append("phone = ?")
+            values.append(data["phone"])
 
         if updates:
             values.append(user_id)

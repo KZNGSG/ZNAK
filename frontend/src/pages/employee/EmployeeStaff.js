@@ -16,7 +16,10 @@ import {
   AlertCircle,
   Send,
   CheckCircle,
-  Clock
+  Clock,
+  Phone,
+  Pencil,
+  Save
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -36,6 +39,10 @@ const EmployeeStaff = () => {
   const [inviteUser, setInviteUser] = useState(null);
   const [invitePassword, setInvitePassword] = useState('');
   const [inviteSubmitting, setInviteSubmitting] = useState(false);
+
+  // Редактирование пользователя
+  const [editingUserId, setEditingUserId] = useState(null);
+  const [editForm, setEditForm] = useState({ name: '', phone: '' });
 
   useEffect(() => {
     fetchUsers();
@@ -145,6 +152,35 @@ const EmployeeStaff = () => {
     }
   };
 
+  // Начать редактирование
+  const startEditing = (user) => {
+    setEditingUserId(user.id);
+    setEditForm({ name: user.name || '', phone: user.phone || '' });
+  };
+
+  // Сохранить изменения
+  const saveUserInfo = async (userId) => {
+    try {
+      const response = await authFetch(`${API_URL}/api/admin/users/${userId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editForm)
+      });
+
+      if (response.ok) {
+        toast.success('Данные обновлены');
+        setEditingUserId(null);
+        fetchUsers();
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || 'Ошибка сохранения');
+      }
+    } catch (error) {
+      console.error('Failed to save user:', error);
+      toast.error('Ошибка сохранения');
+    }
+  };
+
   // Открыть модальное окно приглашения
   const openInviteModal = (user) => {
     setInviteUser(user);
@@ -219,6 +255,22 @@ const EmployeeStaff = () => {
     return new Date(dateStr).toLocaleDateString('ru-RU');
   };
 
+  const formatLastLogin = (dateStr) => {
+    if (!dateStr) return 'Никогда';
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 5) return 'Только что';
+    if (diffMins < 60) return `${diffMins} мин. назад`;
+    if (diffHours < 24) return `${diffHours} ч. назад`;
+    if (diffDays < 7) return `${diffDays} дн. назад`;
+    return date.toLocaleDateString('ru-RU');
+  };
+
   // Защищённый email главного администратора - нельзя деактивировать/удалить
   const PROTECTED_ADMIN_EMAIL = 'damirslk@mail.ru';
 
@@ -277,34 +329,94 @@ const EmployeeStaff = () => {
             {staffUsers.map((user) => (
               <div key={user.id} className="px-5 py-4 hover:bg-gray-50 transition-colors">
                 <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
                       user.is_active ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-gray-400'
                     }`}>
-                      <Mail className="w-5 h-5" />
+                      <User className="w-6 h-6" />
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-gray-900">{user.email}</span>
-                        {!user.is_active && (
-                          <span className="text-xs text-red-500 bg-red-50 px-2 py-0.5 rounded">Неактивен</span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
-                        {getRoleBadge(user.role)}
-                        <span>Создан: {formatDate(user.created_at)}</span>
-                        {/* Статус приглашения */}
-                        {(() => {
-                          const status = getInvitationStatus(user);
-                          const StatusIcon = status.icon;
-                          return (
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs ${status.bg} ${status.color}`}>
-                              <StatusIcon className="w-3 h-3" />
-                              {status.text}
+                    <div className="flex-1 min-w-0">
+                      {/* Режим редактирования */}
+                      {editingUserId === user.id ? (
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={editForm.name}
+                              onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                              placeholder="ФИО сотрудника"
+                              className="flex-1 px-3 py-1.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-yellow-500"
+                            />
+                            <input
+                              type="tel"
+                              value={editForm.phone}
+                              onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                              placeholder="+7 999 123-45-67"
+                              className="w-40 px-3 py-1.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-yellow-500"
+                            />
+                            <button
+                              onClick={() => saveUserInfo(user.id)}
+                              className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg"
+                              title="Сохранить"
+                            >
+                              <Save className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setEditingUserId(null)}
+                              className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg"
+                              title="Отмена"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <div className="text-xs text-gray-500">{user.email}</div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-gray-900">
+                              {user.name || user.email}
                             </span>
-                          );
-                        })()}
-                      </div>
+                            {!user.is_active && (
+                              <span className="text-xs text-red-500 bg-red-50 px-2 py-0.5 rounded">Неактивен</span>
+                            )}
+                            <button
+                              onClick={() => startEditing(user)}
+                              className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
+                              title="Редактировать"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                          {user.name && (
+                            <div className="text-sm text-gray-500">{user.email}</div>
+                          )}
+                          <div className="flex items-center gap-3 text-xs text-gray-500 mt-1 flex-wrap">
+                            {getRoleBadge(user.role)}
+                            {user.phone && (
+                              <span className="inline-flex items-center gap-1">
+                                <Phone className="w-3 h-3" />
+                                {user.phone}
+                              </span>
+                            )}
+                            <span className="inline-flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              Вход: {formatLastLogin(user.last_login)}
+                            </span>
+                            {/* Статус приглашения */}
+                            {(() => {
+                              const status = getInvitationStatus(user);
+                              const StatusIcon = status.icon;
+                              return (
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs ${status.bg} ${status.color}`}>
+                                  <StatusIcon className="w-3 h-3" />
+                                  {status.text}
+                                </span>
+                              );
+                            })()}
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
 
