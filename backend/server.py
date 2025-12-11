@@ -3024,6 +3024,7 @@ class ClientCreate(BaseModel):
     kpp: Optional[str] = None
     ogrn: Optional[str] = None
     address: Optional[str] = None
+    director_name: Optional[str] = None  # ФИО генерального директора
     comment: Optional[str] = None
     source: Optional[str] = "manual"
     status: Optional[str] = "lead"
@@ -3040,6 +3041,7 @@ class ClientUpdate(BaseModel):
     kpp: Optional[str] = None
     ogrn: Optional[str] = None
     address: Optional[str] = None
+    director_name: Optional[str] = None  # ФИО генерального директора
     comment: Optional[str] = None
     status: Optional[str] = None
     products: Optional[List[Dict]] = None
@@ -4015,7 +4017,9 @@ async def api_employee_create_client_quote(
             'ogrn': client.get('ogrn'),
             'name': client.get('company_name', client['contact_name']),
             'type': client.get('company_type', 'LEGAL'),
-            'address': client.get('address')
+            'address': client.get('address'),
+            'management_name': client.get('director_name'),
+            'management_post': 'Генеральный директор'
         }
         company_id = CompanyDB.create(company_data)
 
@@ -4113,7 +4117,9 @@ async def api_employee_create_client_quote_full(
             'ogrn': request.company.get('ogrn'),
             'name': request.company.get('name', client['contact_name']),
             'type': client.get('company_type', 'LEGAL'),
-            'address': request.company.get('address')
+            'address': request.company.get('address'),
+            'management_name': request.company.get('management_name') or client.get('director_name'),
+            'management_post': request.company.get('management_post') or 'Генеральный директор'
         }
         company_id = CompanyDB.create(company_data)
 
@@ -4337,7 +4343,9 @@ async def api_employee_create_client_contract(
                     'ogrn': client.get('ogrn'),
                     'name': client.get('company_name') or client.get('contact_name'),
                     'type': client.get('company_type', 'LEGAL'),
-                    'address': client.get('address')
+                    'address': client.get('address'),
+                    'management_name': client.get('director_name'),
+                    'management_post': 'Генеральный директор'
                 }
                 company_id = CompanyDB.create(company_data)
 
@@ -4360,7 +4368,9 @@ async def api_employee_create_client_contract(
                 'ogrn': client.get('ogrn'),
                 'name': client.get('company_name', client['contact_name']),
                 'type': client.get('company_type', 'LEGAL'),
-                'address': client.get('address')
+                'address': client.get('address'),
+                'management_name': client.get('director_name'),
+                'management_post': 'Генеральный директор'
             }
             company_id = CompanyDB.create(company_data)
         else:
