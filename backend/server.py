@@ -3898,6 +3898,85 @@ async def api_employee_create_client_quote_full(
     }
 
 
+# --- Создать договор с полными данными (услуги, товары) ---
+# ВАЖНО: этот роут должен быть ПЕРЕД /contract, иначе FastAPI матчит /contract первым
+@app.post("/api/employee/clients/{client_id}/contract/full")
+async def api_employee_create_contract_full(
+    client_id: int,
+    request: Request,
+    user: Dict = Depends(require_employee)
+):
+    """Создать договор с товарами и услугами (аналог КП, но сразу договор)"""
+    data = await request.json()
+
+    client = ClientDB.get_by_id(client_id)
+    if not client:
+        raise HTTPException(status_code=404, detail="Клиент не найден")
+
+    if not client.get('inn'):
+        raise HTTPException(
+            status_code=400,
+            detail="Заполните данные компании клиента (ИНН) перед созданием договора"
+        )
+
+    # Создаём компанию из данных клиента
+    company_data = {
+        'inn': client['inn'],
+        'kpp': client.get('kpp'),
+        'ogrn': client.get('ogrn'),
+        'name': client.get('company_name') or client.get('contact_name'),
+        'type': client.get('company_type', 'LEGAL'),
+        'address': client.get('address'),
+        'management_name': client.get('director_name'),
+        'management_post': 'Генеральный директор'
+    }
+    company_id = CompanyDB.create(company_data)
+
+    # Получаем услуги из запроса
+    services_list = data.get('services', [])
+    products_list = data.get('products', [])
+
+    # Считаем общую сумму
+    total_amount = sum(
+        (s.get('price', 0) * s.get('quantity', 1))
+        for s in services_list
+    )
+
+    # Создаём договор с услугами
+    contract_data = {
+        'quote_id': None,
+        'user_id': client.get('user_id'),
+        'manager_id': user['id'],
+        'client_id': client_id,
+        'company_id': company_id,
+        'services': services_list,
+        'total_amount': total_amount
+    }
+
+    result = ContractDB.create(contract_data)
+
+    # Обновляем товары клиента если указаны
+    if products_list:
+        ClientDB.update_products(client_id, products_list)
+
+    # Добавляем в историю
+    InteractionDB.create({
+        'client_id': client_id,
+        'manager_id': user["id"],
+        'type': 'contract_created',
+        'subject': f'Создан договор {result["contract_number"]}',
+        'description': f'Сумма: {total_amount:,.0f} ₽. Услуг: {len(services_list)}. Товаров: {len(products_list)}',
+        'contract_id': result['id']
+    })
+
+    return {
+        "success": True,
+        "contract_id": result['id'],
+        "contract_number": result['contract_number'],
+        "total_amount": total_amount
+    }
+
+
 # --- Создать договор напрямую (без КП) ---
 # ВАЖНО: этот роут должен быть ПЕРЕД /contract, иначе FastAPI матчит /contract первым
 @app.post("/api/employee/clients/{client_id}/contract/direct")
@@ -4125,11 +4204,15 @@ async def api_employee_download_contract_pdf(
         contract_number=contract['contract_number']
     )
 
+    # URL-кодируем имя файла для кириллицы
+    filename = f"Договор_{contract['contract_number']}.pdf"
+    filename_encoded = url_quote(filename)
+
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
         headers={
-            "Content-Disposition": f'attachment; filename="Договор_{contract["contract_number"]}.pdf"'
+            "Content-Disposition": f"attachment; filename*=UTF-8''{filename_encoded}"
         }
     )
 

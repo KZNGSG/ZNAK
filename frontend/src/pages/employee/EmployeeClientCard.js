@@ -49,6 +49,7 @@ const EmployeeClientCard = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [loadingDadata, setLoadingDadata] = useState(false);
+  const [showContractModal, setShowContractModal] = useState(false);
 
   useEffect(() => {
     fetchClient();
@@ -820,10 +821,10 @@ const EmployeeClientCard = () => {
                 Создать КП
               </Link>
               <button
-                onClick={() => handleCreateContractDirect()}
+                onClick={() => setShowContractModal(true)}
                 disabled={!client.inn}
                 className="flex items-center gap-3 w-full px-4 py-3 bg-emerald-100 hover:bg-emerald-200 border border-emerald-200 text-emerald-700 rounded-xl transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                title={!client.inn ? 'Заполните ИНН клиента' : 'Создать договор напрямую'}
+                title={!client.inn ? 'Заполните ИНН клиента' : 'Создать договор'}
               >
                 <FileCheck className="w-5 h-5" />
                 Создать договор
@@ -926,6 +927,79 @@ const EmployeeClientCard = () => {
       </div>
 
       {/* Delete Confirmation Modal */}
+      {/* Contract Creation Modal */}
+      {showContractModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowContractModal(false)} />
+          <div className="relative bg-white rounded-2xl p-6 max-w-lg w-full mx-4 shadow-xl">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="p-3 rounded-full bg-emerald-100">
+                <FileCheck className="w-6 h-6 text-emerald-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Создание договора</h3>
+                <p className="text-sm text-gray-500">Выберите способ создания</p>
+              </div>
+            </div>
+
+            <div className="space-y-3 mb-6">
+              {/* На основании КП */}
+              {client?.quotes && client.quotes.length > 0 && (
+                <div className="border border-gray-200 rounded-xl p-4">
+                  <div className="text-sm font-medium text-gray-700 mb-3">На основании КП:</div>
+                  <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                    {client.quotes.map((quote) => (
+                      <button
+                        key={quote.id}
+                        onClick={() => {
+                          handleCreateContract(quote.id);
+                          setShowContractModal(false);
+                        }}
+                        className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-emerald-50 border border-gray-200 hover:border-emerald-300 rounded-lg transition-colors text-left"
+                      >
+                        <div>
+                          <div className="font-medium text-gray-900 text-sm">{quote.quote_id}</div>
+                          <div className="text-xs text-gray-500">
+                            {new Date(quote.created_at).toLocaleDateString('ru-RU')}
+                          </div>
+                        </div>
+                        <div className="text-sm font-bold text-emerald-600">
+                          {quote.total_amount?.toLocaleString()} ₽
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Новый договор */}
+              <button
+                onClick={() => {
+                  setShowContractModal(false);
+                  navigate(`/employee/clients/${id}/contract/new`);
+                }}
+                className="w-full flex items-center gap-4 p-4 bg-emerald-50 hover:bg-emerald-100 border-2 border-emerald-200 hover:border-emerald-400 rounded-xl transition-colors"
+              >
+                <div className="p-2 rounded-lg bg-emerald-200">
+                  <Plus className="w-5 h-5 text-emerald-700" />
+                </div>
+                <div className="flex-1 text-left">
+                  <div className="font-medium text-emerald-800">Новый договор</div>
+                  <div className="text-sm text-emerald-600">Выбрать товары и услуги</div>
+                </div>
+              </button>
+            </div>
+
+            <button
+              onClick={() => setShowContractModal(false)}
+              className="w-full px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+            >
+              Отмена
+            </button>
+          </div>
+        </div>
+      )}
+
       {showDeleteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowDeleteModal(false)} />

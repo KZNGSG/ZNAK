@@ -47,6 +47,7 @@ import EmployeeClients from './pages/employee/EmployeeClients';
 import EmployeeClientCard from './pages/employee/EmployeeClientCard';
 import EmployeeClientNew from './pages/employee/EmployeeClientNew';
 import EmployeeQuoteCreate from './pages/employee/EmployeeQuoteCreate';
+import EmployeeContractCreate from './pages/employee/EmployeeContractCreate';
 import EmployeeQuotes from './pages/employee/EmployeeQuotes';
 import EmployeeContracts from './pages/employee/EmployeeContracts';
 import EmployeeDocuments from './pages/employee/EmployeeDocuments';
@@ -167,6 +168,11 @@ function App() {
                 <Route path="/employee/clients/:id/quote" element={
                   <EmployeeRoute>
                     <EmployeeLayout><EmployeeQuoteCreate /></EmployeeLayout>
+                  </EmployeeRoute>
+                } />
+                <Route path="/employee/clients/:id/contract/new" element={
+                  <EmployeeRoute>
+                    <EmployeeLayout><EmployeeContractCreate /></EmployeeLayout>
                   </EmployeeRoute>
                 } />
                 <Route path="/employee/quote/new" element={
