@@ -3527,11 +3527,17 @@ async def api_employee_download_quote_pdf(
 
     # Генерируем PDF
     from document_generator import generate_quote_pdf
+    contact_info = {
+        'name': client_info.get('contact_name', ''),
+        'phone': client_info.get('contact_phone', ''),
+        'email': client_info.get('contact_email', '')
+    }
     pdf_bytes = generate_quote_pdf(
         client_info=client_info,
         services=services,
         total_amount=quote.get('total_amount', 0),
-        quote_number=quote['quote_number']
+        quote_id=quote['quote_number'],
+        contact_info=contact_info
     )
 
     # URL-кодируем имя файла для кириллицы
