@@ -428,9 +428,11 @@ def get_next_document_number(doc_type: str) -> str:
         doc_type: 'quote' для КП или 'contract' для Договора
 
     Returns:
-        Номер в формате КП-0001 или ДОГ-0001
+        Номер в формате КП-ДДММГГ-0001 или ДОГ-ДДММГГ-0001
     """
-    year = datetime.now().year
+    now = datetime.now()
+    year = now.year
+    date_str = now.strftime("%d%m%y")
     prefix = "КП" if doc_type == "quote" else "ДОГ"
 
     with get_db() as conn:
@@ -456,7 +458,7 @@ def get_next_document_number(doc_type: str) -> str:
                 (doc_type, year, next_num)
             )
 
-        return f"{prefix}-{next_num:04d}"
+        return f"{prefix}-{date_str}-{next_num:04d}"
 
 
 def get_next_quote_number() -> str:

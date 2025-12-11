@@ -4012,6 +4012,127 @@ async def api_employee_create_client_contract(
     }
 
 
+# --- Создать договор напрямую (без КП) ---
+@app.post("/api/employee/clients/{client_id}/contract/direct")
+async def api_employee_create_contract_direct(
+    client_id: int,
+    user: Dict = Depends(require_employee)
+):
+    """Создать пустой договор для клиента (без КП)"""
+    client = ClientDB.get_by_id(client_id)
+    if not client:
+        raise HTTPException(status_code=404, detail="Клиент не найден")
+
+    if not client.get('inn'):
+        raise HTTPException(
+            status_code=400,
+            detail="Заполните данные компании клиента (ИНН) перед созданием договора"
+        )
+
+    # Создаём компанию из данных клиента
+    company_data = {
+        'inn': client['inn'],
+        'kpp': client.get('kpp'),
+        'ogrn': client.get('ogrn'),
+        'name': client.get('company_name') or client.get('contact_name'),
+        'type': client.get('company_type', 'LEGAL'),
+        'address': client.get('address'),
+        'management_name': client.get('director_name'),
+        'management_post': 'Генеральный директор'
+    }
+    company_id = CompanyDB.create(company_data)
+
+    # Создаём договор без услуг (будут добавлены позже или пустые)
+    contract_data = {
+        'quote_id': None,
+        'user_id': client.get('user_id'),
+        'manager_id': user['id'],
+        'client_id': client_id,
+        'company_id': company_id,
+        'services': [],
+        'total_amount': 0
+    }
+
+    result = ContractDB.create(contract_data)
+
+    # Добавляем в историю
+    InteractionDB.create({
+        'client_id': client_id,
+        'manager_id': user["id"],
+        'type': 'contract_created',
+        'subject': f'Создан договор {result["contract_number"]}',
+        'description': 'Договор создан напрямую (без КП)',
+        'contract_id': result['id']
+    })
+
+    return {
+        "success": True,
+        "contract_id": result['id'],
+        "contract_number": result['contract_number']
+    }
+
+
+# --- Скачать PDF договора ---
+@app.get("/api/employee/contracts/{contract_id}/pdf")
+async def api_employee_download_contract_pdf(
+    contract_id: int,
+    user: Dict = Depends(require_employee)
+):
+    """Скачать PDF договора"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM contracts WHERE id = ?', (contract_id,))
+        contract = cursor.fetchone()
+        if not contract:
+            raise HTTPException(status_code=404, detail="Договор не найден")
+        contract = dict(contract)
+
+        # Получаем данные компании
+        cursor.execute('SELECT * FROM companies WHERE id = ?', (contract['company_id'],))
+        company = cursor.fetchone()
+        if not company:
+            raise HTTPException(status_code=404, detail="Компания не найдена")
+        company = dict(company)
+
+        # Получаем данные клиента если есть
+        client = None
+        if contract.get('client_id'):
+            client = ClientDB.get_by_id(contract['client_id'])
+
+    # Подготавливаем данные для PDF
+    services = json.loads(contract['services_json']) if contract.get('services_json') else []
+
+    client_info = {
+        'inn': company.get('inn', ''),
+        'kpp': company.get('kpp', ''),
+        'ogrn': company.get('ogrn', ''),
+        'name': company.get('name', ''),
+        'address': company.get('address', ''),
+        'management_name': company.get('management_name') or (client.get('director_name') if client else ''),
+        'management_post': company.get('management_post', 'Генеральный директор'),
+        'contact_name': client.get('contact_name', '') if client else '',
+        'contact_phone': client.get('contact_phone', '') if client else '',
+        'contact_email': client.get('contact_email', '') if client else ''
+    }
+
+    # Генерируем PDF
+    from document_generator import generate_contract_pdf
+    pdf_bytes = generate_contract_pdf(
+        client_info=client_info,
+        services=services,
+        total_amount=contract['total_amount'],
+        contract_number=contract['contract_number']
+    )
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="Договор_{contract["contract_number"]}.pdf"'
+        }
+    )
+
+
 # --- Отправка документов ---
 @app.post("/api/employee/clients/{client_id}/send-documents")
 async def api_employee_send_documents(

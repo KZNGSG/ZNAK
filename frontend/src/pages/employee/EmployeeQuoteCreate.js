@@ -79,7 +79,6 @@ const EmployeeQuoteCreate = () => {
   // Quote result
   const [quoteResult, setQuoteResult] = useState(null);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
-  const [downloadingContract, setDownloadingContract] = useState(false);
 
   // Load data on mount
   useEffect(() => {
@@ -487,66 +486,6 @@ const EmployeeQuoteCreate = () => {
       toast.error(error.message || 'Ошибка скачивания PDF');
     } finally {
       setDownloadingPdf(false);
-    }
-  };
-
-  // Download Contract
-  const downloadContract = async () => {
-    if (!client) return;
-    setDownloadingContract(true);
-
-    try {
-      const companyData = {
-        inn: client.inn || '',
-        kpp: client.kpp || '',
-        ogrn: client.ogrn || '',
-        name: client.company_name || client.contact_name,
-        address: client.address || '',
-        management_name: client.contact_name,
-        management_post: client.contact_position || 'Директор'
-      };
-
-      const response = await fetch(`${API_URL}/api/contract/generate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          company: companyData,
-          services: selectedServices.map(s => ({
-            id: s.id,
-            name: s.name,
-            description: s.description,
-            price: s.price,
-            unit: s.unit,
-            category: s.category,
-            quantity: s.quantity
-          })),
-          contact_name: client.contact_name,
-          contact_phone: client.contact_phone,
-          contact_email: client.contact_email
-        })
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.detail || 'Ошибка генерации договора');
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Договор_${client.inn || 'client'}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      toast.success('Договор скачан!');
-    } catch (error) {
-      console.error('Contract download error:', error);
-      toast.error(error.message || 'Ошибка скачивания договора');
-    } finally {
-      setDownloadingContract(false);
     }
   };
 
@@ -1121,18 +1060,6 @@ const EmployeeQuoteCreate = () => {
                     <Download className="w-5 h-5" />
                   )}
                   Скачать КП
-                </button>
-                <button
-                  onClick={downloadContract}
-                  disabled={downloadingContract}
-                  className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50"
-                >
-                  {downloadingContract ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <FileText className="w-5 h-5" />
-                  )}
-                  Скачать договор
                 </button>
               </div>
 

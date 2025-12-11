@@ -229,6 +229,60 @@ const EmployeeClientCard = () => {
     }
   };
 
+  const handleCreateContractDirect = async () => {
+    if (!client.inn) {
+      toast.error('Заполните ИНН клиента перед созданием договора');
+      return;
+    }
+
+    try {
+      const response = await authFetch(`${API_URL}/api/employee/clients/${id}/contract/direct`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(`Договор ${data.contract_number} создан`);
+        fetchClient();
+      } else {
+        try {
+          const error = await response.json();
+          toast.error(error.detail || 'Ошибка создания договора');
+        } catch {
+          toast.error('Ошибка создания договора');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to create contract:', error);
+      toast.error('Ошибка создания договора');
+    }
+  };
+
+  const handleDownloadContract = async (contractId) => {
+    try {
+      const response = await authFetch(`${API_URL}/api/employee/contracts/${contractId}/pdf`);
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Договор_${contractId}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        toast.success('Договор скачан');
+      } else {
+        toast.error('Ошибка скачивания договора');
+      }
+    } catch (error) {
+      console.error('Failed to download contract:', error);
+      toast.error('Ошибка скачивания договора');
+    }
+  };
+
   const getStatusBadge = (status) => {
     const styles = {
       lead: { bg: 'bg-yellow-100', border: 'border-yellow-200', text: 'text-yellow-700', icon: TrendingUp, label: 'Лид' },
@@ -754,6 +808,15 @@ const EmployeeClientCard = () => {
                 <FileText className="w-5 h-5" />
                 Создать КП
               </Link>
+              <button
+                onClick={() => handleCreateContractDirect()}
+                disabled={!client.inn}
+                className="flex items-center gap-3 w-full px-4 py-3 bg-emerald-100 hover:bg-emerald-200 border border-emerald-200 text-emerald-700 rounded-xl transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                title={!client.inn ? 'Заполните ИНН клиента' : 'Создать договор напрямую'}
+              >
+                <FileCheck className="w-5 h-5" />
+                Создать договор
+              </button>
               {client.contact_phone && (
                 <a
                   href={`tel:${client.contact_phone}`}
@@ -830,8 +893,16 @@ const EmployeeClientCard = () => {
                       <span className="text-sm font-medium text-gray-900">{contract.contract_number}</span>
                       <span className="text-sm text-emerald-600">{contract.total_amount?.toLocaleString()} ₽</span>
                     </div>
-                    <div className="text-xs text-gray-400">
-                      {new Date(contract.created_at).toLocaleDateString('ru-RU')}
+                    <div className="flex items-center justify-between">
+                      <div className="text-xs text-gray-400">
+                        {new Date(contract.created_at).toLocaleDateString('ru-RU')}
+                      </div>
+                      <button
+                        onClick={() => handleDownloadContract(contract.id)}
+                        className="text-xs text-emerald-600 hover:text-emerald-700 font-medium"
+                      >
+                        Скачать
+                      </button>
                     </div>
                   </div>
                 ))}
