@@ -3915,16 +3915,27 @@ async def api_employee_create_client_contract(
     if quote_id:
         with get_db() as conn:
             cursor = conn.cursor()
-            cursor.execute('''
-                SELECT * FROM quotes WHERE id = ? AND client_id = ?
-            ''', (quote_id, client_id))
+            # Ищем КП по id (без проверки client_id для старых КП)
+            cursor.execute('SELECT * FROM quotes WHERE id = ?', (quote_id,))
             quote = cursor.fetchone()
             if not quote:
                 raise HTTPException(status_code=404, detail="КП не найдено")
             quote = dict(quote)
             services_data = json.loads(quote['services_json'])
             total_amount = quote['total_amount']
-            company_id = quote['company_id']
+            company_id = quote.get('company_id')
+
+            # Если у КП нет company_id, создаём компанию из данных клиента
+            if not company_id and client.get('inn'):
+                company_data = {
+                    'inn': client['inn'],
+                    'kpp': client.get('kpp'),
+                    'ogrn': client.get('ogrn'),
+                    'name': client.get('company_name') or client.get('contact_name'),
+                    'type': client.get('company_type', 'LEGAL'),
+                    'address': client.get('address')
+                }
+                company_id = CompanyDB.create(company_data)
     elif services:
         # Создаём напрямую из списка услуг
         total_amount = sum(s.get('price', 0) * s.get('quantity', 1) for s in services)
