@@ -3101,18 +3101,28 @@ async def api_superadmin_stats(
     """Расширенная статистика для Superadmin Dashboard"""
     from datetime import timedelta
 
-    # Определяем период
+    # Определяем текущий и предыдущий периоды для сравнения
     now = datetime.now()
     if period == "day":
         start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        prev_start = start_date - timedelta(days=1)
+        prev_end = start_date
     elif period == "week":
         start_date = now - timedelta(days=7)
+        prev_start = now - timedelta(days=14)
+        prev_end = start_date
     elif period == "month":
         start_date = now - timedelta(days=30)
+        prev_start = now - timedelta(days=60)
+        prev_end = start_date
     else:
         start_date = now - timedelta(days=7)
+        prev_start = now - timedelta(days=14)
+        prev_end = start_date
 
     start_str = start_date.strftime('%Y-%m-%d %H:%M:%S')
+    prev_start_str = prev_start.strftime('%Y-%m-%d %H:%M:%S')
+    prev_end_str = prev_end.strftime('%Y-%m-%d %H:%M:%S')
 
     with get_db() as conn:
         cursor = conn.cursor()
@@ -3126,6 +3136,11 @@ async def api_superadmin_stats(
 
         cursor.execute("SELECT COUNT(*) as cnt FROM callbacks WHERE created_at >= ?", (start_str,))
         period_callbacks = cursor.fetchone()['cnt']
+
+        # Заявки за предыдущий период
+        cursor.execute("SELECT COUNT(*) as cnt FROM callbacks WHERE created_at >= ? AND created_at < ?",
+                      (prev_start_str, prev_end_str))
+        prev_period_callbacks = cursor.fetchone()['cnt']
 
         cursor.execute("SELECT COUNT(*) as cnt FROM callbacks")
         total_callbacks = cursor.fetchone()['cnt']
@@ -3144,6 +3159,11 @@ async def api_superadmin_stats(
 
         cursor.execute("SELECT COUNT(*) as cnt FROM clients WHERE created_at >= ?", (start_str,))
         period_clients = cursor.fetchone()['cnt']
+
+        # Клиенты за предыдущий период
+        cursor.execute("SELECT COUNT(*) as cnt FROM clients WHERE created_at >= ? AND created_at < ?",
+                      (prev_start_str, prev_end_str))
+        prev_period_clients = cursor.fetchone()['cnt']
 
         # === КП ===
         cursor.execute('''
@@ -3166,6 +3186,15 @@ async def api_superadmin_stats(
         period_quotes = row['cnt']
         period_quotes_amount = row['amount']
 
+        # КП за предыдущий период
+        cursor.execute('''
+            SELECT COUNT(*) as cnt, COALESCE(SUM(total_amount), 0) as amount
+            FROM quotes WHERE created_at >= ? AND created_at < ?
+        ''', (prev_start_str, prev_end_str))
+        row = cursor.fetchone()
+        prev_period_quotes = row['cnt']
+        prev_period_quotes_amount = row['amount']
+
         # === ДОГОВОРЫ ===
         cursor.execute('''
             SELECT
@@ -3186,6 +3215,50 @@ async def api_superadmin_stats(
         row = cursor.fetchone()
         period_contracts = row['cnt']
         period_contracts_amount = row['amount']
+
+        # Договоры за предыдущий период
+        cursor.execute('''
+            SELECT COUNT(*) as cnt, COALESCE(SUM(total_amount), 0) as amount
+            FROM contracts WHERE created_at >= ? AND created_at < ?
+        ''', (prev_start_str, prev_end_str))
+        row = cursor.fetchone()
+        prev_period_contracts = row['cnt']
+        prev_period_contracts_amount = row['amount']
+
+        # === СРЕДНИЙ ЧЕК ===
+        avg_quote_check = quote_stats['total_amount'] / quote_stats['total'] if quote_stats['total'] > 0 else 0
+        avg_contract_check = contract_stats['total_amount'] / contract_stats['total'] if contract_stats['total'] > 0 else 0
+
+        # Средний чек за период
+        period_avg_quote = period_quotes_amount / period_quotes if period_quotes > 0 else 0
+        period_avg_contract = period_contracts_amount / period_contracts if period_contracts > 0 else 0
+
+        # Средний чек за предыдущий период
+        prev_avg_quote = prev_period_quotes_amount / prev_period_quotes if prev_period_quotes > 0 else 0
+        prev_avg_contract = prev_period_contracts_amount / prev_period_contracts if prev_period_contracts > 0 else 0
+
+        # === ВРЕМЯ КОНВЕРСИИ (от заявки до клиента и до договора) ===
+        cursor.execute('''
+            SELECT AVG(
+                CAST((julianday(c.created_at) - julianday(cb.created_at)) * 24 AS INTEGER)
+            ) as avg_hours
+            FROM clients c
+            INNER JOIN callbacks cb ON c.callback_id = cb.id
+            WHERE c.created_at >= ?
+        ''', (start_str,))
+        row = cursor.fetchone()
+        avg_callback_to_client_hours = row['avg_hours'] or 0
+
+        cursor.execute('''
+            SELECT AVG(
+                CAST((julianday(ct.created_at) - julianday(c.created_at)) AS INTEGER)
+            ) as avg_days
+            FROM contracts ct
+            INNER JOIN clients c ON ct.client_id = c.id
+            WHERE ct.created_at >= ?
+        ''', (start_str,))
+        row = cursor.fetchone()
+        avg_client_to_contract_days = row['avg_days'] or 0
 
         # === ВОРОНКА ПРОДАЖ ===
         funnel = {
@@ -3263,24 +3336,40 @@ async def api_superadmin_stats(
             "new": new_callbacks,
             "processing": processing_callbacks,
             "period": period_callbacks,
+            "prev_period": prev_period_callbacks,
             "total": total_callbacks,
             "overdue": overdue_count
         },
         "clients": {
             **client_stats,
-            "period": period_clients
+            "period": period_clients,
+            "prev_period": prev_period_clients
         },
         "quotes": {
             **quote_stats,
             "period": period_quotes,
-            "period_amount": period_quotes_amount
+            "period_amount": period_quotes_amount,
+            "prev_period": prev_period_quotes,
+            "prev_period_amount": prev_period_quotes_amount,
+            "avg_check": avg_quote_check,
+            "period_avg_check": period_avg_quote,
+            "prev_avg_check": prev_avg_quote
         },
         "contracts": {
             **contract_stats,
             "period": period_contracts,
-            "period_amount": period_contracts_amount
+            "period_amount": period_contracts_amount,
+            "prev_period": prev_period_contracts,
+            "prev_period_amount": prev_period_contracts_amount,
+            "avg_check": avg_contract_check,
+            "period_avg_check": period_avg_contract,
+            "prev_avg_check": prev_avg_contract
         },
         "funnel": funnel,
+        "conversion": {
+            "callback_to_client_hours": round(avg_callback_to_client_hours, 1),
+            "client_to_contract_days": round(avg_client_to_contract_days, 1)
+        },
         "managers": managers_stats,
         "sources": sources,
         "recent": {
