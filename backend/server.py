@@ -3237,17 +3237,9 @@ async def api_superadmin_stats(
         prev_avg_quote = prev_period_quotes_amount / prev_period_quotes if prev_period_quotes > 0 else 0
         prev_avg_contract = prev_period_contracts_amount / prev_period_contracts if prev_period_contracts > 0 else 0
 
-        # === ВРЕМЯ КОНВЕРСИИ (от заявки до клиента и до договора) ===
-        cursor.execute('''
-            SELECT AVG(
-                CAST((julianday(c.created_at) - julianday(cb.created_at)) * 24 AS INTEGER)
-            ) as avg_hours
-            FROM clients c
-            INNER JOIN callbacks cb ON c.callback_id = cb.id
-            WHERE c.created_at >= ?
-        ''', (start_str,))
-        row = cursor.fetchone()
-        avg_callback_to_client_hours = row['avg_hours'] or 0
+        # === ВРЕМЯ КОНВЕРСИИ (от клиента до договора) ===
+        # Примечание: связь callback_id -> client не хранится, поэтому считаем только client -> contract
+        avg_callback_to_client_hours = 0  # Нет данных о связи заявка-клиент
 
         cursor.execute('''
             SELECT AVG(
