@@ -123,6 +123,26 @@ def init_database():
         except sqlite3.OperationalError:
             pass
 
+        # Миграция: добавляем manager_id и client_id в quotes
+        try:
+            cursor.execute('ALTER TABLE quotes ADD COLUMN manager_id INTEGER')
+        except sqlite3.OperationalError:
+            pass
+        try:
+            cursor.execute('ALTER TABLE quotes ADD COLUMN client_id INTEGER')
+        except sqlite3.OperationalError:
+            pass
+
+        # Миграция: добавляем manager_id и client_id в contracts
+        try:
+            cursor.execute('ALTER TABLE contracts ADD COLUMN manager_id INTEGER')
+        except sqlite3.OperationalError:
+            pass
+        try:
+            cursor.execute('ALTER TABLE contracts ADD COLUMN client_id INTEGER')
+        except sqlite3.OperationalError:
+            pass
+
         # Таблица компаний (клиентов)
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS companies (
@@ -580,20 +600,22 @@ class QuoteDB:
             cursor = conn.cursor()
             cursor.execute('''
                 INSERT INTO quotes (
-                    quote_number, user_id, company_id, services_json,
-                    total_amount, contact_name, contact_phone, contact_email,
-                    status, valid_until
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    quote_number, user_id, manager_id, client_id, company_id,
+                    services_json, total_amount, contact_name, contact_phone,
+                    contact_email, status, valid_until
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 quote_number,
                 data.get('user_id'),
-                data['company_id'],
+                data.get('manager_id'),
+                data.get('client_id'),
+                data.get('company_id'),
                 json.dumps(data['services'], ensure_ascii=False),
                 data['total_amount'],
                 data.get('contact_name'),
                 data.get('contact_phone'),
                 data.get('contact_email'),
-                'created',
+                data.get('status', 'draft'),
                 data.get('valid_until')
             ))
 
@@ -697,14 +719,16 @@ class ContractDB:
             cursor = conn.cursor()
             cursor.execute('''
                 INSERT INTO contracts (
-                    contract_number, quote_id, user_id, company_id,
-                    services_json, total_amount, status
-                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                    contract_number, quote_id, user_id, manager_id, client_id,
+                    company_id, services_json, total_amount, status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 contract_number,
                 data.get('quote_id'),
                 data.get('user_id'),
-                data['company_id'],
+                data.get('manager_id'),
+                data.get('client_id'),
+                data.get('company_id'),
                 json.dumps(data['services'], ensure_ascii=False),
                 data['total_amount'],
                 'draft'

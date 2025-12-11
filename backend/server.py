@@ -3948,6 +3948,8 @@ async def api_employee_create_client_contract(
     contract_data = {
         'quote_id': quote_id,
         'user_id': client.get('user_id'),
+        'manager_id': user['id'],  # Текущий менеджер
+        'client_id': client_id,
         'company_id': company_id,
         'services': services_data,
         'total_amount': total_amount
