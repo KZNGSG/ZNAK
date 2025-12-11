@@ -49,7 +49,7 @@ const EmployeeQuotes = () => {
       const response = await authFetch(url);
       if (response.ok) {
         const data = await response.json();
-        setQuotes(data);
+        setQuotes(data.quotes || []);
       } else {
         toast.error('Ошибка загрузки КП');
       }
