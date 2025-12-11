@@ -3420,6 +3420,7 @@ async def api_employee_get_quotes(
                    c.contact_name as client_name,
                    c.company_name,
                    m.email as manager_email,
+                   m.name as manager_name,
                    comp.name as company_legal_name,
                    comp.inn as company_inn
             FROM quotes q
@@ -3473,7 +3474,7 @@ async def api_employee_update_quote_status(
             raise HTTPException(status_code=404, detail="КП не найдено")
 
         cursor.execute(
-            'UPDATE quotes SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+            'UPDATE quotes SET status = ? WHERE id = ?',
             (new_status, quote_id)
         )
 
@@ -3599,11 +3600,47 @@ async def api_employee_get_contracts(
 @app.get("/api/employee/callbacks")
 async def api_employee_get_callbacks(
     status: Optional[str] = None,
+    period: Optional[str] = None,
     user: Dict = Depends(require_employee)
 ):
-    """Получить все заявки"""
-    callbacks = CallbackDBExtended.get_all_extended(status=status)
-    return {"callbacks": callbacks}
+    """Получить все заявки с фильтрацией по периоду"""
+    import json
+
+    with get_db() as conn:
+        cursor = conn.cursor()
+        query = '''
+            SELECT cb.*, u.email as assigned_email, c.contact_name as client_name
+            FROM callbacks cb
+            LEFT JOIN users u ON cb.assigned_to = u.id
+            LEFT JOIN clients c ON cb.client_id = c.id
+            WHERE 1=1
+        '''
+        params = []
+
+        if status:
+            query += ' AND cb.status = ?'
+            params.append(status)
+
+        # Фильтр по периоду
+        if period == 'today':
+            query += " AND date(cb.created_at) = date('now')"
+        elif period == 'week':
+            query += " AND cb.created_at >= datetime('now', '-7 days')"
+        elif period == 'month':
+            query += " AND cb.created_at >= datetime('now', '-30 days')"
+
+        query += ' ORDER BY cb.created_at DESC'
+        cursor.execute(query, params)
+
+        results = []
+        for row in cursor.fetchall():
+            item = dict(row)
+            item['products'] = json.loads(item['products_json']) if item.get('products_json') else []
+            if 'products_json' in item:
+                del item['products_json']
+            results.append(item)
+
+    return {"callbacks": results}
 
 
 @app.get("/api/employee/callbacks/{callback_id}")
@@ -3644,6 +3681,25 @@ async def api_employee_update_callback_status(
     return {"success": True}
 
 
+@app.put("/api/employee/callbacks/{callback_id}/comment")
+async def api_employee_update_callback_comment(
+    callback_id: int,
+    data: dict,
+    user: Dict = Depends(require_employee)
+):
+    """Обновить комментарий заявки"""
+    comment = data.get('comment', '')
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            'UPDATE callbacks SET comment = ? WHERE id = ?',
+            (comment, callback_id)
+        )
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Заявка не найдена")
+    return {"success": True}
+
+
 @app.post("/api/employee/callbacks/{callback_id}/convert")
 async def api_employee_convert_callback(
     callback_id: int,
@@ -3668,26 +3724,44 @@ async def api_employee_get_clients(
     user: Dict = Depends(require_employee)
 ):
     """
-    Получить клиентов.
-    - superadmin видит ВСЕХ клиентов
-    - employee видит только назначенных ему (assigned_manager_id)
+    Получить клиентов с статистикой по КП и договорам.
     """
-    is_superadmin = user.get("role") == "superadmin"
-
     if search:
-        # Для поиска пока показываем всем все результаты
-        # (можно добавить фильтрацию позже если нужно)
         clients = ClientDB.search(search)
-        # Фильтруем для обычного employee
-        if not is_superadmin:
-            clients = [c for c in clients if c.get('assigned_manager_id') == user["id"] or c.get('assigned_manager_id') is None]
     else:
-        if is_superadmin:
-            # Superadmin видит всех клиентов
-            clients = ClientDB.get_all(status=status)
-        else:
-            # Employee видит только своих клиентов
-            clients = ClientDB.get_all(status=status, manager_id=user["id"])
+        clients = ClientDB.get_all(status=status)
+
+    # Добавляем статистику по КП и договорам для каждого клиента
+    with get_db() as conn:
+        cursor = conn.cursor()
+        for client in clients:
+            client_id = client['id']
+
+            # Количество и сумма КП
+            cursor.execute('''
+                SELECT COUNT(*) as count, COALESCE(SUM(total_amount), 0) as total
+                FROM quotes WHERE client_id = ?
+            ''', (client_id,))
+            quotes_stats = cursor.fetchone()
+            client['quotes_count'] = quotes_stats['count'] if quotes_stats else 0
+            client['quotes_total'] = quotes_stats['total'] if quotes_stats else 0
+
+            # Количество и сумма договоров
+            cursor.execute('''
+                SELECT COUNT(*) as count, COALESCE(SUM(total_amount), 0) as total
+                FROM contracts WHERE client_id = ?
+            ''', (client_id,))
+            contracts_stats = cursor.fetchone()
+            client['contracts_count'] = contracts_stats['count'] if contracts_stats else 0
+            client['contracts_total'] = contracts_stats['total'] if contracts_stats else 0
+
+            # Менеджер
+            if client.get('assigned_manager_id'):
+                cursor.execute('SELECT email, name FROM users WHERE id = ?', (client['assigned_manager_id'],))
+                manager = cursor.fetchone()
+                if manager:
+                    client['manager_name'] = manager['name'] or manager['email'].split('@')[0]
+                    client['manager_email'] = manager['email']
 
     return {"clients": clients}
 
@@ -4266,7 +4340,7 @@ async def api_employee_update_contract_status(
     data = await request.json()
     new_status = data.get('status')
 
-    if new_status not in ['draft', 'active', 'completed', 'cancelled']:
+    if new_status not in ['draft', 'sent', 'signed', 'active', 'completed', 'cancelled']:
         raise HTTPException(status_code=400, detail="Недопустимый статус")
 
     with get_db() as conn:
@@ -4277,7 +4351,7 @@ async def api_employee_update_contract_status(
             raise HTTPException(status_code=404, detail="Договор не найден")
 
         cursor.execute(
-            'UPDATE contracts SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+            'UPDATE contracts SET status = ? WHERE id = ?',
             (new_status, contract_id)
         )
 

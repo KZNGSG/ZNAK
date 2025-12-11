@@ -17,7 +17,6 @@ import {
   AlertCircle,
   ArrowUpDown,
   Download,
-  Eye,
   Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -25,12 +24,10 @@ import { toast } from 'sonner';
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const QUOTE_STATUS_CONFIG = {
-  created: { label: 'Создано', color: 'bg-gray-100 text-gray-600', icon: Clock },
+  created: { label: 'Черновик', color: 'bg-gray-100 text-gray-600', icon: Clock },
   sent: { label: 'Отправлено', color: 'bg-blue-100 text-blue-600', icon: AlertCircle },
-  viewed: { label: 'Просмотрено', color: 'bg-purple-100 text-purple-600', icon: Eye },
   accepted: { label: 'Принято', color: 'bg-green-100 text-green-600', icon: CheckCircle },
-  rejected: { label: 'Отклонено', color: 'bg-red-100 text-red-600', icon: XCircle },
-  expired: { label: 'Истекло', color: 'bg-orange-100 text-orange-600', icon: Clock }
+  rejected: { label: 'Отклонено', color: 'bg-red-100 text-red-600', icon: XCircle }
 };
 
 const CONTRACT_STATUS_CONFIG = {
@@ -59,6 +56,7 @@ const EmployeeDocuments = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortField, setSortField] = useState('created_at');
   const [sortDirection, setSortDirection] = useState('desc');
+  const [downloadingId, setDownloadingId] = useState(null);
 
   useEffect(() => {
     fetchAllDocuments();
@@ -113,6 +111,59 @@ const EmployeeDocuments = () => {
     } else {
       setSortField(field);
       setSortDirection('desc');
+    }
+  };
+
+  const handleDownloadPdf = async (doc) => {
+    const docId = doc.id;
+    const docNumber = doc.quote_number || doc.contract_number;
+    const type = activeTab === 'quotes' ? 'quotes' : 'contracts';
+
+    setDownloadingId(docId);
+    try {
+      const response = await authFetch(`${API_URL}/api/employee/${type}/${docId}/pdf`);
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${activeTab === 'quotes' ? 'КП' : 'Договор'}_${docNumber}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        toast.success('Документ скачан');
+      } else {
+        toast.error('Ошибка скачивания');
+      }
+    } catch (error) {
+      console.error('Failed to download PDF:', error);
+      toast.error('Ошибка скачивания');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  const handleStatusChange = async (doc, newStatus) => {
+    const docId = doc.id;
+    const type = activeTab === 'quotes' ? 'quotes' : 'contracts';
+
+    try {
+      const response = await authFetch(`${API_URL}/api/employee/${type}/${docId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (response.ok) {
+        toast.success('Статус обновлён');
+        fetchAllDocuments();
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || 'Ошибка обновления статуса');
+      }
+    } catch (error) {
+      console.error('Failed to update status:', error);
+      toast.error('Ошибка обновления статуса');
     }
   };
 
@@ -365,10 +416,22 @@ const EmployeeDocuments = () => {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full ${statusConfig.color}`}>
-                          <StatusIcon className="w-3 h-3" />
-                          {statusConfig.label}
-                        </span>
+                        {activeTab === 'invoices' ? (
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full ${statusConfig.color}`}>
+                            <StatusIcon className="w-3 h-3" />
+                            {statusConfig.label}
+                          </span>
+                        ) : (
+                          <select
+                            value={doc.status}
+                            onChange={(e) => handleStatusChange(doc, e.target.value)}
+                            className={`text-xs font-medium rounded-full px-2.5 py-1 border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-yellow-500 ${statusConfig.color}`}
+                          >
+                            {getStatusOptions().map(opt => (
+                              <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
+                          </select>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2 text-sm text-gray-500">
@@ -377,14 +440,31 @@ const EmployeeDocuments = () => {
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        {doc.client_id && (
-                          <Link
-                            to={`/employee/clients/${doc.client_id}`}
-                            className="p-2 text-gray-400 hover:text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors inline-flex"
-                          >
-                            <ChevronRight className="w-4 h-4" />
-                          </Link>
-                        )}
+                        <div className="flex items-center gap-1">
+                          {activeTab !== 'invoices' && (
+                            <button
+                              onClick={() => handleDownloadPdf(doc)}
+                              disabled={downloadingId === doc.id}
+                              className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors disabled:opacity-50"
+                              title="Скачать PDF"
+                            >
+                              {downloadingId === doc.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Download className="w-4 h-4" />
+                              )}
+                            </button>
+                          )}
+                          {doc.client_id && (
+                            <Link
+                              to={`/employee/clients/${doc.client_id}`}
+                              className="p-2 text-gray-400 hover:text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors inline-flex"
+                              title="Карточка клиента"
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </Link>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );

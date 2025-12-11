@@ -340,7 +340,7 @@ const EmployeeQuotes = () => {
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="text-sm text-gray-500">{quote.manager_email || '-'}</span>
+                        <span className="text-sm text-gray-500">{quote.manager_name || quote.manager_email || '-'}</span>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">

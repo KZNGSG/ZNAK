@@ -14,7 +14,10 @@ import {
   UserCheck,
   Star,
   UserX,
-  MoreHorizontal
+  FileText,
+  FileCheck,
+  Plus,
+  AlertCircle
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -81,31 +84,9 @@ const EmployeeClients = () => {
     }
   };
 
-  const getStatusBadge = (status) => {
-    const styles = {
-      lead: { bg: 'bg-yellow-100', border: 'border-yellow-200', text: 'text-yellow-700', icon: TrendingUp, label: 'Лид' },
-      active: { bg: 'bg-emerald-100', border: 'border-emerald-200', text: 'text-emerald-700', icon: UserCheck, label: 'Активный' },
-      regular: { bg: 'bg-amber-100', border: 'border-amber-200', text: 'text-amber-700', icon: Star, label: 'Постоянный' },
-      inactive: { bg: 'bg-gray-100', border: 'border-gray-200', text: 'text-gray-600', icon: UserX, label: 'Неактивный' }
-    };
-    const style = styles[status] || styles.lead;
-    const Icon = style.icon;
-
-    return (
-      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium ${style.bg} ${style.border} ${style.text} border`}>
-        <Icon className="w-3.5 h-3.5" />
-        {style.label}
-      </span>
-    );
-  };
-
-  const getSourceLabel = (source) => {
-    const labels = {
-      website: 'Сайт',
-      manual: 'Вручную',
-      callback: 'Заявка'
-    };
-    return labels[source] || source || 'Другое';
+  const formatAmount = (amount) => {
+    if (!amount) return '0';
+    return Number(amount).toLocaleString('ru-RU');
   };
 
   const formatDate = (dateStr) => {
@@ -118,8 +99,16 @@ const EmployeeClients = () => {
     });
   };
 
+  // Статистика
+  const stats = {
+    total: clients.length,
+    leads: clients.filter(c => c.status === 'lead').length,
+    active: clients.filter(c => c.status === 'active').length,
+    withoutQuotes: clients.filter(c => !c.quotes_count).length
+  };
+
   const statusOptions = [
-    { value: '', label: 'Все клиенты', count: clients.length },
+    { value: '', label: 'Все клиенты' },
     { value: 'lead', label: 'Лиды' },
     { value: 'active', label: 'Активные' },
     { value: 'regular', label: 'Постоянные' },
@@ -138,12 +127,12 @@ const EmployeeClients = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Клиенты</h1>
-          <p className="text-gray-500 mt-1">База клиентов компании</p>
+          <p className="text-gray-500 text-sm mt-0.5">База клиентов компании</p>
         </div>
         <Link
           to="/employee/clients/new"
@@ -154,151 +143,286 @@ const EmployeeClients = () => {
         </Link>
       </div>
 
-      {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        {/* Search */}
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-            placeholder="Поиск по имени, компании, телефону, ИНН..."
-            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500"
-          />
+      {/* Filters & Search */}
+      <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
+        <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+          {/* Filter tabs */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <button
+              onClick={() => handleStatusChange('')}
+              className={`px-3 py-1.5 text-sm rounded-lg transition-colors font-medium ${
+                statusFilter === ''
+                  ? 'bg-yellow-500 text-gray-900'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Все
+              <span className="ml-1.5 text-xs opacity-70">{stats.total}</span>
+            </button>
+            <button
+              onClick={() => handleStatusChange('lead')}
+              className={`px-3 py-1.5 text-sm rounded-lg transition-colors font-medium ${
+                statusFilter === 'lead'
+                  ? 'bg-yellow-500 text-gray-900'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Лиды
+              {stats.leads > 0 && <span className="ml-1.5 text-xs opacity-70">{stats.leads}</span>}
+            </button>
+            <button
+              onClick={() => handleStatusChange('active')}
+              className={`px-3 py-1.5 text-sm rounded-lg transition-colors font-medium ${
+                statusFilter === 'active'
+                  ? 'bg-yellow-500 text-gray-900'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Активные
+              {stats.active > 0 && <span className="ml-1.5 text-xs opacity-70">{stats.active}</span>}
+            </button>
+            <button
+              onClick={() => handleStatusChange('regular')}
+              className={`px-3 py-1.5 text-sm rounded-lg transition-colors font-medium ${
+                statusFilter === 'regular'
+                  ? 'bg-yellow-500 text-gray-900'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Постоянные
+            </button>
+            <button
+              onClick={() => handleStatusChange('inactive')}
+              className={`px-3 py-1.5 text-sm rounded-lg transition-colors font-medium ${
+                statusFilter === 'inactive'
+                  ? 'bg-yellow-500 text-gray-900'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Неактивные
+            </button>
+          </div>
+
+          {/* Search */}
+          <div className="flex-1 flex gap-2">
+            <div className="relative flex-1 lg:max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                placeholder="Поиск по имени, ИНН, телефону..."
+                className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-yellow-500"
+              />
+            </div>
+            <button
+              onClick={handleSearch}
+              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors"
+            >
+              Найти
+            </button>
+          </div>
         </div>
-        <button
-          onClick={handleSearch}
-          className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-xl transition-colors"
-        >
-          Искать
-        </button>
       </div>
 
-      {/* Status Filters */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <Filter className="w-4 h-4 text-gray-400" />
-        {statusOptions.map((option) => (
-          <button
-            key={option.value}
-            onClick={() => handleStatusChange(option.value)}
-            className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-              statusFilter === option.value
-                ? 'bg-yellow-100 text-yellow-700 border border-yellow-300'
-                : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
-            }`}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Clients List */}
-      {clients.length > 0 ? (
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+      {/* Table */}
+      <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+        {clients.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-gray-200 bg-gray-50">
-                  <th className="text-left px-5 py-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <tr className="bg-gray-50 border-b border-gray-200">
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Клиент
                   </th>
-                  <th className="text-left px-5 py-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Контакты
                   </th>
-                  <th className="text-left px-5 py-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                     Статус
                   </th>
-                  <th className="text-left px-5 py-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Источник
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                    КП
                   </th>
-                  <th className="text-left px-5 py-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Дата
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                    Договоры
                   </th>
-                  <th className="text-right px-5 py-4"></th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                    Менеджер
+                  </th>
+                  <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider w-28">
+                    Действия
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {clients.map((client) => (
-                  <tr
-                    key={client.id}
-                    className="hover:bg-gray-50 transition-colors cursor-pointer"
-                    onClick={() => navigate(`/employee/clients/${client.id}`)}
-                  >
-                    <td className="px-5 py-4">
-                      <div>
-                        <div className="font-medium text-gray-900">{client.contact_name}</div>
-                        {client.company_name && (
-                          <div className="flex items-center gap-1.5 mt-1 text-sm text-gray-500">
-                            <Building2 className="w-3.5 h-3.5" />
-                            {client.company_name}
-                          </div>
-                        )}
-                        {client.inn && (
-                          <div className="text-xs text-gray-400 mt-0.5">
-                            ИНН: {client.inn}
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="space-y-1 text-sm">
-                        <div className="flex items-center gap-1.5 text-gray-600">
-                          <Phone className="w-3.5 h-3.5 text-gray-400" />
-                          {client.contact_phone}
+                {clients.map((client) => {
+                  const hasNoQuotes = !client.quotes_count;
+                  const hasNoContracts = client.quotes_count > 0 && !client.contracts_count;
+
+                  return (
+                    <tr
+                      key={client.id}
+                      className={`hover:bg-gray-50 transition-colors cursor-pointer ${
+                        hasNoQuotes ? 'bg-orange-50/30' : ''
+                      }`}
+                      onClick={() => navigate(`/employee/clients/${client.id}`)}
+                    >
+                      {/* Клиент */}
+                      <td className="px-4 py-3">
+                        <div>
+                          <div className="font-medium text-gray-900">{client.contact_name}</div>
+                          {client.company_name && (
+                            <div className="flex items-center gap-1 mt-0.5 text-xs text-gray-500">
+                              <Building2 className="w-3 h-3" />
+                              {client.company_name}
+                            </div>
+                          )}
+                          {client.inn && (
+                            <div className="text-xs text-gray-400 mt-0.5">
+                              ИНН: {client.inn}
+                            </div>
+                          )}
                         </div>
-                        {client.contact_email && (
+                      </td>
+
+                      {/* Контакты */}
+                      <td className="px-4 py-3">
+                        <div className="space-y-0.5 text-sm">
                           <div className="flex items-center gap-1.5 text-gray-600">
-                            <Mail className="w-3.5 h-3.5 text-gray-400" />
-                            {client.contact_email}
+                            <Phone className="w-3.5 h-3.5 text-gray-400" />
+                            {client.contact_phone}
                           </div>
+                          {client.contact_email && (
+                            <div className="flex items-center gap-1.5 text-gray-500 text-xs">
+                              <Mail className="w-3 h-3 text-gray-400" />
+                              {client.contact_email}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Статус */}
+                      <td className="px-4 py-3">
+                        <StatusBadge status={client.status} />
+                      </td>
+
+                      {/* КП */}
+                      <td className="px-4 py-3">
+                        {client.quotes_count > 0 ? (
+                          <div className="flex items-center gap-1.5">
+                            <FileText className="w-3.5 h-3.5 text-gray-400" />
+                            <span className="text-sm text-gray-900">{client.quotes_count}</span>
+                            <span className="text-xs text-gray-400">
+                              ({formatAmount(client.quotes_total)})
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-orange-500 flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" />
+                            нет
+                          </span>
                         )}
-                      </div>
-                    </td>
-                    <td className="px-5 py-4">
-                      {getStatusBadge(client.status)}
-                    </td>
-                    <td className="px-5 py-4 text-sm text-gray-500">
-                      {getSourceLabel(client.source)}
-                    </td>
-                    <td className="px-5 py-4 text-sm text-gray-400">
-                      {formatDate(client.created_at)}
-                    </td>
-                    <td className="px-5 py-4 text-right">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/employee/clients/${client.id}`);
-                        }}
-                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                      >
-                        <ArrowUpRight className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+
+                      {/* Договоры */}
+                      <td className="px-4 py-3">
+                        {client.contracts_count > 0 ? (
+                          <div className="flex items-center gap-1.5">
+                            <FileCheck className="w-3.5 h-3.5 text-emerald-500" />
+                            <span className="text-sm text-gray-900">{client.contracts_count}</span>
+                            <span className="text-xs text-gray-400">
+                              ({formatAmount(client.contracts_total)})
+                            </span>
+                          </div>
+                        ) : hasNoContracts ? (
+                          <span className="text-xs text-yellow-600">ожидает</span>
+                        ) : (
+                          <span className="text-xs text-gray-400">-</span>
+                        )}
+                      </td>
+
+                      {/* Менеджер */}
+                      <td className="px-4 py-3">
+                        {client.manager_name ? (
+                          <span className="text-xs text-gray-600 truncate block max-w-[80px]" title={client.manager_email}>
+                            {client.manager_name}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-gray-400">-</span>
+                        )}
+                      </td>
+
+                      {/* Действия */}
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/employee/clients/${client.id}?action=quote`);
+                            }}
+                            className="px-2 py-1 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded transition-colors flex items-center gap-1"
+                            title="Создать КП"
+                          >
+                            <Plus className="w-3 h-3" />
+                            КП
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/employee/clients/${client.id}`);
+                            }}
+                            className="p-1.5 text-gray-400 hover:text-yellow-600 hover:bg-yellow-50 rounded transition-colors"
+                            title="Открыть карточку"
+                          >
+                            <ArrowUpRight className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
-        </div>
-      ) : (
-        <div className="bg-white border border-gray-200 rounded-xl p-12 text-center">
-          <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-700 mb-2">Нет клиентов</h3>
-          <p className="text-gray-500 mb-6">
-            {searchQuery ? 'По вашему запросу ничего не найдено' : 'Добавьте первого клиента'}
-          </p>
-          <Link
-            to="/employee/clients/new"
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-yellow-500 hover:bg-yellow-600 text-gray-900 text-sm font-medium rounded-xl transition-colors"
-          >
-            <UserPlus className="w-4 h-4" />
-            Создать клиента
-          </Link>
-        </div>
-      )}
+        ) : (
+          <div className="text-center py-12">
+            <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <h3 className="text-lg font-medium text-gray-700 mb-1">Нет клиентов</h3>
+            <p className="text-gray-500 text-sm mb-4">
+              {searchQuery ? 'По вашему запросу ничего не найдено' : 'Добавьте первого клиента'}
+            </p>
+            <Link
+              to="/employee/clients/new"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-gray-900 text-sm font-medium rounded-lg transition-colors"
+            >
+              <UserPlus className="w-4 h-4" />
+              Создать клиента
+            </Link>
+          </div>
+        )}
+      </div>
     </div>
+  );
+};
+
+// Status badge component
+const StatusBadge = ({ status }) => {
+  const config = {
+    lead: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Лид', icon: TrendingUp },
+    active: { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Активный', icon: UserCheck },
+    regular: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Постоянный', icon: Star },
+    inactive: { bg: 'bg-gray-100', text: 'text-gray-600', label: 'Неактивный', icon: UserX }
+  };
+  const style = config[status] || config.lead;
+  const Icon = style.icon;
+
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${style.bg} ${style.text}`}>
+      <Icon className="w-3 h-3" />
+      {style.label}
+    </span>
   );
 };
 
