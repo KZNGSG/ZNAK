@@ -159,14 +159,14 @@ const EmployeeDashboard = () => {
       value: stats?.quotes?.total || 0,
       icon: FileText,
       color: 'blue',
-      link: '/employee/quotes'
+      link: '/employee/documents'
     },
     {
       label: 'Договоров',
       value: stats?.contracts?.total || 0,
       icon: ScrollText,
       color: 'indigo',
-      link: '/employee/contracts'
+      link: '/employee/documents'
     }
   ];
 

@@ -385,7 +385,7 @@ const SuperadminDashboard = () => {
         <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
             <h3 className="font-medium text-gray-900">Последние КП</h3>
-            <Link to="/employee/quotes" className="text-xs text-yellow-600 hover:text-yellow-700 flex items-center gap-1">
+            <Link to="/employee/documents" className="text-xs text-yellow-600 hover:text-yellow-700 flex items-center gap-1">
               Все <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
@@ -408,7 +408,7 @@ const SuperadminDashboard = () => {
         <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
             <h3 className="font-medium text-gray-900">Последние договоры</h3>
-            <Link to="/employee/contracts" className="text-xs text-yellow-600 hover:text-yellow-700 flex items-center gap-1">
+            <Link to="/employee/documents" className="text-xs text-yellow-600 hover:text-yellow-700 flex items-center gap-1">
               Все <ArrowRight className="w-3 h-3" />
             </Link>
           </div>

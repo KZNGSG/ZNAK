@@ -63,20 +63,8 @@ const EmployeeLayout = ({ children }) => {
       label: 'Документы',
       description: 'КП, договоры, счета'
     },
-    // КП и Договоры только для superadmin
+    // Сотрудники и Настройки только для superadmin
     ...(isSuperAdmin ? [
-      {
-        path: '/employee/quotes',
-        icon: FileText,
-        label: 'Все КП',
-        description: 'Коммерческие предложения'
-      },
-      {
-        path: '/employee/contracts',
-        icon: FileCheck,
-        label: 'Договоры',
-        description: 'Все договоры'
-      },
       {
         path: '/employee/staff',
         icon: UserCog,
