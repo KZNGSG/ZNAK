@@ -3955,10 +3955,6 @@ async def api_employee_create_contract_full(
 
     result = ContractDB.create(contract_data)
 
-    # Обновляем товары клиента если указаны
-    if products_list:
-        ClientDB.update_products(client_id, products_list)
-
     # Добавляем в историю
     InteractionDB.create({
         'client_id': client_id,
