@@ -13,7 +13,9 @@ import {
   CircleDot,
   CheckCircle2,
   XCircle,
-  TrendingUp
+  TrendingUp,
+  FileText,
+  ScrollText
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -151,6 +153,20 @@ const EmployeeDashboard = () => {
       icon: TrendingUp,
       color: 'purple',
       link: '/employee/clients?status=lead'
+    },
+    {
+      label: 'Коммерческих предложений',
+      value: stats?.quotes?.total || 0,
+      icon: FileText,
+      color: 'blue',
+      link: '/employee/quotes'
+    },
+    {
+      label: 'Договоров',
+      value: stats?.contracts?.total || 0,
+      icon: ScrollText,
+      color: 'indigo',
+      link: '/employee/contracts'
     }
   ];
 
@@ -158,14 +174,18 @@ const EmployeeDashboard = () => {
     yellow: 'bg-yellow-50 border-yellow-200 text-yellow-600',
     amber: 'bg-amber-50 border-amber-200 text-amber-600',
     emerald: 'bg-emerald-50 border-emerald-200 text-emerald-600',
-    purple: 'bg-purple-50 border-purple-200 text-purple-600'
+    purple: 'bg-purple-50 border-purple-200 text-purple-600',
+    blue: 'bg-blue-50 border-blue-200 text-blue-600',
+    indigo: 'bg-indigo-50 border-indigo-200 text-indigo-600'
   };
 
   const iconBgStyles = {
     yellow: 'bg-yellow-100 text-yellow-600',
     amber: 'bg-amber-100 text-amber-600',
     emerald: 'bg-emerald-100 text-emerald-600',
-    purple: 'bg-purple-100 text-purple-600'
+    purple: 'bg-purple-100 text-purple-600',
+    blue: 'bg-blue-100 text-blue-600',
+    indigo: 'bg-indigo-100 text-indigo-600'
   };
 
   return (
@@ -186,7 +206,7 @@ const EmployeeDashboard = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {statCards.map((stat, index) => {
           const Icon = stat.icon;
           return (

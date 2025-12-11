@@ -3066,10 +3066,16 @@ async def api_employee_stats(user: Dict = Depends(require_employee)):
         ''')
         recent_callbacks = [dict(row) for row in cursor.fetchall()]
 
+    # Статистика КП и Договоров
+    quote_stats = QuoteDB.get_stats()
+    contract_stats = ContractDB.get_stats()
+
     return {
         "new_callbacks": new_callbacks,
         "processing_callbacks": processing_callbacks,
         "clients": client_stats,
+        "quotes": quote_stats,
+        "contracts": contract_stats,
         "recent_callbacks": recent_callbacks
     }
 
@@ -3393,14 +3399,21 @@ async def api_employee_get_quotes(
     client_id: Optional[int] = None,
     user: Dict = Depends(require_employee)
 ):
-    """Получить все КП"""
+    """Получить все КП с информацией о менеджерах и клиентах"""
     with get_db() as conn:
         cursor = conn.cursor()
 
         query = '''
-            SELECT q.*, c.contact_name as client_name, c.company_name
+            SELECT q.*,
+                   c.contact_name as client_name,
+                   c.company_name,
+                   m.email as manager_email,
+                   comp.name as company_legal_name,
+                   comp.inn as company_inn
             FROM quotes q
             LEFT JOIN clients c ON q.client_id = c.id
+            LEFT JOIN users m ON q.manager_id = m.id
+            LEFT JOIN companies comp ON q.company_id = comp.id
             WHERE 1=1
         '''
         params = []
@@ -3433,14 +3446,23 @@ async def api_employee_get_contracts(
     client_id: Optional[int] = None,
     user: Dict = Depends(require_employee)
 ):
-    """Получить все договоры"""
+    """Получить все договоры с информацией о менеджерах и клиентах"""
     with get_db() as conn:
         cursor = conn.cursor()
 
         query = '''
-            SELECT ct.*, c.contact_name as client_name, c.company_name
+            SELECT ct.*,
+                   c.contact_name as client_name,
+                   c.company_name,
+                   m.email as manager_email,
+                   comp.name as company_legal_name,
+                   comp.inn as company_inn,
+                   q.quote_number
             FROM contracts ct
             LEFT JOIN clients c ON ct.client_id = c.id
+            LEFT JOIN users m ON ct.manager_id = m.id
+            LEFT JOIN companies comp ON ct.company_id = comp.id
+            LEFT JOIN quotes q ON ct.quote_id = q.id
             WHERE 1=1
         '''
         params = []

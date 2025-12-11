@@ -49,7 +49,7 @@ const EmployeeContracts = () => {
       const response = await authFetch(url);
       if (response.ok) {
         const data = await response.json();
-        setContracts(data);
+        setContracts(data.contracts || []);
       } else {
         toast.error('Ошибка загрузки договоров');
       }
@@ -83,7 +83,7 @@ const EmployeeContracts = () => {
     .sort((a, b) => {
       let aVal = a[sortField];
       let bVal = b[sortField];
-      if (sortField === 'amount') {
+      if (sortField === 'total_amount') {
         aVal = Number(aVal) || 0;
         bVal = Number(bVal) || 0;
       }
@@ -108,10 +108,10 @@ const EmployeeContracts = () => {
   };
 
   // Calculate totals
-  const totalAmount = contracts.reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
+  const totalAmount = contracts.reduce((sum, c) => sum + (Number(c.total_amount) || 0), 0);
   const activeAmount = contracts
     .filter(c => c.status === 'active')
-    .reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
+    .reduce((sum, c) => sum + (Number(c.total_amount) || 0), 0);
 
   if (loading) {
     return (
@@ -230,7 +230,7 @@ const EmployeeContracts = () => {
                   </th>
                   <th
                     className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                    onClick={() => handleSort('amount')}
+                    onClick={() => handleSort('total_amount')}
                   >
                     <div className="flex items-center gap-1">
                       Сумма
@@ -248,6 +248,9 @@ const EmployeeContracts = () => {
                       Дата
                       <ArrowUpDown className="w-3 h-3" />
                     </div>
+                  </th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Менеджер
                   </th>
                   <th className="px-4 py-3"></th>
                 </tr>
@@ -293,7 +296,7 @@ const EmployeeContracts = () => {
                       </td>
                       <td className="px-4 py-3">
                         <span className="text-sm font-medium text-gray-900">
-                          {formatAmount(contract.amount)}
+                          {formatAmount(contract.total_amount)}
                         </span>
                       </td>
                       <td className="px-4 py-3">
@@ -309,12 +312,17 @@ const EmployeeContracts = () => {
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <Link
-                          to={`/employee/clients/${contract.client_id}`}
-                          className="p-2 text-gray-400 hover:text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors inline-flex"
-                        >
-                          <ChevronRight className="w-4 h-4" />
-                        </Link>
+                        <span className="text-sm text-gray-500">{contract.manager_email || '-'}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        {contract.client_id && (
+                          <Link
+                            to={`/employee/clients/${contract.client_id}`}
+                            className="p-2 text-gray-400 hover:text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors inline-flex"
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </Link>
+                        )}
                       </td>
                     </tr>
                   );
@@ -341,7 +349,7 @@ const EmployeeContracts = () => {
             const count = contracts.filter(c => c.status === status).length;
             const amount = contracts
               .filter(c => c.status === status)
-              .reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
+              .reduce((sum, c) => sum + (Number(c.total_amount) || 0), 0);
             const Icon = config.icon;
             return (
               <div key={status} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">

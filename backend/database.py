@@ -149,18 +149,22 @@ def init_database():
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS quotes (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                quote_number TEXT UNIQUE NOT NULL,  -- КП-20251208-ABC123
-                user_id INTEGER,  -- NULL если гостевой
+                quote_number TEXT UNIQUE NOT NULL,  -- КП-0001
+                user_id INTEGER,  -- NULL если гостевой (клиент)
+                manager_id INTEGER,  -- Менеджер, создавший КП
+                client_id INTEGER,  -- Клиент из CRM
                 company_id INTEGER,
                 services_json TEXT NOT NULL,  -- JSON с услугами
                 total_amount REAL NOT NULL,
                 contact_name TEXT,
                 contact_phone TEXT,
                 contact_email TEXT,
-                status TEXT DEFAULT 'created',  -- created, sent, accepted, rejected, expired
+                status TEXT DEFAULT 'draft',  -- draft, sent, approved, rejected
                 valid_until DATE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(id),
+                FOREIGN KEY (manager_id) REFERENCES users(id),
+                FOREIGN KEY (client_id) REFERENCES clients(id),
                 FOREIGN KEY (company_id) REFERENCES companies(id)
             )
         ''')
@@ -169,9 +173,11 @@ def init_database():
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS contracts (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                contract_number TEXT UNIQUE NOT NULL,  -- ДОГ-081225-001
+                contract_number TEXT UNIQUE NOT NULL,  -- ДОГ-0001
                 quote_id INTEGER,  -- Связь с КП если есть
-                user_id INTEGER,
+                user_id INTEGER,  -- Клиент (пользователь)
+                manager_id INTEGER,  -- Менеджер, создавший договор
+                client_id INTEGER,  -- Клиент из CRM
                 company_id INTEGER NOT NULL,
                 services_json TEXT NOT NULL,
                 total_amount REAL NOT NULL,
@@ -180,11 +186,23 @@ def init_database():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (quote_id) REFERENCES quotes(id),
                 FOREIGN KEY (user_id) REFERENCES users(id),
+                FOREIGN KEY (manager_id) REFERENCES users(id),
+                FOREIGN KEY (client_id) REFERENCES clients(id),
                 FOREIGN KEY (company_id) REFERENCES companies(id)
             )
         ''')
 
-        # Счётчик нумерации договоров по дням
+        # Единый счётчик нумерации (КП и Договоры)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS document_sequence (
+                doc_type TEXT NOT NULL,  -- 'quote' или 'contract'
+                year INTEGER NOT NULL,
+                last_number INTEGER DEFAULT 0,
+                PRIMARY KEY (doc_type, year)
+            )
+        ''')
+
+        # Старая таблица для обратной совместимости (можно удалить после миграции)
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS contract_sequence (
                 date_key TEXT PRIMARY KEY,  -- ДДММГГ
@@ -376,35 +394,53 @@ def verify_password(password: str, password_hash: str) -> bool:
         return False
 
 
-def get_next_contract_number() -> str:
-    """Получить следующий номер договора в формате ДОГ-ДДММГГ-XXX"""
-    today = datetime.now()
-    date_key = today.strftime("%d%m%y")
+def get_next_document_number(doc_type: str) -> str:
+    """
+    Получить следующий номер документа с единой нумерацией по году.
+
+    Args:
+        doc_type: 'quote' для КП или 'contract' для Договора
+
+    Returns:
+        Номер в формате КП-0001 или ДОГ-0001
+    """
+    year = datetime.now().year
+    prefix = "КП" if doc_type == "quote" else "ДОГ"
 
     with get_db() as conn:
         cursor = conn.cursor()
 
-        # Получаем текущий счётчик для сегодня
+        # Получаем текущий счётчик для этого типа и года
         cursor.execute(
-            'SELECT last_number FROM contract_sequence WHERE date_key = ?',
-            (date_key,)
+            'SELECT last_number FROM document_sequence WHERE doc_type = ? AND year = ?',
+            (doc_type, year)
         )
         row = cursor.fetchone()
 
         if row:
             next_num = row['last_number'] + 1
             cursor.execute(
-                'UPDATE contract_sequence SET last_number = ? WHERE date_key = ?',
-                (next_num, date_key)
+                'UPDATE document_sequence SET last_number = ? WHERE doc_type = ? AND year = ?',
+                (next_num, doc_type, year)
             )
         else:
             next_num = 1
             cursor.execute(
-                'INSERT INTO contract_sequence (date_key, last_number) VALUES (?, ?)',
-                (date_key, next_num)
+                'INSERT INTO document_sequence (doc_type, year, last_number) VALUES (?, ?, ?)',
+                (doc_type, year, next_num)
             )
 
-        return f"ДОГ-{date_key}-{next_num:03d}"
+        return f"{prefix}-{next_num:04d}"
+
+
+def get_next_quote_number() -> str:
+    """Получить следующий номер КП"""
+    return get_next_document_number("quote")
+
+
+def get_next_contract_number() -> str:
+    """Получить следующий номер договора"""
+    return get_next_document_number("contract")
 
 
 def get_next_invoice_number() -> str:
@@ -537,9 +573,8 @@ class QuoteDB:
     def create(data: Dict) -> Dict:
         """Создать КП"""
         import json
-        import uuid
 
-        quote_number = f"КП-{datetime.now().strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
+        quote_number = get_next_quote_number()
 
         with get_db() as conn:
             cursor = conn.cursor()
@@ -587,6 +622,65 @@ class QuoteDB:
                 del item['services_json']
                 results.append(item)
             return results
+
+    @staticmethod
+    def get_all(status: str = None) -> List[Dict]:
+        """Получить все КП для реестра (суперадмин)"""
+        import json
+        with get_db() as conn:
+            cursor = conn.cursor()
+            query = '''
+                SELECT q.*,
+                       comp.name as company_name,
+                       comp.inn as company_inn,
+                       cl.contact_name as client_name,
+                       cl.company_name as client_company,
+                       m.email as manager_email
+                FROM quotes q
+                LEFT JOIN companies comp ON q.company_id = comp.id
+                LEFT JOIN clients cl ON q.client_id = cl.id
+                LEFT JOIN users m ON q.manager_id = m.id
+            '''
+            params = []
+            if status:
+                query += ' WHERE q.status = ?'
+                params.append(status)
+            query += ' ORDER BY q.created_at DESC'
+
+            cursor.execute(query, params)
+            results = []
+            for row in cursor.fetchall():
+                item = dict(row)
+                item['services'] = json.loads(item['services_json']) if item.get('services_json') else []
+                if 'services_json' in item:
+                    del item['services_json']
+                results.append(item)
+            return results
+
+    @staticmethod
+    def get_stats() -> Dict:
+        """Получить статистику по КП"""
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT
+                    COUNT(*) as total,
+                    SUM(CASE WHEN status = 'draft' THEN 1 ELSE 0 END) as draft,
+                    SUM(CASE WHEN status = 'sent' THEN 1 ELSE 0 END) as sent,
+                    SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved,
+                    SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected,
+                    SUM(total_amount) as total_amount
+                FROM quotes
+            ''')
+            row = cursor.fetchone()
+            return {
+                'total': row['total'] or 0,
+                'draft': row['draft'] or 0,
+                'sent': row['sent'] or 0,
+                'approved': row['approved'] or 0,
+                'rejected': row['rejected'] or 0,
+                'total_amount': row['total_amount'] or 0
+            }
 
 
 class ContractDB:
@@ -641,6 +735,69 @@ class ContractDB:
                 del item['services_json']
                 results.append(item)
             return results
+
+    @staticmethod
+    def get_all(status: str = None) -> List[Dict]:
+        """Получить все договоры для реестра (суперадмин)"""
+        import json
+        with get_db() as conn:
+            cursor = conn.cursor()
+            query = '''
+                SELECT ct.*,
+                       comp.name as company_name,
+                       comp.inn as company_inn,
+                       cl.contact_name as client_name,
+                       cl.company_name as client_company,
+                       m.email as manager_email,
+                       q.quote_number
+                FROM contracts ct
+                LEFT JOIN companies comp ON ct.company_id = comp.id
+                LEFT JOIN clients cl ON ct.client_id = cl.id
+                LEFT JOIN users m ON ct.manager_id = m.id
+                LEFT JOIN quotes q ON ct.quote_id = q.id
+            '''
+            params = []
+            if status:
+                query += ' WHERE ct.status = ?'
+                params.append(status)
+            query += ' ORDER BY ct.created_at DESC'
+
+            cursor.execute(query, params)
+            results = []
+            for row in cursor.fetchall():
+                item = dict(row)
+                item['services'] = json.loads(item['services_json']) if item.get('services_json') else []
+                if 'services_json' in item:
+                    del item['services_json']
+                results.append(item)
+            return results
+
+    @staticmethod
+    def get_stats() -> Dict:
+        """Получить статистику по договорам"""
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT
+                    COUNT(*) as total,
+                    SUM(CASE WHEN status = 'draft' THEN 1 ELSE 0 END) as draft,
+                    SUM(CASE WHEN status = 'signed' THEN 1 ELSE 0 END) as signed,
+                    SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
+                    SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
+                    SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled,
+                    SUM(total_amount) as total_amount
+                FROM contracts
+            ''')
+            row = cursor.fetchone()
+            return {
+                'total': row['total'] or 0,
+                'draft': row['draft'] or 0,
+                'signed': row['signed'] or 0,
+                'active': row['active'] or 0,
+                'completed': row['completed'] or 0,
+                'cancelled': row['cancelled'] or 0,
+                'total_amount': row['total_amount'] or 0
+            }
 
 
 class EmailVerificationDB:
