@@ -73,8 +73,11 @@ const EmployeeDocuments = () => {
         authFetch(`${API_URL}/api/employee/contracts`)
       ]);
 
-      const quotesData = quotesRes.ok ? await quotesRes.json() : [];
-      const contractsData = contractsRes.ok ? await contractsRes.json() : [];
+      const quotesJson = quotesRes.ok ? await quotesRes.json() : { quotes: [] };
+      const contractsJson = contractsRes.ok ? await contractsRes.json() : { contracts: [] };
+
+      const quotesData = quotesJson.quotes || [];
+      const contractsData = contractsJson.contracts || [];
 
       // Extract invoices from contracts or fetch separately if endpoint exists
       const invoices = contractsData
