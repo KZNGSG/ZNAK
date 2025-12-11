@@ -54,6 +54,7 @@ const EmployeeDocuments = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [periodFilter, setPeriodFilter] = useState('');
   const [sortField, setSortField] = useState('created_at');
   const [sortDirection, setSortDirection] = useState('desc');
   const [downloadingId, setDownloadingId] = useState(null);
@@ -191,6 +192,25 @@ const EmployeeDocuments = () => {
         if (statusFilter === 'all') return true;
         return doc.status === statusFilter;
       })
+      .filter(doc => {
+        if (!periodFilter) return true;
+        const docDate = new Date(doc.created_at);
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+        if (periodFilter === 'today') {
+          return docDate >= startOfToday;
+        } else if (periodFilter === 'week') {
+          const weekAgo = new Date(startOfToday);
+          weekAgo.setDate(weekAgo.getDate() - 7);
+          return docDate >= weekAgo;
+        } else if (periodFilter === 'month') {
+          const monthAgo = new Date(startOfToday);
+          monthAgo.setMonth(monthAgo.getMonth() - 1);
+          return docDate >= monthAgo;
+        }
+        return true;
+      })
       .sort((a, b) => {
         let aVal = a[sortField];
         let bVal = b[sortField];
@@ -258,12 +278,113 @@ const EmployeeDocuments = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-4">
+      {/* Header with Period Filter */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Реестр документов</h1>
-          <p className="text-gray-500 mt-1">Все КП, договоры и счета в системе</p>
+          <p className="text-gray-500 text-sm mt-0.5">Все КП, договоры и счета в системе</p>
+        </div>
+
+        {/* Period filter */}
+        <div className="flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-gray-400" />
+          <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => setPeriodFilter('')}
+              className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                periodFilter === ''
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Все
+            </button>
+            <button
+              onClick={() => setPeriodFilter('today')}
+              className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                periodFilter === 'today'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Сегодня
+            </button>
+            <button
+              onClick={() => setPeriodFilter('week')}
+              className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                periodFilter === 'week'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Неделя
+            </button>
+            <button
+              onClick={() => setPeriodFilter('month')}
+              className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                periodFilter === 'month'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Месяц
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-yellow-100">
+              <FileText className="w-4 h-4 text-yellow-700" />
+            </div>
+            <div>
+              <div className="text-xl font-bold text-gray-900">{documents.quotes.length}</div>
+              <div className="text-xs text-gray-500">Всего КП</div>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-emerald-100">
+              <FileCheck className="w-4 h-4 text-emerald-700" />
+            </div>
+            <div>
+              <div className="text-xl font-bold text-gray-900">{documents.contracts.length}</div>
+              <div className="text-xs text-gray-500">Договоров</div>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-blue-100">
+              <Receipt className="w-4 h-4 text-blue-700" />
+            </div>
+            <div>
+              <div className="text-xl font-bold text-gray-900">{documents.invoices.length}</div>
+              <div className="text-xs text-gray-500">Счетов</div>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-green-100">
+              <CheckCircle className="w-4 h-4 text-green-700" />
+            </div>
+            <div>
+              <div className="text-lg font-bold text-gray-900">
+                {formatAmount(
+                  documents.contracts
+                    .filter(c => c.status === 'signed' || c.status === 'active')
+                    .reduce((sum, c) => sum + (Number(c.total_amount) || 0), 0)
+                )}
+              </div>
+              <div className="text-xs text-gray-500">По договорам</div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -299,8 +420,8 @@ const EmployeeDocuments = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-        <div className="flex flex-col md:flex-row gap-4">
+      <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
+        <div className="flex flex-col md:flex-row gap-3">
           {/* Search */}
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -484,59 +605,6 @@ const EmployeeDocuments = () => {
         )}
       </div>
 
-      {/* Summary Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-yellow-100">
-              <FileText className="w-5 h-5 text-yellow-700" />
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-gray-900">{documents.quotes.length}</div>
-              <div className="text-xs text-gray-500">Всего КП</div>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-emerald-100">
-              <FileCheck className="w-5 h-5 text-emerald-700" />
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-gray-900">{documents.contracts.length}</div>
-              <div className="text-xs text-gray-500">Договоров</div>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-blue-100">
-              <Receipt className="w-5 h-5 text-blue-700" />
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-gray-900">{documents.invoices.length}</div>
-              <div className="text-xs text-gray-500">Счетов</div>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-purple-100">
-              <CheckCircle className="w-5 h-5 text-purple-700" />
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-gray-900">
-                {formatAmount(
-                  documents.contracts
-                    .filter(c => c.status === 'signed' || c.status === 'active')
-                    .reduce((sum, c) => sum + (Number(c.total_amount) || 0), 0)
-                )}
-              </div>
-              <div className="text-xs text-gray-500">По договорам</div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

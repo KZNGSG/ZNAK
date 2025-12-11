@@ -111,7 +111,7 @@ const HomePage = () => {
             >
               <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-white/50">
                 <iframe
-                  src="https://vk.com/video_ext.php?oid=-224327673&id=456239037&hd=2&autoplay=0&t=95"
+                  src="https://vk.com/video_ext.php?oid=-224327673&id=456239053&hd=2&autoplay=0"
                   width="100%"
                   height="360"
                   allow="autoplay; encrypted-media; fullscreen; picture-in-picture; screen-wake-lock;"
