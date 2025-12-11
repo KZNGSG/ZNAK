@@ -45,8 +45,8 @@ const EmployeeClientNew = () => {
   };
 
   const handleInnLookup = async () => {
-    if (!formData.inn || formData.inn.length < 10) {
-      toast.error('Введите корректный ИНН (10 или 12 цифр)');
+    if (!formData.inn || formData.inn.length < 5) {
+      toast.error('Введите минимум 5 цифр ИНН');
       return;
     }
 
@@ -55,7 +55,7 @@ const EmployeeClientNew = () => {
       const response = await fetch(`${API_URL}/api/company/suggest`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: formData.inn })
+        body: JSON.stringify({ inn: formData.inn })
       });
 
       if (response.ok) {

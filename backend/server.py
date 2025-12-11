@@ -3898,7 +3898,68 @@ async def api_employee_create_client_quote_full(
     }
 
 
-# --- Договор для клиента ---
+# --- Создать договор напрямую (без КП) ---
+# ВАЖНО: этот роут должен быть ПЕРЕД /contract, иначе FastAPI матчит /contract первым
+@app.post("/api/employee/clients/{client_id}/contract/direct")
+async def api_employee_create_contract_direct(
+    client_id: int,
+    user: Dict = Depends(require_employee)
+):
+    """Создать пустой договор для клиента (без КП)"""
+    client = ClientDB.get_by_id(client_id)
+    if not client:
+        raise HTTPException(status_code=404, detail="Клиент не найден")
+
+    if not client.get('inn'):
+        raise HTTPException(
+            status_code=400,
+            detail="Заполните данные компании клиента (ИНН) перед созданием договора"
+        )
+
+    # Создаём компанию из данных клиента
+    company_data = {
+        'inn': client['inn'],
+        'kpp': client.get('kpp'),
+        'ogrn': client.get('ogrn'),
+        'name': client.get('company_name') or client.get('contact_name'),
+        'type': client.get('company_type', 'LEGAL'),
+        'address': client.get('address'),
+        'management_name': client.get('director_name'),
+        'management_post': 'Генеральный директор'
+    }
+    company_id = CompanyDB.create(company_data)
+
+    # Создаём договор без услуг (будут добавлены позже или пустые)
+    contract_data = {
+        'quote_id': None,
+        'user_id': client.get('user_id'),
+        'manager_id': user['id'],
+        'client_id': client_id,
+        'company_id': company_id,
+        'services': [],
+        'total_amount': 0
+    }
+
+    result = ContractDB.create(contract_data)
+
+    # Добавляем в историю
+    InteractionDB.create({
+        'client_id': client_id,
+        'manager_id': user["id"],
+        'type': 'contract_created',
+        'subject': f'Создан договор {result["contract_number"]}',
+        'description': 'Договор создан напрямую (без КП)',
+        'contract_id': result['id']
+    })
+
+    return {
+        "success": True,
+        "contract_id": result['id'],
+        "contract_number": result['contract_number']
+    }
+
+
+# --- Договор для клиента (из КП) ---
 @app.post("/api/employee/clients/{client_id}/contract")
 async def api_employee_create_client_contract(
     client_id: int,
@@ -4009,66 +4070,6 @@ async def api_employee_create_client_contract(
         "contract_id": result['id'],
         "contract_number": result['contract_number'],
         "total_amount": total_amount
-    }
-
-
-# --- Создать договор напрямую (без КП) ---
-@app.post("/api/employee/clients/{client_id}/contract/direct")
-async def api_employee_create_contract_direct(
-    client_id: int,
-    user: Dict = Depends(require_employee)
-):
-    """Создать пустой договор для клиента (без КП)"""
-    client = ClientDB.get_by_id(client_id)
-    if not client:
-        raise HTTPException(status_code=404, detail="Клиент не найден")
-
-    if not client.get('inn'):
-        raise HTTPException(
-            status_code=400,
-            detail="Заполните данные компании клиента (ИНН) перед созданием договора"
-        )
-
-    # Создаём компанию из данных клиента
-    company_data = {
-        'inn': client['inn'],
-        'kpp': client.get('kpp'),
-        'ogrn': client.get('ogrn'),
-        'name': client.get('company_name') or client.get('contact_name'),
-        'type': client.get('company_type', 'LEGAL'),
-        'address': client.get('address'),
-        'management_name': client.get('director_name'),
-        'management_post': 'Генеральный директор'
-    }
-    company_id = CompanyDB.create(company_data)
-
-    # Создаём договор без услуг (будут добавлены позже или пустые)
-    contract_data = {
-        'quote_id': None,
-        'user_id': client.get('user_id'),
-        'manager_id': user['id'],
-        'client_id': client_id,
-        'company_id': company_id,
-        'services': [],
-        'total_amount': 0
-    }
-
-    result = ContractDB.create(contract_data)
-
-    # Добавляем в историю
-    InteractionDB.create({
-        'client_id': client_id,
-        'manager_id': user["id"],
-        'type': 'contract_created',
-        'subject': f'Создан договор {result["contract_number"]}',
-        'description': 'Договор создан напрямую (без КП)',
-        'contract_id': result['id']
-    })
-
-    return {
-        "success": True,
-        "contract_id": result['id'],
-        "contract_number": result['contract_number']
     }
 
 

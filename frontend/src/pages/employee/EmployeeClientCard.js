@@ -98,8 +98,8 @@ const EmployeeClientCard = () => {
 
   const handleLoadFromDadata = async () => {
     const inn = editData.inn?.trim();
-    if (!inn || inn.length < 10) {
-      toast.error('Введите ИНН (минимум 10 цифр)');
+    if (!inn || inn.length < 5) {
+      toast.error('Введите ИНН (минимум 5 цифр)');
       return;
     }
 
@@ -108,7 +108,7 @@ const EmployeeClientCard = () => {
       const response = await authFetch(`${API_URL}/api/company/suggest`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: inn })
+        body: JSON.stringify({ inn: inn })
       });
 
       if (response.ok) {
@@ -369,6 +369,17 @@ const EmployeeClientCard = () => {
 
   return (
     <div className="space-y-6">
+      {/* Warning if no INN */}
+      {!client.inn && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-red-700 font-medium">Для создания договора заполните ИНН компании</p>
+            <p className="text-red-600 text-sm mt-1">Нажмите «Редактировать» → введите ИНН → «Сохранить»</p>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-4">
