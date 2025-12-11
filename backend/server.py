@@ -14,8 +14,10 @@ import logging
 import httpx
 import uuid
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from urllib.parse import quote as url_quote
+from collections import defaultdict
+import time
 
 # Импорт генератора документов
 from document_generator import generate_contract_pdf, generate_quote_pdf, generate_act_pdf
@@ -48,6 +50,50 @@ app.add_middleware(
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# ======================== RATE LIMITING ========================
+# Хранилище для rate limiting (email -> список timestamps запросов)
+password_reset_attempts: Dict[str, List[float]] = defaultdict(list)
+
+# Настройки rate limiting для forgot-password
+FORGOT_PASSWORD_MAX_ATTEMPTS = 3  # Максимум запросов
+FORGOT_PASSWORD_WINDOW_HOURS = 1  # За период (часы)
+
+
+def check_forgot_password_rate_limit(email: str) -> bool:
+    """
+    Проверяет rate limit для запросов сброса пароля.
+    Возвращает True если лимит не превышен, False если превышен.
+    """
+    email_lower = email.lower().strip()
+    current_time = time.time()
+    window_seconds = FORGOT_PASSWORD_WINDOW_HOURS * 3600
+
+    # Очищаем старые записи (старше окна)
+    password_reset_attempts[email_lower] = [
+        ts for ts in password_reset_attempts[email_lower]
+        if current_time - ts < window_seconds
+    ]
+
+    # Проверяем количество попыток
+    if len(password_reset_attempts[email_lower]) >= FORGOT_PASSWORD_MAX_ATTEMPTS:
+        return False
+
+    # Добавляем текущую попытку
+    password_reset_attempts[email_lower].append(current_time)
+    return True
+
+
+def get_rate_limit_reset_time(email: str) -> int:
+    """Возвращает время в минутах до сброса лимита"""
+    email_lower = email.lower().strip()
+    if not password_reset_attempts[email_lower]:
+        return 0
+
+    oldest_attempt = min(password_reset_attempts[email_lower])
+    window_seconds = FORGOT_PASSWORD_WINDOW_HOURS * 3600
+    reset_time = oldest_attempt + window_seconds - time.time()
+    return max(1, int(reset_time / 60))  # Минимум 1 минута
 
 # ======================== MODELS ========================
 
@@ -2506,8 +2552,19 @@ async def api_forgot_password(data: ForgotPasswordRequest):
     from database import UserDB, PasswordResetDB
     from email_service import generate_verification_token, send_password_reset_email
 
+    email = data.email.lower().strip()
+
+    # Rate limiting: максимум 3 запроса в час на один email
+    if not check_forgot_password_rate_limit(email):
+        minutes_left = get_rate_limit_reset_time(email)
+        logger.warning(f"[RATE LIMIT] Password reset rate limit exceeded for {email}")
+        raise HTTPException(
+            status_code=429,
+            detail=f"Слишком много запросов. Попробуйте через {minutes_left} мин."
+        )
+
     # Ищем пользователя по email
-    user = UserDB.get_by_email(data.email.lower().strip())
+    user = UserDB.get_by_email(email)
 
     # Всегда возвращаем успех, чтобы не раскрывать существование email
     if not user:
