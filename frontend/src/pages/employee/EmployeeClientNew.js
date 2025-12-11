@@ -34,6 +34,7 @@ const EmployeeClientNew = () => {
     kpp: '',
     ogrn: '',
     address: '',
+    director_name: '',
     comment: '',
     source: 'manual',
     status: 'lead'
@@ -54,21 +55,22 @@ const EmployeeClientNew = () => {
       const response = await fetch(`${API_URL}/api/company/suggest`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inn: formData.inn })
+        body: JSON.stringify({ query: formData.inn })
       });
 
       if (response.ok) {
         const data = await response.json();
         if (data.suggestions && data.suggestions.length > 0) {
-          const company = data.suggestions[0].data;
+          const company = data.suggestions[0];
           setFormData({
             ...formData,
-            company_name: company.name?.short_with_opf || company.name?.full_with_opf || '',
+            company_name: company.name || '',
+            inn: company.inn || formData.inn,
             kpp: company.kpp || '',
             ogrn: company.ogrn || '',
-            address: company.address?.unrestricted_value || '',
+            address: company.address || '',
             company_type: company.type === 'INDIVIDUAL' ? 'INDIVIDUAL' : 'LEGAL',
-            contact_name: formData.contact_name || company.management?.name || ''
+            director_name: company.management_name || ''
           });
           toast.success('Данные компании загружены');
         } else {
@@ -273,6 +275,17 @@ const EmployeeClientNew = () => {
                 onChange={(e) => handleChange('ogrn', e.target.value.replace(/\D/g, ''))}
                 placeholder="1177746123456"
                 maxLength={15}
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-yellow-500"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm text-gray-600 mb-1.5">ФИО Ген. директора</label>
+              <input
+                type="text"
+                value={formData.director_name}
+                onChange={(e) => handleChange('director_name', e.target.value)}
+                placeholder="Иванов Иван Иванович"
                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-yellow-500"
               />
             </div>

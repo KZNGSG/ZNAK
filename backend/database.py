@@ -143,6 +143,12 @@ def init_database():
         except sqlite3.OperationalError:
             pass
 
+        # Миграция: добавляем director_name в clients (ФИО генерального директора)
+        try:
+            cursor.execute('ALTER TABLE clients ADD COLUMN director_name TEXT')
+        except sqlite3.OperationalError:
+            pass
+
         # Таблица компаний (клиентов)
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS companies (

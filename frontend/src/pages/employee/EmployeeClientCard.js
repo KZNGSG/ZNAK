@@ -26,7 +26,9 @@ import {
   History,
   ChevronDown,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  Download,
+  User
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -46,6 +48,7 @@ const EmployeeClientCard = () => {
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [loadingDadata, setLoadingDadata] = useState(false);
 
   useEffect(() => {
     fetchClient();
@@ -90,6 +93,50 @@ const EmployeeClientCard = () => {
       toast.error('Ошибка загрузки');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleLoadFromDadata = async () => {
+    const inn = editData.inn?.trim();
+    if (!inn || inn.length < 10) {
+      toast.error('Введите ИНН (минимум 10 цифр)');
+      return;
+    }
+
+    setLoadingDadata(true);
+    try {
+      const response = await authFetch(`${API_URL}/api/company/suggest`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: inn })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.suggestions && data.suggestions.length > 0) {
+          const company = data.suggestions[0];
+          setEditData(prev => ({
+            ...prev,
+            company_name: company.name || prev.company_name,
+            inn: company.inn || prev.inn,
+            kpp: company.kpp || prev.kpp,
+            ogrn: company.ogrn || prev.ogrn,
+            address: company.address || prev.address,
+            director_name: company.management_name || prev.director_name,
+            company_type: company.type || prev.company_type
+          }));
+          toast.success('Данные компании загружены');
+        } else {
+          toast.error('Компания не найдена по ИНН');
+        }
+      } else {
+        toast.error('Ошибка загрузки данных');
+      }
+    } catch (error) {
+      console.error('Failed to load from DaData:', error);
+      toast.error('Ошибка подключения к сервису');
+    } finally {
+      setLoadingDadata(false);
     }
   };
 
@@ -416,10 +463,35 @@ const EmployeeClientCard = () => {
                 </div>
                 <div>
                   <label className="block text-sm text-gray-600 mb-1.5">ИНН</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={editData.inn || ''}
+                      onChange={(e) => setEditData({ ...editData, inn: e.target.value })}
+                      placeholder="Введите ИНН для загрузки данных"
+                      className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:border-yellow-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleLoadFromDadata}
+                      disabled={loadingDadata}
+                      className="px-3 py-2 bg-yellow-500 hover:bg-yellow-600 disabled:bg-gray-300 text-gray-900 rounded-lg transition-colors flex items-center gap-1.5"
+                      title="Загрузить данные по ИНН"
+                    >
+                      {loadingDadata ? (
+                        <div className="w-4 h-4 border-2 border-gray-900 border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <Download className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1.5">КПП</label>
                   <input
                     type="text"
-                    value={editData.inn || ''}
-                    onChange={(e) => setEditData({ ...editData, inn: e.target.value })}
+                    value={editData.kpp || ''}
+                    onChange={(e) => setEditData({ ...editData, kpp: e.target.value })}
                     className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:border-yellow-500"
                   />
                 </div>
@@ -433,11 +505,11 @@ const EmployeeClientCard = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-600 mb-1.5">КПП</label>
+                  <label className="block text-sm text-gray-600 mb-1.5">ФИО Ген. директора</label>
                   <input
                     type="text"
-                    value={editData.kpp || ''}
-                    onChange={(e) => setEditData({ ...editData, kpp: e.target.value })}
+                    value={editData.director_name || ''}
+                    onChange={(e) => setEditData({ ...editData, director_name: e.target.value })}
                     className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:border-yellow-500"
                   />
                 </div>
@@ -504,6 +576,12 @@ const EmployeeClientCard = () => {
                   )}
                   {client.ogrn && (
                     <div className="text-sm text-gray-500">ОГРН: {client.ogrn}</div>
+                  )}
+                  {client.director_name && (
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <User className="w-4 h-4 text-gray-400" />
+                      Директор: {client.director_name}
+                    </div>
                   )}
                   {client.address && (
                     <div className="flex items-start gap-2 text-sm text-gray-500">
