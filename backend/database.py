@@ -68,6 +68,19 @@ def init_database():
             )
         ''')
 
+        # Таблица токенов сброса пароля
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS password_resets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                token TEXT UNIQUE NOT NULL,
+                expires_at TIMESTAMP NOT NULL,
+                used BOOLEAN DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        ''')
+
         # Добавляем колонку email_verified если её нет (для существующих БД)
         try:
             cursor.execute('ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT 0')
@@ -710,6 +723,97 @@ class EmailVerificationDB:
             )
             row = cursor.fetchone()
             return bool(row and row['email_verified'])
+
+
+class PasswordResetDB:
+    """Операции с токенами сброса пароля"""
+
+    @staticmethod
+    def create_token(user_id: int, token: str, expires_hours: int = 1) -> int:
+        """Создать токен сброса пароля (действует 1 час по умолчанию)"""
+        from datetime import timedelta
+        expires_at = datetime.now() + timedelta(hours=expires_hours)
+
+        with get_db() as conn:
+            cursor = conn.cursor()
+            # Удаляем старые неиспользованные токены для этого пользователя
+            cursor.execute(
+                'DELETE FROM password_resets WHERE user_id = ? AND used = 0',
+                (user_id,)
+            )
+            # Создаём новый токен
+            cursor.execute(
+                '''INSERT INTO password_resets (user_id, token, expires_at)
+                   VALUES (?, ?, ?)''',
+                (user_id, token, expires_at)
+            )
+            return cursor.lastrowid
+
+    @staticmethod
+    def verify_token(token: str) -> Optional[Dict]:
+        """
+        Проверить токен сброса пароля.
+        Возвращает данные пользователя если токен валидный, None если невалидный/истёкший.
+        НЕ помечает токен как использованный - это делается при фактическом сбросе пароля.
+        """
+        with get_db() as conn:
+            cursor = conn.cursor()
+
+            # Находим токен
+            cursor.execute('''
+                SELECT pr.*, u.email, u.id as user_id
+                FROM password_resets pr
+                JOIN users u ON pr.user_id = u.id
+                WHERE pr.token = ? AND pr.used = 0
+            ''', (token,))
+            row = cursor.fetchone()
+
+            if not row:
+                return None
+
+            reset_data = dict(row)
+
+            # Проверяем срок действия
+            expires_at = datetime.fromisoformat(reset_data['expires_at'])
+            if datetime.now() > expires_at:
+                return None
+
+            return {
+                'user_id': reset_data['user_id'],
+                'email': reset_data['email'],
+                'token_id': reset_data['id']
+            }
+
+    @staticmethod
+    def use_token(token: str, new_password: str) -> bool:
+        """
+        Использовать токен для сброса пароля.
+        Возвращает True если успешно, False если токен невалидный.
+        """
+        # Сначала проверяем токен
+        token_data = PasswordResetDB.verify_token(token)
+        if not token_data:
+            return False
+
+        with get_db() as conn:
+            cursor = conn.cursor()
+
+            # Хэшируем новый пароль
+            password_hash = hash_password(new_password)
+
+            # Обновляем пароль пользователя
+            cursor.execute(
+                'UPDATE users SET password_hash = ? WHERE id = ?',
+                (password_hash, token_data['user_id'])
+            )
+
+            # Помечаем токен как использованный
+            cursor.execute(
+                'UPDATE password_resets SET used = 1 WHERE id = ?',
+                (token_data['token_id'],)
+            )
+
+            return True
 
 
 class CallbackDB:

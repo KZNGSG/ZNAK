@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useEmployeeAuth } from '../../context/EmployeeAuthContext';
 import { LogIn, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
@@ -70,9 +70,14 @@ const EmployeeLoginPage = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Пароль
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Пароль
+                </label>
+                <Link to="/forgot-password" className="text-xs text-yellow-600 hover:underline">
+                  Забыли пароль?
+                </Link>
+              </div>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}

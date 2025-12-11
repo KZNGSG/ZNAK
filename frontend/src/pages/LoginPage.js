@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -526,9 +526,16 @@ const LoginPage = () => {
 
             {/* Пароль */}
             <div>
-              <Label htmlFor="password" className="text-sm font-medium text-gray-700">
-                Пароль {mode === 'register' && <span className="text-red-500">*</span>}
-              </Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                  Пароль {mode === 'register' && <span className="text-red-500">*</span>}
+                </Label>
+                {mode === 'login' && (
+                  <Link to="/forgot-password" className="text-xs text-[rgb(var(--brand-yellow-600))] hover:underline">
+                    Забыли пароль?
+                  </Link>
+                )}
+              </div>
               <div className="relative mt-1">
                 <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <Input
