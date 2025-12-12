@@ -12,7 +12,9 @@ import {
   Truck,
   Store,
   Users,
-  Package
+  Package,
+  ArrowRight,
+  AlertTriangle
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -39,6 +41,7 @@ const statusColors = {
 const TimelinePage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [data, setData] = useState(null);
+  const [upcomingStats, setUpcomingStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || null);
   const [expandedGroups, setExpandedGroups] = useState({});
@@ -47,6 +50,7 @@ const TimelinePage = () => {
 
   useEffect(() => {
     fetchData();
+    fetchUpcomingStats();
   }, []);
 
   useEffect(() => {
@@ -72,6 +76,18 @@ const TimelinePage = () => {
       console.error('Failed to fetch timeline:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchUpcomingStats = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/marking/timeline/stats`);
+      if (response.ok) {
+        const result = await response.json();
+        setUpcomingStats(result.statistics);
+      }
+    } catch (error) {
+      console.error('Failed to fetch upcoming stats:', error);
     }
   };
 
@@ -121,7 +137,7 @@ const TimelinePage = () => {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          📅 Сроки маркировки
+          Сроки маркировки
         </h1>
         <p className="text-gray-600">
           Актуальные сроки вступления требований по категориям товаров
@@ -129,24 +145,74 @@ const TimelinePage = () => {
       </div>
 
       {/* Statistics */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <div className="text-3xl font-bold text-gray-900">{data?.statistics?.total_categories || 0}</div>
+          <div className="text-3xl font-bold text-gray-900">{Object.keys(data?.categories || {}).length}</div>
           <div className="text-sm text-gray-500">Всего категорий</div>
         </div>
         <div className={`rounded-xl border p-4 ${statusColors.active.bg} ${statusColors.active.border}`}>
-          <div className={`text-3xl font-bold ${statusColors.active.text}`}>{data?.statistics?.active || 0}</div>
-          <div className="text-sm text-gray-600">🟢 Полностью действует</div>
+          <div className={`text-3xl font-bold ${statusColors.active.text}`}>{upcomingStats?.active || 0}</div>
+          <div className="text-sm text-gray-600">Полностью действует</div>
         </div>
         <div className={`rounded-xl border p-4 ${statusColors.partial.bg} ${statusColors.partial.border}`}>
-          <div className={`text-3xl font-bold ${statusColors.partial.text}`}>{data?.statistics?.partial || 0}</div>
-          <div className="text-sm text-gray-600">🟡 Частично действует</div>
+          <div className={`text-3xl font-bold ${statusColors.partial.text}`}>{upcomingStats?.partial || 0}</div>
+          <div className="text-sm text-gray-600">В процессе внедрения</div>
         </div>
-        <div className={`rounded-xl border p-4 ${statusColors.upcoming.bg} ${statusColors.upcoming.border}`}>
-          <div className={`text-3xl font-bold ${statusColors.upcoming.text}`}>{data?.statistics?.upcoming || 0}</div>
-          <div className="text-sm text-gray-600">🔴 Скоро старт</div>
+        <div className={`rounded-xl border p-4 bg-orange-50 border-orange-200`}>
+          <div className={`text-3xl font-bold text-orange-600`}>{upcomingStats?.upcoming_count || 0}</div>
+          <div className="text-sm text-gray-600">Дедлайны (6 мес)</div>
         </div>
       </div>
+
+      {/* Upcoming Deadlines Block */}
+      {upcomingStats?.upcoming_events && upcomingStats.upcoming_events.length > 0 && (
+        <div className="mb-8 bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl border-2 border-orange-200 overflow-hidden">
+          <div className="px-6 py-4 bg-gradient-to-r from-orange-500 to-amber-500">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="w-6 h-6 text-white" />
+              <div>
+                <h2 className="text-lg font-bold text-white">Ближайшие дедлайны</h2>
+                <p className="text-sm text-white/80">Требования вступающие в силу в ближайшие 6 месяцев</p>
+              </div>
+            </div>
+          </div>
+          <div className="p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {upcomingStats.upcoming_events.map((event, index) => (
+                <button
+                  key={index}
+                  onClick={() => setSelectedCategory(event.category)}
+                  className="bg-white rounded-xl p-4 border border-orange-200 hover:border-orange-400 hover:shadow-md transition-all text-left group"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0 w-14 text-center bg-orange-100 rounded-lg py-2">
+                      <div className="text-xl font-bold text-orange-600">{event.date_display?.split('.')[0]}</div>
+                      <div className="text-xs text-orange-500 font-medium">
+                        {['', 'янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'][parseInt(event.date_display?.split('.')[1])] || ''}
+                      </div>
+                      <div className="text-xs text-orange-400">{event.date_display?.split('.')[2]}</div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span className="px-2 py-0.5 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full truncate max-w-[150px]">
+                          {event.category}
+                        </span>
+                        <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full">
+                          {event.type_label}
+                        </span>
+                      </div>
+                      <p className="text-sm font-medium text-gray-900 line-clamp-2 group-hover:text-orange-700 transition-colors">
+                        {event.title}
+                      </p>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-orange-500 flex-shrink-0 mt-1 transition-colors" />
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left: Categories list */}
@@ -186,9 +252,11 @@ const TimelinePage = () => {
                             }`}
                           >
                             <span className="text-gray-700">{catName}</span>
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${colors.bg} ${colors.text}`}>
-                              {cat.status === 'active' ? '🟢' : cat.status === 'partial' ? '🟡' : cat.status === 'upcoming' ? '🔴' : '⚪'}
-                            </span>
+                            <span className={`w-2.5 h-2.5 rounded-full ${
+                              cat.status === 'active' ? 'bg-emerald-500' :
+                              cat.status === 'partial' ? 'bg-amber-500' :
+                              cat.status === 'upcoming' ? 'bg-red-500' : 'bg-gray-300'
+                            }`} />
                           </button>
                         );
                       })}
