@@ -2183,6 +2183,18 @@ async def get_categories():
     """Get all product categories and subcategories"""
     return {"groups": CATEGORIES_DATA}
 
+@app.get("/api/check/init")
+async def get_check_init():
+    """Unified endpoint for initial page load - returns categories, stats, timeline in one request"""
+    timeline_data = get_timeline_data_cached()
+    timeline_stats = timeline_data.get("statistics", {"active": 0, "partial": 0, "upcoming": 0}) if timeline_data else {"active": 0, "partial": 0, "upcoming": 0}
+
+    return {
+        "groups": CATEGORIES_DATA,
+        "tnved_stats": get_tnved_stats_cached(),
+        "timeline_stats": timeline_stats
+    }
+
 @app.post("/api/check/assess", response_model=CheckProductResponse)
 async def assess_product(request: CheckProductRequest):
     """Assess if product requires marking"""
@@ -5324,8 +5336,10 @@ async def api_employee_send_documents(
 
 # ======================== ТЕСТ ТН ВЭД ========================
 
-# Загружаем базу ТН ВЭД из JSON при старте
+# Загружаем базу ТН ВЭД из JSON при старте (с кэшированием)
 _tnved_data = None
+_tnved_stats_cache = None
+_timeline_data_cache = None
 
 def get_tnved_data():
     """Загрузить данные ТН ВЭД из JSON"""
@@ -5341,6 +5355,46 @@ def get_tnved_data():
             logger.warning("TNVED JSON not found, returning empty list")
             _tnved_data = []
     return _tnved_data
+
+def get_tnved_stats_cached():
+    """Закэшированная статистика ТН ВЭД"""
+    global _tnved_stats_cache
+    if _tnved_stats_cache is None:
+        data = get_tnved_data()
+        total = len(data) if data else 0
+        mandatory = 0
+        experimental = 0
+        for category in CATEGORIES_DATA:
+            for subcategory in category.get("subcategories", []):
+                for product in subcategory.get("products", []):
+                    status = product.get("marking_status", "not_required")
+                    if status == "mandatory":
+                        mandatory += 1
+                    elif status == "experiment":
+                        experimental += 1
+        _tnved_stats_cache = {
+            "loaded": True,
+            "total": total,
+            "mandatory": mandatory,
+            "experimental": experimental,
+            "not_required": total - mandatory - experimental
+        }
+    return _tnved_stats_cache
+
+def get_timeline_data_cached():
+    """Закэшированные данные timeline"""
+    global _timeline_data_cache
+    if _timeline_data_cache is None:
+        try:
+            timeline_path = os.path.join(os.path.dirname(__file__), 'data', 'marking_timeline.json')
+            if os.path.exists(timeline_path):
+                with open(timeline_path, 'r', encoding='utf-8') as f:
+                    _timeline_data_cache = json.load(f)
+                logger.info("Loaded marking_timeline.json")
+        except Exception as e:
+            logger.error(f"Failed to load marking_timeline.json: {e}")
+            _timeline_data_cache = {}
+    return _timeline_data_cache
 
 
 @app.get("/api/tnved/search")
@@ -5372,51 +5426,15 @@ async def api_tnved_search(q: str = "", limit: int = 50):
 @app.get("/api/tnved/stats")
 async def api_tnved_stats():
     """Статистика: всего кодов из tnved.json, обязательных/эксперимент из CATEGORIES_DATA"""
-
-    # Total from tnved.json
-    data = get_tnved_data()
-    total = len(data) if data else 0
-
-    # Mandatory/Experiment from CATEGORIES_DATA (our curated products)
-    mandatory = 0
-    experimental = 0
-
-    for category in CATEGORIES_DATA:
-        for subcategory in category.get("subcategories", []):
-            for product in subcategory.get("products", []):
-                status = product.get("marking_status", "not_required")
-                if status == "mandatory":
-                    mandatory += 1
-                elif status == "experiment":
-                    experimental += 1
-
-    return {
-        "loaded": True,
-        "total": total,
-        "mandatory": mandatory,
-        "experimental": experimental,
-        "not_required": total - mandatory - experimental
-    }
+    return get_tnved_stats_cached()
 
 
 # ======================== TIMELINE API ========================
 
-def get_timeline_data():
-    """Load marking_timeline.json"""
-    try:
-        timeline_path = os.path.join(os.path.dirname(__file__), 'data', 'marking_timeline.json')
-        if os.path.exists(timeline_path):
-            with open(timeline_path, 'r', encoding='utf-8') as f:
-                return json.load(f)
-    except Exception as e:
-        logger.error(f"Failed to load marking_timeline.json: {e}")
-    return None
-
-
 @app.get("/api/marking/timeline/stats")
 async def api_timeline_stats():
     """Статистика по срокам маркировки"""
-    data = get_timeline_data()
+    data = get_timeline_data_cached()
     if not data:
         return {"statistics": {"active": 0, "partial": 0, "upcoming": 0}}
 
@@ -5426,7 +5444,7 @@ async def api_timeline_stats():
 @app.get("/api/marking/timeline")
 async def api_timeline():
     """Полные данные по срокам маркировки"""
-    data = get_timeline_data()
+    data = get_timeline_data_cached()
     if not data:
         return {"categories": {}, "groups": [], "statistics": {}}
 
@@ -5436,7 +5454,7 @@ async def api_timeline():
 @app.get("/api/marking/timeline/category/{category_id}")
 async def api_timeline_category(category_id: str):
     """Данные по конкретной категории"""
-    data = get_timeline_data()
+    data = get_timeline_data_cached()
     if not data or "categories" not in data:
         raise HTTPException(status_code=404, detail="Category not found")
 
