@@ -3105,14 +3105,16 @@ async def generate_contract(request: ContractGenerateRequest):
         )
 
         # Формируем имя файла с номером договора
-        filename = f"Договор_{contract_number}.pdf"
-        filename_encoded = url_quote(filename)
+        # ASCII имя для fallback + UTF-8 для современных браузеров
+        filename_ascii = f"Contract_{contract_number}.pdf"
+        filename_utf8 = f"Договор_{contract_number}.pdf"
+        filename_encoded = url_quote(filename_utf8)
 
         return Response(
             content=pdf_bytes,
             media_type="application/pdf",
             headers={
-                "Content-Disposition": f"attachment; filename*=UTF-8''{filename_encoded}",
+                "Content-Disposition": f'attachment; filename="{filename_ascii}"; filename*=UTF-8\'\'{filename_encoded}',
                 "X-Contract-Number": contract_number
             }
         )
