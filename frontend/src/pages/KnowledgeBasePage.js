@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import {
   BookOpen, Search, Clock, ArrowRight, Tag,
   Shield, Printer, Ship, AlertTriangle, FileText,
-  ChevronRight, TrendingUp
+  ChevronRight, TrendingUp, Package
 } from 'lucide-react';
 import { Input } from '../components/ui/input';
 import SEO from '../components/SEO';
@@ -16,6 +16,7 @@ const CATEGORIES = [
   { id: 'oborudovanie', name: 'Оборудование', icon: Printer, color: 'purple' },
   { id: 'import', name: 'Импорт', icon: Ship, color: 'cyan' },
   { id: 'shtrafy', name: 'Штрафы', icon: AlertTriangle, color: 'red' },
+  { id: 'tovary', name: 'Товары', icon: Package, color: 'green' },
 ];
 
 // Статьи
@@ -100,6 +101,157 @@ const ARTICLES = [
     popular: false,
     tags: ['сканеры', 'оборудование', 'DataMatrix']
   },
+  // Новые статьи
+  {
+    id: 'chto-takoe-chestnyj-znak',
+    title: 'Что такое Честный ЗНАК и зачем он нужен',
+    excerpt: 'Простое объяснение системы маркировки Честный ЗНАК: что это, зачем нужно, как работает. Обязательная маркировка в России.',
+    category: 'chestny-znak',
+    readTime: 4,
+    date: '2025-12-12',
+    popular: true,
+    tags: ['честный знак', 'маркировка', 'основы']
+  },
+  {
+    id: 'markirovka-dlya-marketplejsov',
+    title: 'Маркировка для маркетплейсов (Wildberries, Ozon)',
+    excerpt: 'Как продавать маркированные товары на Wildberries, Ozon, Яндекс.Маркет. Требования маркетплейсов к маркировке.',
+    category: 'chestny-znak',
+    readTime: 7,
+    date: '2025-12-12',
+    popular: true,
+    tags: ['маркетплейсы', 'wildberries', 'ozon', 'маркировка']
+  },
+  {
+    id: 'ostatki-bez-markirovki',
+    title: 'Остатки без маркировки: что делать?',
+    excerpt: 'Как легализовать остатки товаров без маркировки. Пошаговая инструкция по самомаркировке остатков.',
+    category: 'chestny-znak',
+    readTime: 5,
+    date: '2025-12-12',
+    popular: false,
+    tags: ['остатки', 'самомаркировка', 'легализация']
+  },
+  {
+    id: 'skaner-dlya-markirovki',
+    title: 'Сканер для маркировки: как выбрать и не переплатить',
+    excerpt: 'Обзор сканеров для Честного ЗНАКа: 2D сканеры, ТСД, приложения на смартфоне. Что подойдёт именно вам.',
+    category: 'oborudovanie',
+    readTime: 6,
+    date: '2025-12-12',
+    popular: false,
+    tags: ['сканеры', 'оборудование', '2D', 'ТСД']
+  },
+  {
+    id: 'oborudovanie-dlya-markirovki',
+    title: 'Оборудование для маркировки: полный комплект',
+    excerpt: 'Какое оборудование нужно для маркировки товаров: принтеры, сканеры, расходники. Готовые комплекты для разных объёмов.',
+    category: 'oborudovanie',
+    readTime: 8,
+    date: '2025-12-12',
+    popular: true,
+    tags: ['оборудование', 'принтеры', 'комплект']
+  },
+  {
+    id: 'printer-etiketok-dlya-ip',
+    title: 'Принтер этикеток для ИП и малого бизнеса',
+    excerpt: 'Как выбрать принтер этикеток для небольших объёмов. Обзор бюджетных моделей для ИП и малого бизнеса.',
+    category: 'oborudovanie',
+    readTime: 5,
+    date: '2025-12-12',
+    popular: false,
+    tags: ['принтеры', 'ИП', 'малый бизнес', 'этикетки']
+  },
+  {
+    id: 'markirovka-importa',
+    title: 'Маркировка импортных товаров: полный гайд',
+    excerpt: 'Как маркировать импортные товары: где наносить коды, какие документы нужны, особенности для разных категорий.',
+    category: 'import',
+    readTime: 10,
+    date: '2025-12-12',
+    popular: true,
+    tags: ['импорт', 'маркировка', 'таможня']
+  },
+  {
+    id: 'markirovka-na-tamozhne-ili-sklade',
+    title: 'Маркировка на таможне или на складе: что выбрать?',
+    excerpt: 'Сравнение маркировки на таможенном складе и собственном складе. Плюсы и минусы каждого варианта.',
+    category: 'import',
+    readTime: 6,
+    date: '2025-12-12',
+    popular: false,
+    tags: ['таможня', 'склад', 'импорт', 'сравнение']
+  },
+  {
+    id: 'dokumenty-dlya-markirovki-importa',
+    title: 'Документы для маркировки импорта',
+    excerpt: 'Какие документы нужны для маркировки импортных товаров: декларация, инвойс, сертификаты. Контрольный список.',
+    category: 'import',
+    readTime: 5,
+    date: '2025-12-12',
+    popular: false,
+    tags: ['документы', 'импорт', 'декларация']
+  },
+  {
+    id: 'proverka-markirovki',
+    title: 'Проверка маркировки: как проверяют и что грозит',
+    excerpt: 'Как проходят проверки маркировки: кто проверяет, что смотрят, какие штрафы. Как подготовиться к проверке.',
+    category: 'shtrafy',
+    readTime: 6,
+    date: '2025-12-12',
+    popular: false,
+    tags: ['проверки', 'штрафы', 'контроль']
+  },
+  {
+    id: 'poddelnaya-markirovka',
+    title: 'Поддельная маркировка: ответственность и последствия',
+    excerpt: 'Что грозит за использование поддельных кодов маркировки. Уголовная ответственность, штрафы, конфискация.',
+    category: 'shtrafy',
+    readTime: 5,
+    date: '2025-12-12',
+    popular: false,
+    tags: ['подделка', 'ответственность', 'уголовная']
+  },
+  {
+    id: 'markirovka-obuvi-2025',
+    title: 'Маркировка обуви в 2025 году: актуальные требования',
+    excerpt: 'Всё о маркировке обуви: какая обувь подлежит, как получить коды, как наносить, штрафы за нарушения.',
+    category: 'tovary',
+    readTime: 8,
+    date: '2025-12-12',
+    popular: true,
+    tags: ['обувь', 'маркировка', '2025', 'требования']
+  },
+  {
+    id: 'markirovka-parfyumerii',
+    title: 'Маркировка парфюмерии: что нужно знать',
+    excerpt: 'Маркировка духов и туалетной воды: какие товары подлежат, исключения, особенности нанесения кодов.',
+    category: 'tovary',
+    readTime: 6,
+    date: '2025-12-12',
+    popular: false,
+    tags: ['парфюмерия', 'духи', 'косметика']
+  },
+  {
+    id: 'markirovka-bad',
+    title: 'Маркировка БАД и лекарств',
+    excerpt: 'Маркировка биологически активных добавок и лекарственных препаратов: отличия, требования, сроки.',
+    category: 'tovary',
+    readTime: 7,
+    date: '2025-12-12',
+    popular: false,
+    tags: ['БАД', 'лекарства', 'фармацевтика']
+  },
+  {
+    id: 'markirovka-moloka',
+    title: 'Маркировка молочной продукции в 2025 году',
+    excerpt: 'Как маркировать молочную продукцию. Какие молочные товары подлежат маркировке, сроки, требования — полная инструкция для бизнеса.',
+    category: 'tovary',
+    readTime: 6,
+    date: '2025-12-12',
+    popular: true,
+    tags: ['маркировка молока', 'молочка', 'сыры', 'мороженое']
+  },
 ];
 
 const getCategoryColor = (categoryId) => {
@@ -108,6 +260,7 @@ const getCategoryColor = (categoryId) => {
     'oborudovanie': 'bg-purple-100 text-purple-700 border-purple-200',
     'import': 'bg-cyan-100 text-cyan-700 border-cyan-200',
     'shtrafy': 'bg-red-100 text-red-700 border-red-200',
+    'tovary': 'bg-green-100 text-green-700 border-green-200',
   };
   return colors[categoryId] || 'bg-gray-100 text-gray-700 border-gray-200';
 };
@@ -350,7 +503,7 @@ const KnowledgeBasePage = () => {
                 Темы
               </h3>
               <div className="flex flex-wrap gap-2">
-                {['регистрация', 'штрафы', 'одежда', 'оборудование', 'принтеры', 'коды', 'импорт', 'КИЗ'].map((tag) => (
+                {['регистрация', 'штрафы', 'маркетплейсы', 'оборудование', 'принтеры', 'импорт', 'обувь', 'парфюмерия'].map((tag) => (
                   <button
                     key={tag}
                     onClick={() => setSearchQuery(tag)}
