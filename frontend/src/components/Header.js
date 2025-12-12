@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { CheckCircle, Wrench, Info, User, LogIn, Handshake } from 'lucide-react';
+import { CheckCircle, GraduationCap, Info, User, LogIn, Handshake } from 'lucide-react';
 import CitySelector from './CitySelector';
 import { useAuth } from '../context/AuthContext';
 
@@ -52,16 +52,16 @@ const Header = () => {
               Проверить товар
             </Link>
             <Link
-              to="/equipment"
+              to="/training"
               className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-bold transition-all ${
-                isActive('/equipment') 
-                  ? 'bg-gradient-to-r from-[rgb(var(--brand-yellow-500))] to-[rgb(var(--brand-yellow-600))] text-[rgb(var(--black))] shadow-lg' 
+                isActive('/training')
+                  ? 'bg-gradient-to-r from-[rgb(var(--brand-yellow-500))] to-[rgb(var(--brand-yellow-600))] text-[rgb(var(--black))] shadow-lg'
                   : 'text-[rgb(var(--grey-700))] hover:bg-[rgb(var(--brand-yellow-50))] hover:text-[rgb(var(--black))]'
               }`}
-              data-testid="nav-equipment"
+              data-testid="nav-training"
             >
-              <Wrench size={20} strokeWidth={2.5} />
-              Оснащение
+              <GraduationCap size={20} strokeWidth={2.5} />
+              Обучение
             </Link>
             <Link
               to="/about"

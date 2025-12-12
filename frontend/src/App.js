@@ -25,6 +25,7 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import PartnersPage from './pages/PartnersPage';
 import AboutPage from './pages/AboutPage';
+import TrainingPage from './pages/TrainingPage';
 
 // Client cabinet pages
 import ClientLayout from './components/cabinet/ClientLayout';
@@ -99,6 +100,7 @@ function App() {
                 <Route path="/check" element={<MainLayout><CheckProductPage /></MainLayout>} />
                 <Route path="/import" element={<MainLayout><ImportPage /></MainLayout>} />
                 <Route path="/equipment" element={<MainLayout><EquipmentPage /></MainLayout>} />
+                <Route path="/training" element={<MainLayout><TrainingPage /></MainLayout>} />
                 <Route path="/contact" element={<MainLayout><ContactPage /></MainLayout>} />
                 <Route path="/quote" element={<MainLayout><QuotePage /></MainLayout>} />
                 <Route path="/consultation" element={<MainLayout><ConsultationPage /></MainLayout>} />
