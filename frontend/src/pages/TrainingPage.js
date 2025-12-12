@@ -966,7 +966,7 @@ const TrainingPage = () => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-white/10 rounded-2xl p-6 text-center">
-                  <div className="text-3xl font-bold text-yellow-400 mb-1">10%</div>
+                  <div className="text-3xl font-bold text-yellow-400 mb-1">%</div>
                   <div className="text-sm text-gray-300">комиссия с продаж</div>
                 </div>
                 <div className="bg-white/10 rounded-2xl p-6 text-center">
