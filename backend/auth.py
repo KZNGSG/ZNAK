@@ -39,6 +39,7 @@ class UserRegister(BaseModel):
     company_name: Optional[str] = None
     city: Optional[str] = None
     region: Optional[str] = None
+    source: Optional[str] = None  # Откуда узнали о нас
 
 
 class UserLogin(BaseModel):
@@ -180,10 +181,20 @@ async def require_employee(user: Dict = Depends(require_auth)) -> Dict:
     return user
 
 
+async def require_partner(user: Dict = Depends(require_auth)) -> Dict:
+    """Требовать права партнёра"""
+    if user["role"] != "partner":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Требуются права партнёра"
+        )
+    return user
+
+
 # ======================== СЕРВИСНЫЕ ФУНКЦИИ ========================
 
 def register_user(email: str, password: str, name: str = None, phone: str = None, inn: str = None,
-                  company_name: str = None, city: str = None, region: str = None) -> Dict:
+                  company_name: str = None, city: str = None, region: str = None, source: str = None) -> Dict:
     """Зарегистрировать нового пользователя"""
     # Проверяем, не занят ли email
     existing = UserDB.get_by_email(email)
@@ -202,24 +213,35 @@ def register_user(email: str, password: str, name: str = None, phone: str = None
 
     # Создаём пользователя с дополнительными данными
     user_id = UserDB.create(email, password, name=name, phone=phone, inn=inn,
-                            company_name=company_name, city=city, region=region)
+                            company_name=company_name, city=city, region=region, source=source)
     user = UserDB.get_by_id(user_id)
 
     # Создаём запись клиента в CRM для видимости менеджерам
     try:
+        # Формируем читаемое название источника
+        source_labels = {
+            'search': 'Поиск (Яндекс, Google)',
+            'recommendation': 'Рекомендация',
+            'social': 'Соц. сети',
+            'ads': 'Реклама',
+            'event': 'Выставка/конференция',
+            'честный_знак': 'Сайт Честного ЗНАКа',
+        }
+        source_display = source_labels.get(source, source) if source else 'Не указан'
+
         client_data = {
             'contact_name': name or email.split('@')[0],  # Имя или часть email
             'contact_phone': phone or 'Не указан',
             'contact_email': email,
             'inn': inn,
             'company_name': company_name,
-            'source': 'website',  # Регистрация с сайта
+            'source': source or 'website',  # Откуда узнали
             'status': 'lead',
             'user_id': user_id,  # Связь с аккаунтом пользователя
-            'comment': f'Самостоятельная регистрация. Город: {city or "не указан"}, Регион: {region or "не указан"}'
+            'comment': f'Самостоятельная регистрация. Город: {city or "не указан"}, Регион: {region or "не указан"}. Источник: {source_display}'
         }
         ClientDB.create(client_data)
-        print(f"[AUTH] Created client record for user {email}")
+        print(f"[AUTH] Created client record for user {email}, source: {source}")
     except Exception as e:
         print(f"[AUTH WARNING] Failed to create client record for {email}: {e}")
         # Не прерываем регистрацию если клиент не создался

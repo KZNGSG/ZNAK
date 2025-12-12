@@ -149,15 +149,19 @@ const EmployeeInbox = () => {
   const handleAssignToManager = async (callbackId, managerId, e) => {
     e?.stopPropagation();
     try {
-      const response = await authFetch(`${API_URL}/api/superadmin/callbacks/${callbackId}/assign`, {
+      // Используем employee endpoint - он позволяет superadmin назначать на любого, а employee только на себя
+      const response = await authFetch(`${API_URL}/api/employee/callbacks/${callbackId}/assign`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ manager_id: managerId })
       });
       if (response.ok) {
         setAssigningId(null);
-        toast.success('Менеджер назначен');
+        toast.success('Заявка назначена');
         fetchCallbacks();
+      } else {
+        const data = await response.json();
+        toast.error(data.detail || 'Ошибка назначения');
       }
     } catch (error) {
       console.error('Failed to assign callback:', error);
@@ -223,7 +227,12 @@ const EmployeeInbox = () => {
     const labels = {
       check_page: 'Проверка товара',
       quote_page: 'Запрос КП',
-      contact_form: 'Контакт',
+      contact_form: 'Контактная форма',
+      partner_request: 'Партнёрство',
+      representative_request: 'Представительство',
+      callback: 'Обратный звонок',
+      website: 'Сайт',
+      manual: 'Вручную',
       unknown: 'Другое'
     };
     return labels[source] || source || 'Другое';
@@ -536,7 +545,8 @@ const EmployeeInbox = () => {
                             <span className="text-xs text-gray-600 truncate block max-w-[80px]" title={callback.assigned_email}>
                               {callback.assigned_email.split('@')[0]}
                             </span>
-                          ) : managers.length > 0 ? (
+                          ) : user?.role === 'superadmin' && managers.length > 0 ? (
+                            // Superadmin видит список всех менеджеров
                             <div className="relative" onClick={(e) => e.stopPropagation()}>
                               <button
                                 onClick={() => setAssigningId(assigningId === callback.id ? null : callback.id)}
@@ -560,6 +570,18 @@ const EmployeeInbox = () => {
                                 </div>
                               )}
                             </div>
+                          ) : user?.role === 'employee' ? (
+                            // Обычный менеджер видит только кнопку "Взять себе"
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAssignToManager(callback.id, user.id, e);
+                              }}
+                              className="text-xs text-green-600 hover:text-green-700 flex items-center gap-1 font-medium"
+                            >
+                              <UserPlus className="w-3 h-3" />
+                              Взять
+                            </button>
                           ) : (
                             <span className="text-xs text-gray-400">-</span>
                           )}

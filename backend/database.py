@@ -123,6 +123,12 @@ def init_database():
         except sqlite3.OperationalError:
             pass
 
+        # Миграция: откуда узнали о нас
+        try:
+            cursor.execute('ALTER TABLE users ADD COLUMN source TEXT')
+        except sqlite3.OperationalError:
+            pass
+
         # Миграция: добавляем manager_id и client_id в quotes
         try:
             cursor.execute('ALTER TABLE quotes ADD COLUMN manager_id INTEGER')
@@ -385,6 +391,44 @@ def init_database():
         except:
             pass
 
+        # Таблица партнёров
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS partners (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                ref_code TEXT UNIQUE NOT NULL,
+                commission_rate REAL DEFAULT 10.0,
+                partner_type TEXT NOT NULL,  -- 'legal' или 'individual'
+                inn TEXT,
+                company_name TEXT,
+                contact_name TEXT NOT NULL,
+                contact_phone TEXT NOT NULL,
+                contact_email TEXT NOT NULL,
+                status TEXT DEFAULT 'pending',  -- pending, active, inactive
+                created_by INTEGER,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id),
+                FOREIGN KEY (created_by) REFERENCES users(id)
+            )
+        ''')
+
+        # Миграция: добавляем partner_id и ref_code в quotes
+        try:
+            cursor.execute('ALTER TABLE quotes ADD COLUMN partner_id INTEGER REFERENCES partners(id)')
+        except sqlite3.OperationalError:
+            pass
+        try:
+            cursor.execute('ALTER TABLE quotes ADD COLUMN ref_code TEXT')
+        except sqlite3.OperationalError:
+            pass
+
+        # Миграция: добавляем partner_id в contracts
+        try:
+            cursor.execute('ALTER TABLE contracts ADD COLUMN partner_id INTEGER REFERENCES partners(id)')
+        except sqlite3.OperationalError:
+            pass
+
         # Индексы для быстрого поиска
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_companies_inn ON companies(inn)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_companies_user ON companies(user_id)')
@@ -397,6 +441,11 @@ def init_database():
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_interactions_client ON client_interactions(client_id)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_callbacks_assigned ON callbacks(assigned_to)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_callbacks_sla ON callbacks(sla_deadline)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_partners_user ON partners(user_id)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_partners_ref_code ON partners(ref_code)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_partners_status ON partners(status)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_quotes_partner ON quotes(partner_id)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_contracts_partner ON contracts(partner_id)')
 
         print("Database initialized successfully!")
 
@@ -493,13 +542,13 @@ class UserDB:
 
     @staticmethod
     def create(email: str, password: str, role: str = 'client', name: str = None, phone: str = None,
-               inn: str = None, company_name: str = None, city: str = None, region: str = None) -> int:
+               inn: str = None, company_name: str = None, city: str = None, region: str = None, source: str = None) -> int:
         """Создать пользователя"""
         with get_db() as conn:
             cursor = conn.cursor()
             cursor.execute(
-                'INSERT INTO users (email, password_hash, role, name, phone, inn, company_name, city, region) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                (email.lower(), hash_password(password), role, name, phone, inn, company_name, city, region)
+                'INSERT INTO users (email, password_hash, role, name, phone, inn, company_name, city, region, source) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                (email.lower(), hash_password(password), role, name, phone, inn, company_name, city, region, source)
             )
             return cursor.lastrowid
 
@@ -1608,6 +1657,295 @@ class CallbackSLADB:
                 WHERE sla_deadline IS NULL AND status IN ('new', 'processing')
             ''', (hours,))
             return cursor.rowcount
+
+
+class PartnerDB:
+    """Операции с партнёрами"""
+
+    @staticmethod
+    def generate_ref_code() -> str:
+        """Генерация уникального реферального кода (6 символов)"""
+        import string
+        import random
+        chars = string.ascii_uppercase + string.digits
+        while True:
+            code = ''.join(random.choices(chars, k=6))
+            # Проверяем уникальность
+            with get_db() as conn:
+                cursor = conn.cursor()
+                cursor.execute('SELECT id FROM partners WHERE ref_code = ?', (code,))
+                if not cursor.fetchone():
+                    return code
+
+    @staticmethod
+    def create(data: Dict, created_by: int = None) -> Dict:
+        """Создать партнёра (возвращает partner_id и user_id)"""
+        ref_code = PartnerDB.generate_ref_code()
+
+        # Сначала создаём пользователя с ролью partner
+        password = data.get('password') or secrets.token_urlsafe(8)
+        user_id = UserDB.create(
+            email=data['contact_email'],
+            password=password,
+            role='partner',
+            name=data['contact_name'],
+            phone=data['contact_phone']
+        )
+
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO partners (
+                    user_id, ref_code, commission_rate, partner_type,
+                    inn, company_name, contact_name, contact_phone,
+                    contact_email, status, created_by
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                user_id,
+                ref_code,
+                data.get('commission_rate', 10.0),
+                data['partner_type'],
+                data.get('inn'),
+                data.get('company_name'),
+                data['contact_name'],
+                data['contact_phone'],
+                data['contact_email'],
+                'pending',
+                created_by
+            ))
+
+            return {
+                'id': cursor.lastrowid,
+                'user_id': user_id,
+                'ref_code': ref_code,
+                'password': password
+            }
+
+    @staticmethod
+    def get_by_id(partner_id: int) -> Optional[Dict]:
+        """Получить партнёра по ID"""
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT p.*, u.email as user_email, u.last_login,
+                       creator.email as created_by_email
+                FROM partners p
+                LEFT JOIN users u ON p.user_id = u.id
+                LEFT JOIN users creator ON p.created_by = creator.id
+                WHERE p.id = ?
+            ''', (partner_id,))
+            row = cursor.fetchone()
+            return dict(row) if row else None
+
+    @staticmethod
+    def get_by_user_id(user_id: int) -> Optional[Dict]:
+        """Получить партнёра по user_id"""
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT p.*, u.email as user_email, u.last_login
+                FROM partners p
+                LEFT JOIN users u ON p.user_id = u.id
+                WHERE p.user_id = ?
+            ''', (user_id,))
+            row = cursor.fetchone()
+            return dict(row) if row else None
+
+    @staticmethod
+    def get_by_ref_code(ref_code: str) -> Optional[Dict]:
+        """Получить партнёра по ref_code"""
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT p.*, u.email as user_email
+                FROM partners p
+                LEFT JOIN users u ON p.user_id = u.id
+                WHERE p.ref_code = ? AND p.status = 'active'
+            ''', (ref_code.upper(),))
+            row = cursor.fetchone()
+            return dict(row) if row else None
+
+    @staticmethod
+    def get_all(status: str = None) -> List[Dict]:
+        """Получить всех партнёров"""
+        with get_db() as conn:
+            cursor = conn.cursor()
+            query = '''
+                SELECT p.*, u.email as user_email, u.last_login,
+                       creator.email as created_by_email
+                FROM partners p
+                LEFT JOIN users u ON p.user_id = u.id
+                LEFT JOIN users creator ON p.created_by = creator.id
+            '''
+            params = []
+            if status:
+                query += ' WHERE p.status = ?'
+                params.append(status)
+            query += ' ORDER BY p.created_at DESC'
+            cursor.execute(query, params)
+            return [dict(row) for row in cursor.fetchall()]
+
+    @staticmethod
+    def update(partner_id: int, data: Dict) -> bool:
+        """Обновить партнёра"""
+        with get_db() as conn:
+            cursor = conn.cursor()
+            fields = []
+            values = []
+
+            updateable = [
+                'commission_rate', 'partner_type', 'inn', 'company_name',
+                'contact_name', 'contact_phone', 'contact_email', 'status'
+            ]
+
+            for field in updateable:
+                if field in data:
+                    fields.append(f'{field} = ?')
+                    values.append(data[field])
+
+            if not fields:
+                return False
+
+            fields.append('updated_at = CURRENT_TIMESTAMP')
+            values.append(partner_id)
+
+            cursor.execute(
+                f'UPDATE partners SET {", ".join(fields)} WHERE id = ?',
+                values
+            )
+            return cursor.rowcount > 0
+
+    @staticmethod
+    def activate(partner_id: int) -> bool:
+        """Активировать партнёра"""
+        return PartnerDB.update(partner_id, {'status': 'active'})
+
+    @staticmethod
+    def deactivate(partner_id: int) -> bool:
+        """Деактивировать партнёра"""
+        return PartnerDB.update(partner_id, {'status': 'inactive'})
+
+    @staticmethod
+    def delete(partner_id: int) -> bool:
+        """Удалить партнёра"""
+        with get_db() as conn:
+            cursor = conn.cursor()
+            # Получаем user_id партнёра
+            cursor.execute('SELECT user_id FROM partners WHERE id = ?', (partner_id,))
+            row = cursor.fetchone()
+            if row:
+                # Удаляем партнёра
+                cursor.execute('DELETE FROM partners WHERE id = ?', (partner_id,))
+                # Деактивируем пользователя
+                cursor.execute('UPDATE users SET is_active = 0 WHERE id = ?', (row['user_id'],))
+                return True
+            return False
+
+    @staticmethod
+    def get_stats(partner_id: int) -> Dict:
+        """Получить статистику партнёра"""
+        with get_db() as conn:
+            cursor = conn.cursor()
+
+            # Получаем данные партнёра
+            cursor.execute('SELECT commission_rate FROM partners WHERE id = ?', (partner_id,))
+            partner = cursor.fetchone()
+            if not partner:
+                return {}
+
+            commission_rate = partner['commission_rate']
+
+            # Статистика по КП
+            cursor.execute('''
+                SELECT
+                    COUNT(*) as total_leads,
+                    COALESCE(SUM(total_amount), 0) as quotes_amount,
+                    SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved_quotes
+                FROM quotes
+                WHERE partner_id = ?
+            ''', (partner_id,))
+            quotes_stats = dict(cursor.fetchone())
+
+            # Статистика по договорам (оплаченные)
+            cursor.execute('''
+                SELECT
+                    COUNT(*) as total_contracts,
+                    COALESCE(SUM(total_amount), 0) as paid_amount
+                FROM contracts
+                WHERE partner_id = ? AND status IN ('signed', 'active', 'completed')
+            ''', (partner_id,))
+            contracts_stats = dict(cursor.fetchone())
+
+            paid_amount = contracts_stats['paid_amount']
+            commission_earned = paid_amount * commission_rate / 100
+
+            # Ожидает выплаты (КП approved но ещё не оплачены)
+            cursor.execute('''
+                SELECT COALESCE(SUM(q.total_amount), 0) as pending_amount
+                FROM quotes q
+                LEFT JOIN contracts c ON c.quote_id = q.id
+                WHERE q.partner_id = ? AND q.status = 'approved'
+                AND (c.id IS NULL OR c.status NOT IN ('signed', 'active', 'completed'))
+            ''', (partner_id,))
+            pending = cursor.fetchone()
+            pending_amount = pending['pending_amount'] if pending else 0
+            commission_pending = pending_amount * commission_rate / 100
+
+            return {
+                'total_leads': quotes_stats['total_leads'],
+                'quotes_amount': quotes_stats['quotes_amount'],
+                'approved_quotes': quotes_stats['approved_quotes'],
+                'total_contracts': contracts_stats['total_contracts'],
+                'paid_amount': paid_amount,
+                'commission_rate': commission_rate,
+                'commission_earned': commission_earned,
+                'commission_pending': commission_pending
+            }
+
+    @staticmethod
+    def get_leads(partner_id: int) -> List[Dict]:
+        """Получить список клиентов партнёра (минимальная информация)"""
+        import json
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT
+                    q.id,
+                    q.quote_number,
+                    q.total_amount,
+                    q.status as quote_status,
+                    q.created_at,
+                    c.status as contract_status,
+                    c.total_amount as contract_amount,
+                    m.name as manager_name,
+                    m.email as manager_email,
+                    p.commission_rate
+                FROM quotes q
+                LEFT JOIN contracts c ON c.quote_id = q.id
+                LEFT JOIN users m ON q.manager_id = m.id
+                LEFT JOIN partners p ON q.partner_id = p.id
+                WHERE q.partner_id = ?
+                ORDER BY q.created_at DESC
+            ''', (partner_id,))
+
+            results = []
+            for row in cursor.fetchall():
+                item = dict(row)
+                # Определяем статус оплаты
+                if item['contract_status'] in ('signed', 'active', 'completed'):
+                    item['payment_status'] = 'paid'
+                elif item['quote_status'] == 'approved':
+                    item['payment_status'] = 'pending'
+                else:
+                    item['payment_status'] = 'not_paid'
+
+                # Рассчитываем комиссию
+                amount = item['contract_amount'] or item['total_amount'] or 0
+                item['commission'] = amount * (item['commission_rate'] or 10) / 100
+
+                results.append(item)
+
+            return results
 
 
 # Инициализация БД при импорте модуля

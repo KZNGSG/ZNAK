@@ -21,7 +21,7 @@ import {
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const EmployeeDashboard = () => {
-  const { authFetch } = useEmployeeAuth();
+  const { authFetch, user } = useEmployeeAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -59,9 +59,12 @@ const EmployeeDashboard = () => {
   };
 
   const handleAssignCallback = async (callbackId) => {
+    if (!user?.id) return;
     try {
       const response = await authFetch(`${API_URL}/api/employee/callbacks/${callbackId}/assign`, {
-        method: 'PUT'
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ manager_id: user.id })
       });
       if (response.ok) {
         fetchStats(); // Refresh data
@@ -94,6 +97,11 @@ const EmployeeDashboard = () => {
       check_page: 'Проверка товара',
       quote_page: 'Запрос КП',
       contact_form: 'Контактная форма',
+      partner_request: 'Партнёрство',
+      representative_request: 'Представительство',
+      callback: 'Обратный звонок',
+      website: 'Сайт',
+      manual: 'Вручную',
       unknown: 'Другое'
     };
     return labels[source] || source || 'Другое';
@@ -141,32 +149,32 @@ const EmployeeDashboard = () => {
       link: '/employee/inbox?status=processing'
     },
     {
-      label: 'Всего клиентов',
+      label: 'Клиентов',
       value: stats?.clients?.total || 0,
       icon: Users,
       color: 'emerald',
       link: '/employee/clients'
     },
     {
-      label: 'Активных лидов',
+      label: 'Лидов',
       value: stats?.clients?.leads || 0,
       icon: TrendingUp,
       color: 'purple',
       link: '/employee/clients?status=lead'
     },
     {
-      label: 'Коммерческих предложений',
+      label: 'КП',
       value: stats?.quotes?.total || 0,
       icon: FileText,
       color: 'blue',
-      link: '/employee/documents'
+      link: '/employee/quotes'
     },
     {
       label: 'Договоров',
       value: stats?.contracts?.total || 0,
       icon: ScrollText,
       color: 'indigo',
-      link: '/employee/documents'
+      link: '/employee/contracts'
     }
   ];
 

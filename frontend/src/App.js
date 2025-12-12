@@ -17,10 +17,12 @@ import ChecklistPage from './pages/ChecklistPage';
 import ScannerPage from './pages/ScannerPage';
 import KnowledgePage from './pages/KnowledgePage';
 import QuotePage from './pages/QuotePage';
+import TimelinePage from './pages/TimelinePage';
 import LoginPage from './pages/LoginPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import PartnersPage from './pages/PartnersPage';
 
 // Client cabinet pages
 import ClientLayout from './components/cabinet/ClientLayout';
@@ -56,6 +58,18 @@ import SuperadminDashboard from './pages/employee/SuperadminDashboard';
 import EmployeeSettings from './pages/employee/EmployeeSettings';
 import EmployeeRoute from './components/employee/EmployeeRoute';
 import EmployeeLayout from './components/employee/EmployeeLayout';
+import EmployeePartners from './pages/employee/EmployeePartners';
+
+// Partner pages
+import { PartnerAuthProvider } from './context/PartnerAuthContext';
+import PartnerRoute from './components/partner/PartnerRoute';
+import PartnerLayout from './components/partner/PartnerLayout';
+import PartnerLoginPage from './pages/partner/PartnerLoginPage';
+import PartnerDashboard from './pages/partner/PartnerDashboard';
+import PartnerLeads from './pages/partner/PartnerLeads';
+import PartnerCalculator from './pages/partner/PartnerCalculator';
+import PartnerMaterials from './pages/partner/PartnerMaterials';
+import PartnerSettings from './pages/partner/PartnerSettings';
 
 // Main layout wrapper
 const MainLayout = ({ children }) => (
@@ -73,7 +87,8 @@ function App() {
     <AuthProvider>
       <AdminAuthProvider>
         <EmployeeAuthProvider>
-          <Router>
+          <PartnerAuthProvider>
+            <Router>
             <div className="App">
               <Toaster position="top-right" richColors />
               <Routes>
@@ -88,10 +103,12 @@ function App() {
                 <Route path="/checklist" element={<MainLayout><ChecklistPage /></MainLayout>} />
                 <Route path="/scanner" element={<MainLayout><ScannerPage /></MainLayout>} />
                 <Route path="/knowledge" element={<MainLayout><KnowledgePage /></MainLayout>} />
+                <Route path="/timeline" element={<MainLayout><TimelinePage /></MainLayout>} />
                 <Route path="/login" element={<MainLayout><LoginPage /></MainLayout>} />
                 <Route path="/verify-email" element={<MainLayout><VerifyEmailPage /></MainLayout>} />
                 <Route path="/forgot-password" element={<MainLayout><ForgotPasswordPage /></MainLayout>} />
                 <Route path="/reset-password" element={<MainLayout><ResetPasswordPage /></MainLayout>} />
+                <Route path="/partners" element={<MainLayout><PartnersPage /></MainLayout>} />
 
                 {/* Client cabinet routes */}
                 <Route path="/cabinet" element={
@@ -210,9 +227,43 @@ function App() {
                     <EmployeeLayout><EmployeeSettings /></EmployeeLayout>
                   </EmployeeRoute>
                 } />
+                <Route path="/employee/partners" element={
+                  <EmployeeRoute>
+                    <EmployeeLayout><EmployeePartners /></EmployeeLayout>
+                  </EmployeeRoute>
+                } />
+
+                {/* Partner routes */}
+                <Route path="/partner/login" element={<PartnerLoginPage />} />
+                <Route path="/partner" element={
+                  <PartnerRoute>
+                    <PartnerLayout><PartnerDashboard /></PartnerLayout>
+                  </PartnerRoute>
+                } />
+                <Route path="/partner/leads" element={
+                  <PartnerRoute>
+                    <PartnerLayout><PartnerLeads /></PartnerLayout>
+                  </PartnerRoute>
+                } />
+                <Route path="/partner/calculator" element={
+                  <PartnerRoute>
+                    <PartnerLayout><PartnerCalculator /></PartnerLayout>
+                  </PartnerRoute>
+                } />
+                <Route path="/partner/materials" element={
+                  <PartnerRoute>
+                    <PartnerLayout><PartnerMaterials /></PartnerLayout>
+                  </PartnerRoute>
+                } />
+                <Route path="/partner/settings" element={
+                  <PartnerRoute>
+                    <PartnerLayout><PartnerSettings /></PartnerLayout>
+                  </PartnerRoute>
+                } />
               </Routes>
             </div>
-          </Router>
+            </Router>
+          </PartnerAuthProvider>
         </EmployeeAuthProvider>
       </AdminAuthProvider>
     </AuthProvider>

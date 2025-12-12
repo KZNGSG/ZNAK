@@ -85,7 +85,15 @@ const QuotePage = () => {
   useEffect(() => {
     fetchCategories();
     fetchServices();
-  }, []);
+
+    // Сохраняем реферальный код партнёра из URL в localStorage
+    const params = new URLSearchParams(location.search);
+    const refCode = params.get('ref');
+    if (refCode) {
+      localStorage.setItem('partner_ref_code', refCode);
+      console.log('[Partner] Saved ref code:', refCode);
+    }
+  }, [location.search]);
 
   // Инициализация товаров из CheckProductPage
   useEffect(() => {
@@ -451,6 +459,9 @@ const QuotePage = () => {
   const submitQuote = async () => {
     setLoading(true);
     try {
+      // Получаем реферальный код партнёра из localStorage
+      const refCode = localStorage.getItem('partner_ref_code') || null;
+
       const response = await fetch(`${API_URL}/api/quote/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -473,7 +484,8 @@ const QuotePage = () => {
           })),
           contact_name: contactData.name,
           contact_phone: contactData.phone,
-          contact_email: contactData.email || null
+          contact_email: contactData.email || null,
+          ref_code: refCode  // Передаём реферальный код партнёра
         })
       });
 

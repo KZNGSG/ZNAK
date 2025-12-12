@@ -25,8 +25,31 @@ const AdminLayout = ({ children }) => {
       <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-gray-800 transition-all duration-300 flex flex-col`}>
         {/* Logo */}
         <div className="h-16 flex items-center justify-between px-4 border-b border-gray-700">
-          {sidebarOpen && (
-            <span className="text-yellow-400 font-bold text-lg">Про.Маркируй</span>
+          {sidebarOpen ? (
+            <Link to="/" className="flex items-center gap-2 group">
+              <div className="flex items-center gap-0.5 p-2 rounded-lg bg-gradient-to-br from-yellow-400/20 to-yellow-500/20 group-hover:scale-105 transition-transform">
+                <div className="grid grid-cols-2 gap-0.5">
+                  <div className="w-2 h-2 bg-yellow-400 rounded-sm"></div>
+                  <div className="w-2 h-2 bg-gray-300 rounded-sm"></div>
+                  <div className="w-2 h-2 bg-gray-300 rounded-sm"></div>
+                  <div className="w-2 h-2 bg-yellow-400 rounded-sm"></div>
+                </div>
+              </div>
+              <span className="text-base font-bold text-white">
+                Про<span className="text-yellow-400">.</span>Маркируй
+              </span>
+            </Link>
+          ) : (
+            <Link to="/" className="flex items-center justify-center group">
+              <div className="flex items-center gap-0.5 p-2 rounded-lg bg-gradient-to-br from-yellow-400/20 to-yellow-500/20 group-hover:scale-105 transition-transform">
+                <div className="grid grid-cols-2 gap-0.5">
+                  <div className="w-2 h-2 bg-yellow-400 rounded-sm"></div>
+                  <div className="w-2 h-2 bg-gray-300 rounded-sm"></div>
+                  <div className="w-2 h-2 bg-gray-300 rounded-sm"></div>
+                  <div className="w-2 h-2 bg-yellow-400 rounded-sm"></div>
+                </div>
+              </div>
+            </Link>
           )}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}

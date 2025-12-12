@@ -117,16 +117,31 @@ const ClientLayout = ({ children }) => {
       >
         {/* Header */}
         <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200">
-          {!sidebarCollapsed && (
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-yellow-400 to-yellow-500 flex items-center justify-center">
-                <span className="text-gray-900 font-bold text-sm">П</span>
+          {!sidebarCollapsed ? (
+            <Link to="/" className="flex items-center gap-2 group">
+              <div className="flex items-center gap-0.5 p-2 rounded-lg bg-gradient-to-br from-yellow-100 to-yellow-200 group-hover:scale-105 transition-transform shadow-sm">
+                <div className="grid grid-cols-2 gap-0.5">
+                  <div className="w-2 h-2 bg-yellow-500 rounded-sm"></div>
+                  <div className="w-2 h-2 bg-gray-800 rounded-sm"></div>
+                  <div className="w-2 h-2 bg-gray-800 rounded-sm"></div>
+                  <div className="w-2 h-2 bg-yellow-500 rounded-sm"></div>
+                </div>
               </div>
-              <div>
-                <div className="text-sm font-semibold text-gray-900">Личный кабинет</div>
-                <div className="text-[10px] text-gray-400 uppercase tracking-wider">Pro.Markiruj</div>
+              <span className="text-base font-bold text-gray-900">
+                Про<span className="text-yellow-500">.</span>Маркируй
+              </span>
+            </Link>
+          ) : (
+            <Link to="/" className="flex items-center justify-center group">
+              <div className="flex items-center gap-0.5 p-2 rounded-lg bg-gradient-to-br from-yellow-100 to-yellow-200 group-hover:scale-105 transition-transform shadow-sm">
+                <div className="grid grid-cols-2 gap-0.5">
+                  <div className="w-2 h-2 bg-yellow-500 rounded-sm"></div>
+                  <div className="w-2 h-2 bg-gray-800 rounded-sm"></div>
+                  <div className="w-2 h-2 bg-gray-800 rounded-sm"></div>
+                  <div className="w-2 h-2 bg-yellow-500 rounded-sm"></div>
+                </div>
               </div>
-            </div>
+            </Link>
           )}
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}

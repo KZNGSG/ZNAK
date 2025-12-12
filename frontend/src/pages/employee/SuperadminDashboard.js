@@ -67,6 +67,11 @@ const SuperadminDashboard = () => {
       check_page: 'Проверка товара',
       quote_page: 'Запрос КП',
       contact_form: 'Контактная форма',
+      partner_request: 'Партнёрство',
+      representative_request: 'Представительство',
+      callback: 'Обратный звонок',
+      website: 'Сайт',
+      manual: 'Вручную',
       unknown: 'Другое'
     };
     return labels[source] || source || 'Другое';

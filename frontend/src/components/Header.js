@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { CheckCircle, Wrench, Mail, User, LogIn } from 'lucide-react';
+import { CheckCircle, Wrench, Mail, User, LogIn, Handshake } from 'lucide-react';
 import CitySelector from './CitySelector';
 import { useAuth } from '../context/AuthContext';
 
@@ -74,6 +74,18 @@ const Header = () => {
             >
               <Mail size={20} strokeWidth={2.5} />
               Контакт
+            </Link>
+            <Link
+              to="/partners"
+              className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-bold transition-all ${
+                isActive('/partners')
+                  ? 'bg-gradient-to-r from-[rgb(var(--brand-yellow-500))] to-[rgb(var(--brand-yellow-600))] text-[rgb(var(--black))] shadow-lg'
+                  : 'text-[rgb(var(--grey-700))] hover:bg-[rgb(var(--brand-yellow-50))] hover:text-[rgb(var(--black))]'
+              }`}
+              data-testid="nav-partners"
+            >
+              <Handshake size={20} strokeWidth={2.5} />
+              Партнёрам
             </Link>
 
             {/* Auth Button */}

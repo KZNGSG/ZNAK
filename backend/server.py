@@ -31,7 +31,7 @@ from database import (
     CompanyDB, QuoteDB, ContractDB, CallbackDB, UserDB,
     ClientDB, InteractionDB, CallbackDBExtended,
     NotificationSettingsDB, CRMSettingsDB, CallbackSLADB,
-    get_next_contract_number, get_db
+    get_next_contract_number, get_db, PartnerDB
 )
 
 # Load environment variables first
@@ -402,11 +402,14 @@ CATEGORIES_DATA = [
                 }
             ]},
             {"id": "water", "name": "Упакованная вода", "icon": "droplet", "products": [
-                {"id": "water_2201", "name": "Воды, включая природные или искусственные минеральные, газированные, б", "tnved": "2201", "marking_status": "mandatory"},
-                {"id": "water_220122", "name": "Природные минеральные воды, газированные;", "tnved": "2201 22", "marking_status": "mandatory"},
-                {"id": "water_22012201", "name": "Природные минеральные воды, газированные;", "tnved": "2201 22 01", "marking_status": "mandatory"},
-                {"id": "water_2201220110", "name": "Природные минеральные воды, газированные;", "tnved": "2201 22 011 0", "marking_status": "mandatory"},
-                {"id": "water_2201220190", "name": "Воды, включая природные или искусственные минеральные, газированные, б", "tnved": "2201 22 019 0", "marking_status": "mandatory"}
+                {"id": "water_220110_1", "name": "Природные минеральные воды газированные", "tnved": "2201 10", "marking_status": "mandatory"},
+                {"id": "water_220110_2", "name": "Природные минеральные воды негазированные", "tnved": "2201 10", "marking_status": "mandatory"},
+                {"id": "water_220110_3", "name": "Природные минеральные воды слабогазированные", "tnved": "2201 10", "marking_status": "mandatory"},
+                {"id": "water_22019000_1", "name": "Вода питьевая газированная", "tnved": "2201 90 000 0", "marking_status": "mandatory"},
+                {"id": "water_22019000_2", "name": "Вода питьевая негазированная", "tnved": "2201 90 000 0", "marking_status": "mandatory"},
+                {"id": "water_22019000_3", "name": "Вода питьевая слабогазированная", "tnved": "2201 90 000 0", "marking_status": "mandatory"},
+                {"id": "water_22019000_4", "name": "Вода питьевая прочая", "tnved": "2201 90 000 0", "marking_status": "mandatory"},
+                {"id": "water_22019000_5", "name": "Вода для детского питания", "tnved": "2201 90 000 0", "marking_status": "mandatory"}
             ]},
             {"id": "tobacco", "name": "Табак", "icon": "cigarette", "products": [
                 {"id": "tobacco_2402", "name": "Сигары, сигары с обрезанными концами, сигариллы и сигареты из табака и", "tnved": "2402", "marking_status": "mandatory"},
@@ -473,16 +476,26 @@ CATEGORIES_DATA = [
                 {"id": "oils_1507109001", "name": "в первичных упаковках нетто-объемом 10 л или менее", "tnved": "1507 10 900 1", "marking_status": "mandatory"}
             ]},
             {"id": "pet_food", "name": "Корма для животных", "icon": "paw", "products": [
-                {"id": "pet_food_1092", "name": "Сухой корм", "tnved": "1092", "marking_status": "mandatory"},
-                {"id": "pet_food_109210", "name": "Сухой корм", "tnved": "1092 10", "marking_status": "mandatory"},
-                {"id": "pet_food_10921010", "name": "Сухой корм", "tnved": "1092 10 10", "marking_status": "mandatory"},
-                {"id": "pet_food_10921011", "name": "Сухой корм животного происхождения", "tnved": "1092 10 11", "marking_status": "mandatory"},
-                {"id": "pet_food_10921012", "name": "Сухой корм растительного происхождения", "tnved": "1092 10 12", "marking_status": "mandatory"},
-                {"id": "pet_food_10921019", "name": "Сухой корм прочий", "tnved": "1092 10 19", "marking_status": "mandatory"},
-                {"id": "pet_food_10921020", "name": "Влажный корм", "tnved": "1092 10 20", "marking_status": "mandatory"},
-                {"id": "pet_food_10921021", "name": "Влажный корм животного происхождения", "tnved": "1092 10 21", "marking_status": "mandatory"},
-                {"id": "pet_food_10921022", "name": "Влажный корм растительного происхождения", "tnved": "1092 10 22", "marking_status": "mandatory"},
-                {"id": "pet_food_10921029", "name": "Влажный корм прочий", "tnved": "1092 10 29", "marking_status": "mandatory"}
+                {"id": "pet_food_dry", "name": "Сухой корм", "tnved": "2309", "marking_status": "mandatory"},
+                {"id": "pet_food_dry_animal", "name": "Сухой корм животного происхождения", "tnved": "2309", "marking_status": "mandatory"},
+                {"id": "pet_food_dry_animal_dog", "name": "Сухой корм животного происхождения для собак", "tnved": "2309", "marking_status": "mandatory"},
+                {"id": "pet_food_dry_animal_cat", "name": "Сухой корм животного происхождения для кошек", "tnved": "2309", "marking_status": "mandatory"},
+                {"id": "pet_food_dry_animal_other", "name": "Сухой корм животного происхождения для прочих животных", "tnved": "2309", "marking_status": "mandatory"},
+                {"id": "pet_food_dry_plant", "name": "Сухой корм растительного происхождения", "tnved": "2309", "marking_status": "mandatory"},
+                {"id": "pet_food_dry_other", "name": "Сухой корм прочий", "tnved": "2309", "marking_status": "mandatory"},
+                {"id": "pet_food_dry_other_dog", "name": "Сухой корм прочий для собак", "tnved": "2309", "marking_status": "mandatory"},
+                {"id": "pet_food_dry_other_cat", "name": "Сухой корм прочий для кошек", "tnved": "2309", "marking_status": "mandatory"},
+                {"id": "pet_food_dry_other_other", "name": "Сухой корм прочий для прочих животных", "tnved": "2309", "marking_status": "mandatory"},
+                {"id": "pet_food_wet", "name": "Влажный корм", "tnved": "2309", "marking_status": "mandatory"},
+                {"id": "pet_food_wet_animal", "name": "Влажный корм животного происхождения", "tnved": "2309", "marking_status": "mandatory"},
+                {"id": "pet_food_wet_animal_dog", "name": "Влажный корм животного происхождения для собак", "tnved": "2309", "marking_status": "mandatory"},
+                {"id": "pet_food_wet_animal_cat", "name": "Влажный корм животного происхождения для кошек", "tnved": "2309", "marking_status": "mandatory"},
+                {"id": "pet_food_wet_animal_other", "name": "Влажный корм животного происхождения для прочих животных", "tnved": "2309", "marking_status": "mandatory"},
+                {"id": "pet_food_wet_plant", "name": "Влажный корм растительного происхождения", "tnved": "2309", "marking_status": "mandatory"},
+                {"id": "pet_food_wet_other", "name": "Влажный корм прочий", "tnved": "2309", "marking_status": "mandatory"},
+                {"id": "pet_food_wet_other_dog", "name": "Влажный корм прочий для собак", "tnved": "2309", "marking_status": "mandatory"},
+                {"id": "pet_food_wet_other_cat", "name": "Влажный корм прочий для кошек", "tnved": "2309", "marking_status": "mandatory"},
+                {"id": "pet_food_wet_other_other", "name": "Влажный корм прочий для прочих животных", "tnved": "2309", "marking_status": "mandatory"}
             ]},
             {"id": "canned", "name": "Консервированные продукты", "icon": "archive", "products": [
                 {"id": "canned_1604", "name": "Готовая или консервированная рыба; икра осетровых и ее заменители, изг", "tnved": "1604", "marking_status": "mandatory"},
@@ -495,14 +508,31 @@ CATEGORIES_DATA = [
                 {"id": "canned_1602200121", "name": "Мясная и плодоовощная консервация", "tnved": "1602 20 012 1", "marking_status": "mandatory"}
             ]},
             {"id": "grocery", "name": "Бакалея", "icon": "shopping-basket", "products": [
-                {"id": "grocery_1904", "name": "Готовые пищевые продукты, полученные путем вздувания или обжаривания з", "tnved": "1904", "marking_status": "mandatory"},
-                {"id": "grocery_190410", "name": "готовые пищевые продукты, полученные путем вздувания или обжаривания з", "tnved": "1904 10", "marking_status": "mandatory"},
-                {"id": "grocery_19041010", "name": "Снековая продукция (чипсы, начос, сухарики, гренки, кукурузные палочки", "tnved": "1904 10 10", "marking_status": "mandatory"},
-                {"id": "grocery_1904101000", "name": "полученные из кукурузы", "tnved": "1904 10 100 0", "marking_status": "mandatory"},
-                {"id": "grocery_0712", "name": "Овощи сушеные, целые, нарезанные кусками, ломтиками, измельченные или ", "tnved": "0712", "marking_status": "mandatory"},
-                {"id": "grocery_071220", "name": "Соусы, специи, приправы, пряности, сухие бульоны, сухие супы и уксусы", "tnved": "0712 20", "marking_status": "mandatory"},
-                {"id": "grocery_07122000", "name": "Соусы, специи, приправы, пряности, сухие бульоны, сухие супы и уксусы", "tnved": "0712 20 00", "marking_status": "mandatory"},
-                {"id": "grocery_0712200000", "name": "лук репчатый", "tnved": "0712 20 000 0", "marking_status": "mandatory"}
+                {"id": "snacks_chips_potato", "name": "Чипсы картофельные", "tnved": "1904 10 100 0", "marking_status": "mandatory"},
+                {"id": "snacks_chips_veg", "name": "Чипсы овощные", "tnved": "1904 10 300 0", "marking_status": "mandatory"},
+                {"id": "snacks_chips_other", "name": "Чипсы прочие", "tnved": "1904 10 900 0", "marking_status": "mandatory"},
+                {"id": "snacks_crispbread", "name": "Хлебцы хрустящие", "tnved": "1905 10 000 0", "marking_status": "mandatory"},
+                {"id": "snacks_crackers", "name": "Сухарики", "tnved": "1905 40 100 0", "marking_status": "mandatory"},
+                {"id": "snacks_croutons", "name": "Гренки", "tnved": "1905 40 900 0", "marking_status": "mandatory"},
+                {"id": "snacks_corn_sticks", "name": "Кукурузные палочки", "tnved": "1905 90 550 0", "marking_status": "mandatory"},
+                {"id": "snacks_nachos", "name": "Начос", "tnved": "1905 90 900 0", "marking_status": "mandatory"},
+                {"id": "snacks_popcorn", "name": "Попкорн готовый", "tnved": "2005 20 200 0", "marking_status": "mandatory"},
+                {"id": "snacks_other", "name": "Снековая продукция прочая", "tnved": "2005 20 800 0", "marking_status": "mandatory"},
+                {"id": "spices_onion", "name": "Лук сушеный", "tnved": "0712 20 000 0", "marking_status": "mandatory"},
+                {"id": "spices_veg_dried", "name": "Овощи сушеные прочие", "tnved": "0712 90 900 0", "marking_status": "mandatory"},
+                {"id": "spices_pepper", "name": "Перец (род Piper)", "tnved": "0904", "marking_status": "mandatory"},
+                {"id": "spices_vanilla", "name": "Ваниль", "tnved": "0905", "marking_status": "mandatory"},
+                {"id": "spices_cinnamon", "name": "Корица и цветы коричного дерева", "tnved": "0906", "marking_status": "mandatory"},
+                {"id": "spices_cloves", "name": "Гвоздика", "tnved": "0907", "marking_status": "mandatory"},
+                {"id": "spices_nutmeg", "name": "Мускатный орех, мацис и кардамон", "tnved": "0908", "marking_status": "mandatory"},
+                {"id": "spices_seeds", "name": "Семена аниса, бадьяна, кориандра, тмина", "tnved": "0909", "marking_status": "mandatory"},
+                {"id": "spices_ginger", "name": "Имбирь, шафран, куркума, тимьян, лавровый лист", "tnved": "0910", "marking_status": "mandatory"},
+                {"id": "spices_other", "name": "Пряности пищевые прочие", "tnved": "1211 90 860 8", "marking_status": "mandatory"},
+                {"id": "sauces_main", "name": "Соусы и их компоненты, приправы", "tnved": "2103", "marking_status": "mandatory"},
+                {"id": "sauces_mustard", "name": "Горчица готовая", "tnved": "2103", "marking_status": "mandatory"},
+                {"id": "sauces_soups_dry", "name": "Сухие супы", "tnved": "2104 10 000 0", "marking_status": "mandatory"},
+                {"id": "sauces_broth_dry", "name": "Сухие бульоны", "tnved": "2104 10 000 0", "marking_status": "mandatory"},
+                {"id": "sauces_vinegar", "name": "Уксусы", "tnved": "2209 000", "marking_status": "mandatory"}
             ]},
             {"id": "soft_drinks", "name": "Безалкогольные напитки", "icon": "glass-water", "products": [
                 {"id": "soft_drinks_2202100000", "name": "воды, включая минеральные и газированные, содержащие добавки сахара ил", "tnved": "2202 10 000 0", "marking_status": "mandatory"}
@@ -651,7 +681,19 @@ CATEGORIES_DATA = [
                 {"id": "vet_300290", "name": "прочие:", "tnved": "3002 90", "marking_status": "mandatory"},
                 {"id": "vet_3002903000", "name": "кровь животных, приготовленная для использования в терапевтических, пр", "tnved": "3002 90 300 0", "marking_status": "mandatory"}
             ]},
-            {"id": "pharma_raw", "name": "Фармацевтическое сырьё, лекарственные средства", "icon": "flask", "products": []},
+            {"id": "pharma_raw", "name": "Фармацевтическое сырьё, лекарственные средства", "icon": "flask", "products": [
+                {"id": "pharma_raw_2932", "name": "Фармсубстанции (с кислородом)", "tnved": "2932", "marking_status": "experiment"},
+                {"id": "pharma_raw_2933", "name": "Фармсубстанции (с азотом)", "tnved": "2933", "marking_status": "experiment"},
+                {"id": "pharma_raw_2934", "name": "Нуклеиновые кислоты", "tnved": "2934", "marking_status": "experiment"},
+                {"id": "pharma_raw_2935", "name": "Сульфонамиды", "tnved": "2935", "marking_status": "experiment"},
+                {"id": "pharma_raw_2936", "name": "Витамины", "tnved": "2936", "marking_status": "experiment"},
+                {"id": "pharma_raw_2937", "name": "Гормоны", "tnved": "2937", "marking_status": "experiment"},
+                {"id": "pharma_raw_2939", "name": "Гликозиды, алкалоиды", "tnved": "2939", "marking_status": "experiment"},
+                {"id": "pharma_raw_2941", "name": "Антибиотики", "tnved": "2941", "marking_status": "experiment"},
+                {"id": "pharma_raw_in_process", "name": "In-process продукты", "tnved": "-", "marking_status": "experiment"},
+                {"id": "pharma_raw_in_bulk", "name": "In-bulk продукты", "tnved": "-", "marking_status": "experiment"},
+                {"id": "pharma_raw_afs", "name": "АФС (активные фармацевтические субстанции)", "tnved": "-", "marking_status": "experiment"}
+            ]},
             {"id": "medical_devices", "name": "Медицинские изделия", "icon": "heart-pulse", "products": [
                 {"id": "medical_devices_9021", "name": "Приспособления ортопедические, включая костыли, хирургические ремни и ", "tnved": "9021", "marking_status": "mandatory"},
                 {"id": "medical_devices_902110", "name": "приспособления ортопедические или для лечения переломов:", "tnved": "9021 10", "marking_status": "mandatory"},
@@ -828,7 +870,12 @@ CATEGORIES_DATA = [
         "icon": "sparkles",
         "subcategories": [
             {"id": "perfume", "name": "Духи и туалетная вода", "icon": "spray-can", "products": [
-                {"id": "perfume_330300", "name": "Духи и туалетная вода:", "tnved": "3303 00", "marking_status": "mandatory"}
+                {"id": "perfume_330300", "name": "Духи и туалетная вода:", "tnved": "3303 00", "marking_status": "mandatory"},
+                {"id": "perfume_dukhi", "name": "Духи", "tnved": "3303 00", "marking_status": "mandatory"},
+                {"id": "perfume_tualetnaya_voda", "name": "Туалетная вода", "tnved": "3303 00", "marking_status": "mandatory"},
+                {"id": "perfume_odekolon", "name": "Одеколон", "tnved": "3303 00", "marking_status": "mandatory"},
+                {"id": "perfume_parfyumernaya_voda", "name": "Парфюмерная вода", "tnved": "3303 00", "marking_status": "mandatory"},
+                {"id": "perfume_nabory", "name": "Наборы парфюмерной продукции (импорт)", "tnved": "3303 00", "marking_status": "mandatory"}
             ]},
             {"id": "cosmetics_hygiene", "name": "Косметика, бытовая химия и товары личной гигиены", "icon": "sparkles", "products": [
                 {"id": "cosmetics_hygiene_3304", "name": "Косметические средства или средства для макияжа и средства для ухода з", "tnved": "3304", "marking_status": "mandatory"},
@@ -846,7 +893,29 @@ CATEGORIES_DATA = [
                 {"id": "cosmetics_hygiene_8212", "name": "Бритвы и лезвия для них (включая полосовые заготовки для лезвий):", "tnved": "8212", "marking_status": "mandatory"},
                 {"id": "cosmetics_hygiene_821210", "name": "бритвы:", "tnved": "8212 10", "marking_status": "mandatory"},
                 {"id": "cosmetics_hygiene_82121010", "name": "Бритвы и лезвия для них, включая полосовые заготовки для лезвий", "tnved": "8212 10 10", "marking_status": "mandatory"},
-                {"id": "cosmetics_hygiene_8212101000", "name": "безопасные бритвы с несменяемыми лезвиями", "tnved": "8212 10 100 0", "marking_status": "mandatory"}
+                {"id": "cosmetics_hygiene_8212101000", "name": "безопасные бритвы с несменяемыми лезвиями", "tnved": "8212 10 100 0", "marking_status": "mandatory"},
+                {"id": "cosmetics_mylo_tualetnoe", "name": "Мыло туалетное", "tnved": "3401", "marking_status": "mandatory"},
+                {"id": "cosmetics_mylo_hozyaystvennoe", "name": "Мыло хозяйственное", "tnved": "3401", "marking_status": "mandatory"},
+                {"id": "cosmetics_moyushchie_pav", "name": "Моющие средства ПАВ", "tnved": "3402 50 000 0", "marking_status": "mandatory"},
+                {"id": "cosmetics_chistka_obuvi", "name": "Средства для чистки обуви", "tnved": "3405 40 00 0", "marking_status": "mandatory"},
+                {"id": "cosmetics_shampuni", "name": "Шампуни", "tnved": "3305", "marking_status": "mandatory"},
+                {"id": "cosmetics_kondicionery_volos", "name": "Кондиционеры для волос", "tnved": "3305", "marking_status": "mandatory"},
+                {"id": "cosmetics_laki_volos", "name": "Лаки для волос", "tnved": "3305", "marking_status": "mandatory"},
+                {"id": "cosmetics_kraski_volos", "name": "Краски для волос", "tnved": "3305", "marking_status": "mandatory"},
+                {"id": "cosmetics_sredstva_britya", "name": "Средства для бритья", "tnved": "3307", "marking_status": "mandatory"},
+                {"id": "cosmetics_dezodoranty", "name": "Дезодоранты", "tnved": "3307", "marking_status": "mandatory"},
+                {"id": "cosmetics_aromatizatory", "name": "Ароматизаторы помещений", "tnved": "3307", "marking_status": "mandatory"},
+                {"id": "cosmetics_kremy_lico", "name": "Кремы для лица", "tnved": "3304", "marking_status": "mandatory"},
+                {"id": "cosmetics_kremy_ruki_telo", "name": "Кремы для рук и тела", "tnved": "3304", "marking_status": "mandatory"},
+                {"id": "cosmetics_dekorativnaya", "name": "Декоративная косметика", "tnved": "3304", "marking_status": "mandatory"},
+                {"id": "cosmetics_laki_nogtey", "name": "Лаки для ногтей", "tnved": "3304", "marking_status": "mandatory"},
+                {"id": "cosmetics_sredstva_zagara", "name": "Средства для загара", "tnved": "3304", "marking_status": "mandatory"},
+                {"id": "cosmetics_zubnaya_pasta", "name": "Зубная паста", "tnved": "3306", "marking_status": "mandatory"},
+                {"id": "cosmetics_opolaskivateli_rta", "name": "Ополаскиватели для рта", "tnved": "3306", "marking_status": "mandatory"},
+                {"id": "cosmetics_britvy_bezopasnye", "name": "Бритвы безопасные", "tnved": "8212 10 100 0", "marking_status": "mandatory"},
+                {"id": "cosmetics_britvy_prochie", "name": "Бритвы прочие", "tnved": "8212 10 900 0", "marking_status": "mandatory"},
+                {"id": "cosmetics_lezviya_britv", "name": "Лезвия для бритв", "tnved": "8212 20 000 0", "marking_status": "mandatory"},
+                {"id": "cosmetics_zagotovki_lezviy", "name": "Заготовки для лезвий", "tnved": "8212 90 000 0", "marking_status": "mandatory"}
             ]}
         ]
     },
@@ -958,7 +1027,8 @@ CATEGORIES_DATA = [
                 {"id": "shoes_6402", "name": "Прочая обувь с подошвой и с верхом из резины или пластмассы:", "tnved": "6402", "marking_status": "mandatory"},
                 {"id": "shoes_6403", "name": "Обувь с подошвой из резины, пластмассы, натуральной или композиционной", "tnved": "6403", "marking_status": "mandatory"},
                 {"id": "shoes_6404", "name": "Обувь с подошвой из резины, пластмассы, натуральной или композиционной", "tnved": "6404", "marking_status": "mandatory"},
-                {"id": "shoes_6405", "name": "Обувь прочая:", "tnved": "6405", "marking_status": "mandatory"}
+                {"id": "shoes_6405", "name": "Обувь прочая:", "tnved": "6405", "marking_status": "mandatory"},
+                {"id": "shoes_sportivnaya", "name": "Обувь спортивная", "tnved": "6402; 6403; 6404", "marking_status": "mandatory"}
             ]},
             {"id": "furs", "name": "Шубы", "icon": "shirt", "products": [
                 {"id": "furs_4303", "name": "Предметы одежды, принадлежности к одежде и прочие изделия, из натураль", "tnved": "4303", "marking_status": "mandatory"},
@@ -979,13 +1049,21 @@ CATEGORIES_DATA = [
                 {"id": "toys_9504400000", "name": "карты игральные", "tnved": "9504 40 000 0", "marking_status": "mandatory"},
                 {"id": "toys_950490", "name": "прочие:", "tnved": "9504 90", "marking_status": "mandatory"},
                 {"id": "toys_9504901000", "name": "наборы электрических гоночных автомобилей для соревновательных игр", "tnved": "9504 90 100 0", "marking_status": "mandatory"},
-                {"id": "toys_9504908009", "name": "прочие", "tnved": "9504 90 800 9", "marking_status": "mandatory"}
+                {"id": "toys_9504908009", "name": "прочие", "tnved": "9504 90 800 9", "marking_status": "mandatory"},
+                {"id": "toys_kolyaski_kukol", "name": "Коляски для кукол", "tnved": "9503 00", "marking_status": "mandatory"},
+                {"id": "toys_kukly", "name": "Куклы", "tnved": "9503 00", "marking_status": "mandatory"},
+                {"id": "toys_igrushki_prochie", "name": "Игрушки прочие", "tnved": "9503 00", "marking_status": "mandatory"},
+                {"id": "toys_modeli", "name": "Модели в масштабе", "tnved": "9503 00", "marking_status": "mandatory"},
+                {"id": "toys_golovolomki", "name": "Головоломки всех видов", "tnved": "9503 00", "marking_status": "mandatory"}
             ]},
             {"id": "bicycles", "name": "Велосипеды", "icon": "bike", "products": [
                 {"id": "bicycles_8711", "name": "Мотоциклы (включая мопеды) и велосипеды с установленным вспомогательны", "tnved": "8711", "marking_status": "mandatory"},
                 {"id": "bicycles_871187", "name": "Велосипеды (в том числе с установленным вспомогательным двигателем и т", "tnved": "8711 87", "marking_status": "mandatory"},
                 {"id": "bicycles_87118712", "name": "Велосипеды (в том числе с установленным вспомогательным двигателем и т", "tnved": "8711 87 12", "marking_status": "mandatory"},
-                {"id": "bicycles_8711871200", "name": "Велосипеды (в том числе с установленным вспомогательным двигателем и т", "tnved": "8711 87 120 0", "marking_status": "mandatory"}
+                {"id": "bicycles_8711871200", "name": "Велосипеды (в том числе с установленным вспомогательным двигателем и т", "tnved": "8711 87 120 0", "marking_status": "mandatory"},
+                {"id": "bicycles_871200", "name": "Велосипеды двухколёсные", "tnved": "8712 00", "marking_status": "mandatory"},
+                {"id": "bicycles_871491100", "name": "Рамы велосипедные", "tnved": "8714 91 100", "marking_status": "mandatory"},
+                {"id": "bicycles_950300100", "name": "Велосипеды трёхколёсные, самокаты детские", "tnved": "9503 00 100", "marking_status": "mandatory"}
             ]}
         ]
     },
@@ -1041,7 +1119,12 @@ CATEGORIES_DATA = [
                 {"id": "motor_oils_3820", "name": "Антифризы и жидкости антиобледенительные готовые (например, омыватель ", "tnved": "3820", "marking_status": "mandatory"},
                 {"id": "motor_oils_382000", "name": "Антифризы и жидкости антиобледенительные готовые (например, омыватель ", "tnved": "3820 00", "marking_status": "mandatory"},
                 {"id": "motor_oils_38200000", "name": "Антифризы и жидкости антиобледенительные готовые (например, омыватель ", "tnved": "3820 00 00", "marking_status": "mandatory"},
-                {"id": "motor_oils_3820000000", "name": "Антифризы и жидкости антиобледенительные готовые", "tnved": "3820 00 000 0", "marking_status": "mandatory"}
+                {"id": "motor_oils_3820000000", "name": "Антифризы и жидкости антиобледенительные готовые", "tnved": "3820 00 000 0", "marking_status": "mandatory"},
+                {"id": "motor_oils_kompressornye", "name": "Компрессорные масла", "tnved": "2710 19 820 0", "marking_status": "mandatory"},
+                {"id": "motor_oils_turbinnye", "name": "Турбинные масла", "tnved": "2710 19 820 0", "marking_status": "mandatory"},
+                {"id": "motor_oils_reduktory", "name": "Масла для редукторов", "tnved": "2710 19 880 0", "marking_status": "mandatory"},
+                {"id": "motor_oils_smazki_prochie", "name": "Смазки прочие (эмульсии, антикоррозионные)", "tnved": "3403 99 000 0", "marking_status": "mandatory"},
+                {"id": "motor_oils_omyvateli", "name": "Омыватели стёкол", "tnved": "3820 00 000 0", "marking_status": "mandatory"}
             ]}
         ]
     },
@@ -1061,7 +1144,27 @@ CATEGORIES_DATA = [
                 {"id": "building_materials_382450", "name": "неогнеупорные строительные растворы и бетоны:", "tnved": "3824 50", "marking_status": "mandatory"},
                 {"id": "building_materials_38245090", "name": "Смеси строительные, растворы строительные", "tnved": "3824 50 90", "marking_status": "mandatory"},
                 {"id": "building_materials_3824509000", "name": "прочие", "tnved": "3824 50 900 0", "marking_status": "mandatory"},
-                {"id": "building_materials_3214", "name": "Замазки стекольная и садовая, цементы смоляные, составы для уплотнения", "tnved": "3214", "marking_status": "mandatory"}
+                {"id": "building_materials_3214", "name": "Замазки стекольная и садовая, цементы смоляные, составы для уплотнения", "tnved": "3214", "marking_status": "mandatory"},
+                {"id": "building_materials_gips_stroit", "name": "Гипс строительный", "tnved": "2520", "marking_status": "mandatory"},
+                {"id": "building_materials_gips_tech", "name": "Гипс технический", "tnved": "2520", "marking_status": "mandatory"},
+                {"id": "building_materials_gips_med", "name": "Гипс медицинский", "tnved": "2520", "marking_status": "mandatory"},
+                {"id": "building_materials_gips_form", "name": "Гипс формовочный", "tnved": "2520", "marking_status": "mandatory"},
+                {"id": "building_materials_portland_bez", "name": "Портландцемент без добавок", "tnved": "2523", "marking_status": "mandatory"},
+                {"id": "building_materials_portland_s", "name": "Портландцемент с добавками", "tnved": "2523", "marking_status": "mandatory"},
+                {"id": "building_materials_shlako", "name": "Шлакопортландцемент", "tnved": "2523", "marking_status": "mandatory"},
+                {"id": "building_materials_kompozit", "name": "Цемент композиционный", "tnved": "2523", "marking_status": "mandatory"},
+                {"id": "building_materials_belye", "name": "Портландцементы белые/цветные", "tnved": "2523", "marking_status": "mandatory"},
+                {"id": "building_materials_tampon", "name": "Цемент тампонажный", "tnved": "2523", "marking_status": "mandatory"},
+                {"id": "building_materials_glinozem", "name": "Цементы глинозёмистые", "tnved": "2523", "marking_status": "mandatory"},
+                {"id": "building_materials_cement_proch", "name": "Цементы прочие", "tnved": "2523", "marking_status": "mandatory"},
+                {"id": "building_materials_rastvory_ogn", "name": "Растворы огнеупорные", "tnved": "3816 00 000 0", "marking_status": "mandatory"},
+                {"id": "building_materials_betony_ogn", "name": "Бетоны огнеупорные", "tnved": "3816 00 000 0", "marking_status": "mandatory"},
+                {"id": "building_materials_rastvory_str", "name": "Растворы строительные", "tnved": "3824 50 900 0", "marking_status": "mandatory"},
+                {"id": "building_materials_shpatlyovki", "name": "Шпатлёвки", "tnved": "3214", "marking_status": "mandatory"},
+                {"id": "building_materials_zamazki", "name": "Замазки", "tnved": "3214", "marking_status": "mandatory"},
+                {"id": "building_materials_germetiki", "name": "Герметики", "tnved": "3214", "marking_status": "mandatory"},
+                {"id": "building_materials_mastiki", "name": "Мастики", "tnved": "3214", "marking_status": "mandatory"},
+                {"id": "building_materials_pasty", "name": "Пасты строительные", "tnved": "3214", "marking_status": "mandatory"}
             ]}
         ]
     },
@@ -1070,7 +1173,31 @@ CATEGORIES_DATA = [
         "name": "Электроника и техника",
         "icon": "cpu",
         "subcategories": [
-            {"id": "cameras", "name": "Фотоаппараты и лампы-вспышки", "icon": "camera", "products": []}
+            {"id": "cameras", "name": "Фотоаппараты и лампы-вспышки", "icon": "camera", "products": [
+                {"id": "cameras_9006", "name": "Фотокамеры (кроме кинематографических)", "tnved": "9006", "marking_status": "mandatory", "mandatory_since": "2020-10-01",
+                    "timeline": {
+                        "title": "Фотоаппараты и лампы-вспышки",
+                        "start_date": "1 октября 2020",
+                        "who": ["Производители", "Импортёры", "Оптовики", "Розница"],
+                        "current_requirements": [
+                            "Регистрация в Честном ЗНАКе",
+                            "Нанесение кодов маркировки",
+                            "Передача данных при продаже на кассе",
+                            "Электронный документооборот (ЭДО)",
+                            "Разрешительный режим на кассах (с 01.11.2024)"
+                        ]
+                    }
+                },
+                {"id": "cameras_900610", "name": "Фотоаппараты для изготовления печатных пластин/цилиндров", "tnved": "9006 10", "marking_status": "mandatory"},
+                {"id": "cameras_900630", "name": "Фотоаппараты специальные для подводной/аэросъёмки", "tnved": "9006 30", "marking_status": "mandatory"},
+                {"id": "cameras_900640", "name": "Фотоаппараты для моментальной печати", "tnved": "9006 40", "marking_status": "mandatory"},
+                {"id": "cameras_900651", "name": "Фотоаппараты прочие с видоискателем (зеркальные)", "tnved": "9006 51", "marking_status": "mandatory"},
+                {"id": "cameras_900652", "name": "Фотоаппараты прочие для плёнки шириной менее 35мм", "tnved": "9006 52", "marking_status": "mandatory"},
+                {"id": "cameras_900653", "name": "Фотоаппараты прочие для плёнки шириной 35мм", "tnved": "9006 53", "marking_status": "mandatory"},
+                {"id": "cameras_900659", "name": "Фотоаппараты прочие", "tnved": "9006 59", "marking_status": "mandatory"},
+                {"id": "cameras_900661", "name": "Лампы-вспышки с газоразрядной трубкой", "tnved": "9006 61", "marking_status": "mandatory"},
+                {"id": "cameras_900669", "name": "Лампы-вспышки прочие", "tnved": "9006 69", "marking_status": "mandatory"}
+            ]}
         ]
     },
     {
@@ -1078,23 +1205,451 @@ CATEGORIES_DATA = [
         "name": "Пилотные проекты",
         "icon": "rocket",
         "subcategories": [
-            {"id": "titanium", "name": "Титановая металлопродукция (завершён)", "icon": "box", "products": []},
-            {"id": "radio_electronics", "name": "Радиоэлектроника", "icon": "radio", "products": []},
-            {"id": "fiber_optic", "name": "Оптоволокно", "icon": "cable", "products": []},
-            {"id": "print_products", "name": "Печатная продукция (завершен)", "icon": "book", "products": []},
-            {"id": "heating", "name": "Отопительные приборы", "icon": "thermometer", "products": []},
-            {"id": "cables", "name": "Кабельная продукция", "icon": "cable", "products": []},
-            {"id": "low_alcohol", "name": "Слабый алкоголь", "icon": "wine", "products": []},
-            {"id": "medical_2", "name": "Медицинские изделия 2.0", "icon": "stethoscope", "products": []},
-            {"id": "pyrotechnics", "name": "Пиротехника", "icon": "sparkles", "products": []},
-            {"id": "polymer_pipes", "name": "Полимерные трубы", "icon": "cylinder", "products": []},
-            {"id": "auto_parts", "name": "Автозапчасти", "icon": "wrench", "products": []},
-            {"id": "hygiene", "name": "Средства гигиены", "icon": "sparkles", "products": []},
-            {"id": "home_interior", "name": "Товары для дома и интерьера", "icon": "home", "products": []},
-            {"id": "fertilizers", "name": "Удобрения", "icon": "leaf", "products": []},
-            {"id": "pasta_cereals", "name": "Макароны, крупы, мёд", "icon": "wheat", "products": []},
-            {"id": "meat_products", "name": "Мясные изделия", "icon": "beef", "products": []},
-            {"id": "frozen_food", "name": "Полуфабрикаты и замороженная продукция", "icon": "snowflake", "products": []}
+            {
+                "id": "pilot_титановая_металлопродукция",
+                "name": "Титановая металлопродукция (завершен)",
+                "products": [
+                    {"id": "pilot_титановая_металлопродукция_8108_20_000_6", "name": "Слитки из титановых сплавов", "tnved": "8108 20 000 6", "marking_status": "not_required"},
+                    {"id": "pilot_титановая_металлопродукция_8108_20_000_7", "name": "Слябы из титановых сплавов", "tnved": "8108 20 000 7", "marking_status": "not_required"},
+                    {"id": "pilot_титановая_металлопродукция_8108_90_300_8", "name": "Прутки и биллеты из титановых сплавов", "tnved": "8108 90 300 8", "marking_status": "not_required"},
+                    {"id": "pilot_титановая_металлопродукция_8108_90_300_8_1", "name": "Плиты и листы из титановых сплавов", "tnved": "8108 90 300 8", "marking_status": "not_required"},
+                    {"id": "pilot_титановая_металлопродукция_8108_90_300_8_2", "name": "Поковки прямоугольной формы из титановых сплавов", "tnved": "8108 90 300 8", "marking_status": "not_required"},
+                    {"id": "pilot_титановая_металлопродукция_8108_90_500_8", "name": "Плиты и листы из титановых сплавов", "tnved": "8108 90 500 8", "marking_status": "not_required"}
+                ]
+            },
+            {
+                "id": "pilot_оптоволоконная_продукция",
+                "name": "Оптоволоконная продукция",
+                "products": [
+                    {"id": "pilot_оптоволоконная_продукция_9001_10_900_1", "name": "Волокна оптические", "tnved": "9001 10 900 1", "marking_status": "experiment"},
+                    {"id": "pilot_оптоволоконная_продукция_8544_70_000_0", "name": "Кабели волоконно-оптические", "tnved": "8544 70 000 0", "marking_status": "experiment"}
+                ]
+            },
+            {
+                "id": "pilot_отопительные_приборы",
+                "name": "Отопительные приборы",
+                "products": [
+                    {"id": "pilot_отопительные_приборы_7322_11_000_0", "name": "Радиаторы центрального отопления чугунные", "tnved": "7322 11 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_отопительные_приборы_7322_19_000_0", "name": "Радиаторы центрального отопления прочие", "tnved": "7322 19 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_отопительные_приборы_7616_99_100_2", "name": "Радиаторы алюминиевые", "tnved": "7616 99 100 2", "marking_status": "experiment"},
+                    {"id": "pilot_отопительные_приборы_7616_99_100_3", "name": "Радиаторы алюминиевые", "tnved": "7616 99 100 3", "marking_status": "experiment"},
+                    {"id": "pilot_отопительные_приборы_7616_99_900_8", "name": "Радиаторы алюминиевые прочие", "tnved": "7616 99 900 8", "marking_status": "experiment"},
+                    {"id": "pilot_отопительные_приборы_7322_90_000_9", "name": "Конвекторы отопительные", "tnved": "7322 90 000 9", "marking_status": "experiment"},
+                    {"id": "pilot_отопительные_приборы_7419_80_000_0", "name": "Конвекторы отопительные медные", "tnved": "7419 80 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_отопительные_приборы_8403_10_900_0", "name": "Котлы центрального отопления", "tnved": "8403 10 900 0", "marking_status": "experiment"}
+                ]
+            },
+            {
+                "id": "pilot_слабоалкогольная_продукция_до_9",
+                "name": "Слабоалкогольная продукция (до 9%)",
+                "products": [
+                    {"id": "pilot_слабоалкогольная_продукция_до_9_2206_00_590_1", "name": "Алкогольная продукция до 9%", "tnved": "2206 00 590 1", "marking_status": "experiment"},
+                    {"id": "pilot_слабоалкогольная_продукция_до_9_2206_00_390_1", "name": "Алкогольная продукция до 9%", "tnved": "2206 00 390 1", "marking_status": "experiment"},
+                    {"id": "pilot_слабоалкогольная_продукция_до_9_2206_00_890_1", "name": "Алкогольная продукция до 9%", "tnved": "2206 00 890 1", "marking_status": "experiment"},
+                    {"id": "pilot_слабоалкогольная_продукция_до_9_2208_90_690_1", "name": "Алкогольная продукция до 9%", "tnved": "2208 90 690 1", "marking_status": "experiment"},
+                    {"id": "pilot_слабоалкогольная_продукция_до_9_2208_90_780_1", "name": "Алкогольная продукция до 9%", "tnved": "2208 90 780 1", "marking_status": "experiment"},
+                    {"id": "pilot_слабоалкогольная_продукция_до_9_2206_00_390_9", "name": "Алкогольная продукция до 9%", "tnved": "2206 00 390 9", "marking_status": "experiment"},
+                    {"id": "pilot_слабоалкогольная_продукция_до_9_2206_00_590_9", "name": "Алкогольная продукция до 9%", "tnved": "2206 00 590 9", "marking_status": "experiment"},
+                    {"id": "pilot_слабоалкогольная_продукция_до_9_2206_00_890_9", "name": "Алкогольная продукция до 9%", "tnved": "2206 00 890 9", "marking_status": "experiment"},
+                    {"id": "pilot_слабоалкогольная_продукция_до_9_2208_90_690_9", "name": "Алкогольная продукция до 9%", "tnved": "2208 90 690 9", "marking_status": "experiment"},
+                    {"id": "pilot_слабоалкогольная_продукция_до_9_2208_90_780_9", "name": "Алкогольная продукция до 9%", "tnved": "2208 90 780 9", "marking_status": "experiment"}
+                ]
+            },
+            {
+                "id": "pilot_пиротехника_и_пожарная_безопасность",
+                "name": "Пиротехника и пожарная безопасность",
+                "products": [
+                    {"id": "pilot_пиротехника_и_пожарная_безопасность_3604", "name": "Изделия пиротехнические I, II, III классов", "tnved": "3604", "marking_status": "experiment"},
+                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8424_10_000_0", "name": "Огнетушители", "tnved": "8424 10 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_пиротехника_и_пожарная_безопасность_3813_00_000_0", "name": "Составы и заряды для огнетушителей", "tnved": "3813 00 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8526_92_000_8", "name": "Извещатели пожарные", "tnved": "8526 92 000 8", "marking_status": "experiment"},
+                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8531_10", "name": "Извещатели пожарные", "tnved": "8531 10", "marking_status": "experiment"},
+                    {"id": "pilot_пиротехника_и_пожарная_безопасность_9022_29_000_0", "name": "Извещатели пожарные", "tnved": "9022 29 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_пиротехника_и_пожарная_безопасность_9027_10", "name": "Извещатели пожарные", "tnved": "9027 10", "marking_status": "experiment"},
+                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8504_40_300_4", "name": "Источники бесперебойного питания пожарной автоматики", "tnved": "8504 40 300 4", "marking_status": "experiment"},
+                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8504_40_300_8", "name": "Источники бесперебойного питания пожарной автоматики", "tnved": "8504 40 300 8", "marking_status": "experiment"},
+                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8504_40_550_0", "name": "Источники бесперебойного питания пожарной автоматики", "tnved": "8504 40 550 0", "marking_status": "experiment"},
+                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8504_40_830_0", "name": "Источники бесперебойного питания пожарной автоматики", "tnved": "8504 40 830 0", "marking_status": "experiment"},
+                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8504_40_850_0", "name": "Источники бесперебойного питания пожарной автоматики", "tnved": "8504 40 850 0", "marking_status": "experiment"},
+                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8504_40_870_0", "name": "Источники бесперебойного питания пожарной автоматики", "tnved": "8504 40 870 0", "marking_status": "experiment"},
+                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8504_40_910_0", "name": "Источники бесперебойного питания пожарной автоматики", "tnved": "8504 40 910 0", "marking_status": "experiment"},
+                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8517_62_000_9", "name": "Оповещатели пожарные", "tnved": "8517 62 000 9", "marking_status": "experiment"},
+                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8518_21_000_0", "name": "Оповещатели пожарные", "tnved": "8518 21 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8518_22_000_9", "name": "Оповещатели пожарные", "tnved": "8518 22 000 9", "marking_status": "experiment"},
+                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8518_29_300_8", "name": "Оповещатели пожарные", "tnved": "8518 29 300 8", "marking_status": "experiment"},
+                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8518_29_960_0", "name": "Оповещатели пожарные", "tnved": "8518 29 960 0", "marking_status": "experiment"},
+                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8531_20_200_0", "name": "Выносные устройства индикации", "tnved": "8531 20 200 0", "marking_status": "experiment"},
+                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8531_80_950_0", "name": "Выносные устройства индикации", "tnved": "8531 80 950 0", "marking_status": "experiment"},
+                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8537_10", "name": "Приборы приемно-контрольные пожарные", "tnved": "8537 10", "marking_status": "experiment"},
+                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8517_61_000", "name": "Системы передачи извещений о пожаре", "tnved": "8517 61 000", "marking_status": "experiment"},
+                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8517_62_000", "name": "Системы передачи извещений о пожаре", "tnved": "8517 62 000", "marking_status": "experiment"},
+                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8517_69_390_0", "name": "Системы передачи извещений о пожаре", "tnved": "8517 69 390 0", "marking_status": "experiment"},
+                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8517_69_900_0", "name": "Системы передачи извещений о пожаре", "tnved": "8517 69 900 0", "marking_status": "experiment"}
+                ]
+            },
+            {
+                "id": "pilot_компоненты_транспортных_средств",
+                "name": "Компоненты транспортных средств",
+                "products": [
+                    {"id": "pilot_компоненты_транспортных_средств_4823_90_859_7", "name": "Фильтры", "tnved": "4823 90 859 7", "marking_status": "experiment"},
+                    {"id": "pilot_компоненты_транспортных_средств_5911_90_900_0", "name": "Фильтры", "tnved": "5911 90 900 0", "marking_status": "experiment"},
+                    {"id": "pilot_компоненты_транспортных_средств_8421_23_000_0", "name": "Фильтры масляные", "tnved": "8421 23 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_компоненты_транспортных_средств_8421_29_000_9", "name": "Фильтры прочие", "tnved": "8421 29 000 9", "marking_status": "experiment"},
+                    {"id": "pilot_компоненты_транспортных_средств_8421_31_000_0", "name": "Фильтры воздушные", "tnved": "8421 31 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_компоненты_транспортных_средств_8421_32_000_0", "name": "Фильтры воздушные", "tnved": "8421 32 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_компоненты_транспортных_средств_8421_39_200_8", "name": "Фильтры прочие", "tnved": "8421 39 200 8", "marking_status": "experiment"},
+                    {"id": "pilot_компоненты_транспортных_средств_8421_99_000_6", "name": "Фильтры части", "tnved": "8421 99 000 6", "marking_status": "experiment"},
+                    {"id": "pilot_компоненты_транспортных_средств_7007_11_100_1", "name": "Стекло закаленное безопасное", "tnved": "7007 11 100 1", "marking_status": "experiment"},
+                    {"id": "pilot_компоненты_транспортных_средств_7007_11_100_9", "name": "Стекло закаленное безопасное", "tnved": "7007 11 100 9", "marking_status": "experiment"},
+                    {"id": "pilot_компоненты_транспортных_средств_7007_11_900_0", "name": "Стекло закаленное безопасное", "tnved": "7007 11 900 0", "marking_status": "experiment"},
+                    {"id": "pilot_компоненты_транспортных_средств_7007_21_200_1", "name": "Стекло многослойное безопасное", "tnved": "7007 21 200 1", "marking_status": "experiment"},
+                    {"id": "pilot_компоненты_транспортных_средств_7007_21_200_9", "name": "Стекло многослойное безопасное", "tnved": "7007 21 200 9", "marking_status": "experiment"},
+                    {"id": "pilot_компоненты_транспортных_средств_7007_21_800_9", "name": "Стекло многослойное безопасное", "tnved": "7007 21 800 9", "marking_status": "experiment"},
+                    {"id": "pilot_компоненты_транспортных_средств_7007_29_000_0", "name": "Стекло многослойное безопасное", "tnved": "7007 29 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_компоненты_транспортных_средств_8511_10_000_1", "name": "Свечи зажигания", "tnved": "8511 10 000 1", "marking_status": "experiment"},
+                    {"id": "pilot_компоненты_транспортных_средств_8511_10_000_9", "name": "Свечи зажигания", "tnved": "8511 10 000 9", "marking_status": "experiment"},
+                    {"id": "pilot_компоненты_транспортных_средств_8708_22_000_1", "name": "Лобовые стекла", "tnved": "8708 22 000 1", "marking_status": "experiment"},
+                    {"id": "pilot_компоненты_транспортных_средств_8708_22_000_9", "name": "Лобовые стекла", "tnved": "8708 22 000 9", "marking_status": "experiment"},
+                    {"id": "pilot_компоненты_транспортных_средств_8708_30_910_1", "name": "Тормозные диски, колодки", "tnved": "8708 30 910 1", "marking_status": "experiment"},
+                    {"id": "pilot_компоненты_транспортных_средств_8708_30_910_9", "name": "Тормозные диски, колодки", "tnved": "8708 30 910 9", "marking_status": "experiment"},
+                    {"id": "pilot_компоненты_транспортных_средств_8708_30_990_9", "name": "Тормозные диски, колодки", "tnved": "8708 30 990 9", "marking_status": "experiment"},
+                    {"id": "pilot_компоненты_транспортных_средств_8714_10_100_0", "name": "Тормозные диски, колодки мото", "tnved": "8714 10 100 0", "marking_status": "experiment"},
+                    {"id": "pilot_компоненты_транспортных_средств_8708_70_500_1", "name": "Колеса ходовые, диски", "tnved": "8708 70 500 1", "marking_status": "experiment"},
+                    {"id": "pilot_компоненты_транспортных_средств_8708_70_500_9", "name": "Колеса ходовые, диски", "tnved": "8708 70 500 9", "marking_status": "experiment"},
+                    {"id": "pilot_компоненты_транспортных_средств_8708_70_990_1", "name": "Колеса ходовые, диски", "tnved": "8708 70 990 1", "marking_status": "experiment"},
+                    {"id": "pilot_компоненты_транспортных_средств_8708_70_990_9", "name": "Колеса ходовые, диски", "tnved": "8708 70 990 9", "marking_status": "experiment"},
+                    {"id": "pilot_компоненты_транспортных_средств_8714_10_300_0", "name": "Колеса ходовые мото", "tnved": "8714 10 300 0", "marking_status": "experiment"}
+                ]
+            },
+            {
+                "id": "pilot_товары_для_дома_и_интерьера",
+                "name": "Товары для дома и интерьера",
+                "products": [
+                    {"id": "pilot_товары_для_дома_и_интерьера_3924_10_000_0", "name": "Посуда пластиковая столовая", "tnved": "3924 10 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_3924_90_000_9", "name": "Посуда пластиковая прочая", "tnved": "3924 90 000 9", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_4419", "name": "Посуда деревянная", "tnved": "4419", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_4806_10_000_0", "name": "Бумага пергаментная", "tnved": "4806 10 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_4806_20_000_0", "name": "Бумага жиронепроницаемая", "tnved": "4806 20 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_4806_40_100_0", "name": "Бумага пергаментная прочая", "tnved": "4806 40 100 0", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_4818_30_000_0", "name": "Скатерти бумажные", "tnved": "4818 30 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_4823_61_000_0", "name": "Подносы бумажные", "tnved": "4823 61 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_4823_69", "name": "Посуда бумажная прочая", "tnved": "4823 69", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_6911", "name": "Посуда фарфоровая", "tnved": "6911", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_6912_00", "name": "Посуда керамическая", "tnved": "6912 00", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_7013", "name": "Посуда стеклянная", "tnved": "7013", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_7323_91_000_0", "name": "Посуда чугунная эмалированная", "tnved": "7323 91 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_7323_92_000_0", "name": "Посуда чугунная прочая", "tnved": "7323 92 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_7323_93_000_0", "name": "Посуда из нержавеющей стали", "tnved": "7323 93 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_7323_94_000_0", "name": "Посуда стальная эмалированная", "tnved": "7323 94 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_7323_99_000_0", "name": "Посуда стальная прочая", "tnved": "7323 99 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_7326_20_000_2", "name": "Изделия из проволоки", "tnved": "7326 20 000 2", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_7418_10_100_0", "name": "Посуда медная", "tnved": "7418 10 100 0", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_7615_10_100_0", "name": "Посуда алюминиевая", "tnved": "7615 10 100 0", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_7615_10_300_0", "name": "Посуда алюминиевая", "tnved": "7615 10 300 0", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_7615_10_800_9", "name": "Посуда алюминиевая прочая", "tnved": "7615 10 800 9", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_8205_51_009_0", "name": "Инструменты кухонные", "tnved": "8205 51 009 0", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_8211_10_000_0", "name": "Наборы ножей", "tnved": "8211 10 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_8211_91_000", "name": "Ножи столовые", "tnved": "8211 91 000", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_8211_92_000_0", "name": "Ножи кухонные", "tnved": "8211 92 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_8213_00_000_0", "name": "Ножницы", "tnved": "8213 00 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_8215", "name": "Столовые приборы", "tnved": "8215", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_9616_10", "name": "Пульверизаторы", "tnved": "9616 10", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_9617_00_000", "name": "Термосы", "tnved": "9617 00 000", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_6307_10", "name": "Тряпки для уборки", "tnved": "6307 10", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_9603_10_000_0", "name": "Метлы", "tnved": "9603 10 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_9603_90", "name": "Щетки и швабры", "tnved": "9603 90", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_9604_00_000_0", "name": "Сита", "tnved": "9604 00 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_3406_00_000_0", "name": "Свечи", "tnved": "3406 00 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_3926_40_000_0", "name": "Статуэтки пластиковые", "tnved": "3926 40 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_4414", "name": "Рамки деревянные", "tnved": "4414", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_4420_11_000_0", "name": "Статуэтки деревянные", "tnved": "4420 11 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_4420_19_000_0", "name": "Статуэтки деревянные прочие", "tnved": "4420 19 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_4421_10_000_0", "name": "Вешалки деревянные", "tnved": "4421 10 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_4602", "name": "Изделия плетеные", "tnved": "4602", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_6702", "name": "Искусственные цветы", "tnved": "6702", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_6810_99_000_0", "name": "Изделия из цемента", "tnved": "6810 99 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_6913", "name": "Статуэтки керамические", "tnved": "6913", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_7009_91_000_0", "name": "Зеркала без рамы", "tnved": "7009 91 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_7009_92_000_0", "name": "Зеркала в раме", "tnved": "7009 92 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_8306_21_000_0", "name": "Статуэтки металлические", "tnved": "8306 21 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_8306_29_000", "name": "Статуэтки металлические прочие", "tnved": "8306 29 000", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_8306_30_000_0", "name": "Рамки для фото металлические", "tnved": "8306 30 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_9105_19_000_0", "name": "Часы настенные", "tnved": "9105 19 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_9105_29_000_0", "name": "Часы настенные прочие", "tnved": "9105 29 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_9105_96_000_0", "name": "Часы настенные прочие", "tnved": "9105 96 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_товары_для_дома_и_интерьера_9405_50_000_0", "name": "Подсвечники", "tnved": "9405 50 000 0", "marking_status": "experiment"}
+                ]
+            },
+            {
+                "id": "pilot_бакалейная_продукция",
+                "name": "Бакалейная продукция",
+                "products": [
+                    {"id": "pilot_бакалейная_продукция_0713_10_900_9", "name": "Горох прочий", "tnved": "0713 10 900 9", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_0713_20_000_0", "name": "Нут сушеный", "tnved": "0713 20 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_0713_31_000_0", "name": "Фасоль VINGA MUNGO", "tnved": "0713 31 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_0713_32_000_0", "name": "Фасоль мелкая красная (адзуки)", "tnved": "0713 32 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_0713_33_900_0", "name": "Фасоль обыкновенная", "tnved": "0713 33 900 0", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_0713_34_000_9", "name": "Земляной орех бамбарский", "tnved": "0713 34 000 9", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_0713_35_000_9", "name": "Коровий горох", "tnved": "0713 35 000 9", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_0713_39_000_9", "name": "Фасоль прочая", "tnved": "0713 39 000 9", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_0713_40_000_0", "name": "Чечевица", "tnved": "0713 40 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_0713_60_000_9", "name": "Голубиный горох", "tnved": "0713 60 000 9", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_0713_90_000_9", "name": "Прочие бобовые", "tnved": "0713 90 000 9", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_1006", "name": "Рис (кроме 1006 10)", "tnved": "1006", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_1007_90_000_0", "name": "Сорго зерновое", "tnved": "1007 90 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_1008_10_000_0", "name": "Гречиха", "tnved": "1008 10 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_1008_29_000_0", "name": "Просо и прочие злаки", "tnved": "1008 29 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_1008_50_000_0", "name": "Киноа", "tnved": "1008 50 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_1008_90_000_0", "name": "Прочие злаки", "tnved": "1008 90 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_1101_00", "name": "Мука пшеничная", "tnved": "1101 00", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_1102", "name": "Мука из зерна злаков", "tnved": "1102", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_1103", "name": "Крупа из зерна злаков", "tnved": "1103", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_1104", "name": "Зерно злаков обработанное", "tnved": "1104", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_1105", "name": "Мука картофельная, хлопья", "tnved": "1105", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_1106", "name": "Мука из бобовых", "tnved": "1106", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_1208", "name": "Мука из масличных культур", "tnved": "1208", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_1212", "name": "Продукты растительного происхождения", "tnved": "1212", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_1901_10_000_0", "name": "Готовые продукты для детей", "tnved": "1901 10 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_1901_20_000_0", "name": "Смеси для теста", "tnved": "1901 20 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_1902", "name": "Макаронные изделия", "tnved": "1902", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_1904_10", "name": "Готовые продукты из злаков вздутые", "tnved": "1904 10", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_1904_20", "name": "Мюсли, хлопья", "tnved": "1904 20", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_1904_30_000_0", "name": "Булгур", "tnved": "1904 30 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_1904_90", "name": "Злаки готовые прочие", "tnved": "1904 90", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_1905_90", "name": "Смеси для хлебобулочных изделий", "tnved": "1905 90", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_2004_90_500_0", "name": "Горох и фасоль в стручках", "tnved": "2004 90 500 0", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_2005_20_100_0", "name": "Картофель быстрого приготовления", "tnved": "2005 20 100 0", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_2005_40_000_0", "name": "Горох консервированный", "tnved": "2005 40 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_2005_51_000_0", "name": "Фасоль лущеная консервированная", "tnved": "2005 51 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_2005_59_000_0", "name": "Фасоль прочая консервированная", "tnved": "2005 59 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_0409_00_000_0", "name": "Мёд натуральный", "tnved": "0409 00 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_1212_99_950_9", "name": "Продукты растительные пищевые", "tnved": "1212 99 950 9", "marking_status": "experiment"},
+                    {"id": "pilot_бакалейная_продукция_1702", "name": "Искусственный мёд, сахара прочие", "tnved": "1702", "marking_status": "experiment"}
+                ]
+            },
+            {
+                "id": "pilot_полуфабрикаты_и_замороженная_продукция",
+                "name": "Полуфабрикаты и замороженная продукция",
+                "products": [
+                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_0201", "name": "Мясо крупного рогатого скота, свежее или охлажденное", "tnved": "0201", "marking_status": "experiment"},
+                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_0202", "name": "Мясо крупного рогатого скота, замороженное", "tnved": "0202", "marking_status": "experiment"},
+                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_0203", "name": "Свинина свежая, охлажденная или замороженная", "tnved": "0203", "marking_status": "experiment"},
+                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_0204", "name": "Баранина или козлятина", "tnved": "0204", "marking_status": "experiment"},
+                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_0205_00", "name": "Мясо лошадей, ослов, мулов", "tnved": "0205 00", "marking_status": "experiment"},
+                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_0206", "name": "Пищевые субпродукты", "tnved": "0206", "marking_status": "experiment"},
+                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_0207", "name": "Мясо и субпродукты домашней птицы", "tnved": "0207", "marking_status": "experiment"},
+                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_0208", "name": "Прочее мясо и субпродукты", "tnved": "0208", "marking_status": "experiment"},
+                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_0209", "name": "Свиной жир и жир птицы", "tnved": "0209", "marking_status": "experiment"},
+                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_0304", "name": "Филе рыбное и прочее мясо рыбы", "tnved": "0304", "marking_status": "experiment"},
+                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_0306", "name": "Ракообразные", "tnved": "0306", "marking_status": "experiment"},
+                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_0307", "name": "Моллюски", "tnved": "0307", "marking_status": "experiment"},
+                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_0710", "name": "Овощи замороженные", "tnved": "0710", "marking_status": "experiment"},
+                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_0811", "name": "Фрукты и орехи замороженные", "tnved": "0811", "marking_status": "experiment"},
+                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_1501_10_900_0", "name": "Жир свиной топленый", "tnved": "1501 10 900 0", "marking_status": "experiment"},
+                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_1501_20_900_0", "name": "Жир свиной прочий", "tnved": "1501 20 900 0", "marking_status": "experiment"},
+                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_1501_90_000_0", "name": "Жир домашней птицы", "tnved": "1501 90 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_1601_00", "name": "Колбасы и аналогичные продукты из мяса", "tnved": "1601 00", "marking_status": "experiment"},
+                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_1602", "name": "Готовые или консервированные продукты из мяса", "tnved": "1602", "marking_status": "experiment"},
+                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_1604", "name": "Готовая или консервированная рыба", "tnved": "1604", "marking_status": "experiment"},
+                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_1901_20_000_0", "name": "Смеси для приготовления", "tnved": "1901 20 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_1902", "name": "Макаронные изделия замороженные", "tnved": "1902", "marking_status": "experiment"},
+                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_1904_90_100_0", "name": "Злаки готовые", "tnved": "1904 90 100 0", "marking_status": "experiment"},
+                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_1905_90", "name": "Хлебобулочные изделия замороженные", "tnved": "1905 90", "marking_status": "experiment"},
+                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_2003", "name": "Грибы готовые или консервированные", "tnved": "2003", "marking_status": "experiment"},
+                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_2004", "name": "Овощи готовые замороженные", "tnved": "2004", "marking_status": "experiment"},
+                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_2005", "name": "Овощи готовые незамороженные", "tnved": "2005", "marking_status": "experiment"},
+                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_2104", "name": "Супы, бульоны готовые", "tnved": "2104", "marking_status": "experiment"},
+                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_2106", "name": "Пищевые продукты прочие (кроме исключений)", "tnved": "2106", "marking_status": "experiment"}
+                ]
+            },
+            {
+                "id": "pilot_радиоэлектроника_i_этап",
+                "name": "Радиоэлектроника (I этап) (завершен)",
+                "products": [
+                    {"id": "pilot_радиоэлектроника_i_этап_8504_40_830_0", "name": "Выпрямители прочие", "tnved": "8504 40 830 0", "marking_status": "not_required"},
+                    {"id": "pilot_радиоэлектроника_i_этап_8504_40_910_0", "name": "Преобразователи статические прочие", "tnved": "8504 40 910 0", "marking_status": "not_required"},
+                    {"id": "pilot_радиоэлектроника_i_этап_8536_49_000_0", "name": "Реле на напряжение не более 1000 В", "tnved": "8536 49 000 0", "marking_status": "not_required"},
+                    {"id": "pilot_радиоэлектроника_i_этап_8536_69_900_8", "name": "Штепсели и розетки", "tnved": "8536 69 900 8", "marking_status": "not_required"},
+                    {"id": "pilot_радиоэлектроника_i_этап_8536_90_100_0", "name": "Соединители для проводов и кабелей", "tnved": "8536 90 100 0", "marking_status": "not_required"},
+                    {"id": "pilot_радиоэлектроника_i_этап_8536_90_850_0", "name": "Аппаратура электрическая прочая", "tnved": "8536 90 850 0", "marking_status": "not_required"},
+                    {"id": "pilot_радиоэлектроника_i_этап_8537_10_980_0", "name": "Пульты, панели, распределительные щиты", "tnved": "8537 10 980 0", "marking_status": "not_required"},
+                    {"id": "pilot_радиоэлектроника_i_этап_8539", "name": "Лампы накаливания и газоразрядные", "tnved": "8539", "marking_status": "not_required"},
+                    {"id": "pilot_радиоэлектроника_i_этап_8541_41_000", "name": "Светодиоды (LED)", "tnved": "8541 41 000", "marking_status": "not_required"},
+                    {"id": "pilot_радиоэлектроника_i_этап_8541_42_000_0", "name": "Фотогальванические элементы", "tnved": "8541 42 000 0", "marking_status": "not_required"},
+                    {"id": "pilot_радиоэлектроника_i_этап_8541_43_000_0", "name": "Фоточувствительные приборы", "tnved": "8541 43 000 0", "marking_status": "not_required"},
+                    {"id": "pilot_радиоэлектроника_i_этап_8541_49_000_0", "name": "Приборы полупроводниковые прочие", "tnved": "8541 49 000 0", "marking_status": "not_required"},
+                    {"id": "pilot_радиоэлектроника_i_этап_8512_20_000", "name": "Приборы освещения для транспорта", "tnved": "8512 20 000", "marking_status": "not_required"},
+                    {"id": "pilot_радиоэлектроника_i_этап_8513_10_000_0", "name": "Фонари портативные", "tnved": "8513 10 000 0", "marking_status": "not_required"},
+                    {"id": "pilot_радиоэлектроника_i_этап_9405_11_00", "name": "Люстры и светильники потолочные", "tnved": "9405 11 00", "marking_status": "not_required"},
+                    {"id": "pilot_радиоэлектроника_i_этап_9405_19_00", "name": "Светильники прочие", "tnved": "9405 19 00", "marking_status": "not_required"},
+                    {"id": "pilot_радиоэлектроника_i_этап_9405_21_00", "name": "Лампы настольные LED", "tnved": "9405 21 00", "marking_status": "not_required"},
+                    {"id": "pilot_радиоэлектроника_i_этап_9405_29_00", "name": "Лампы настольные прочие", "tnved": "9405 29 00", "marking_status": "not_required"},
+                    {"id": "pilot_радиоэлектроника_i_этап_9405_31_000_0", "name": "Гирлянды световые LED", "tnved": "9405 31 000 0", "marking_status": "not_required"},
+                    {"id": "pilot_радиоэлектроника_i_этап_9405_39_000_0", "name": "Гирлянды световые прочие", "tnved": "9405 39 000 0", "marking_status": "not_required"},
+                    {"id": "pilot_радиоэлектроника_i_этап_9405_41_00", "name": "Фотогальванические светильники", "tnved": "9405 41 00", "marking_status": "not_required"},
+                    {"id": "pilot_радиоэлектроника_i_этап_9405_42_00", "name": "Светильники LED прочие", "tnved": "9405 42 00", "marking_status": "not_required"},
+                    {"id": "pilot_радиоэлектроника_i_этап_9405_49_00", "name": "Светильники прочие", "tnved": "9405 49 00", "marking_status": "not_required"},
+                    {"id": "pilot_радиоэлектроника_i_этап_9405_92_000_8", "name": "Части светильников пластиковые", "tnved": "9405 92 000 8", "marking_status": "not_required"},
+                    {"id": "pilot_радиоэлектроника_i_этап_9405_99_000_8", "name": "Части светильников прочие", "tnved": "9405 99 000 8", "marking_status": "not_required"}
+                ]
+            },
+            {
+                "id": "pilot_радиоэлектроника_ii_этап",
+                "name": "Радиоэлектроника (II этап) (завершен)",
+                "products": [
+                    {"id": "pilot_радиоэлектроника_ii_этап_8471_30_000_0", "name": "Ноутбуки портативные до 10 кг", "tnved": "8471 30 000 0", "marking_status": "not_required"},
+                    {"id": "pilot_радиоэлектроника_ii_этап_8517_11_000_0", "name": "Телефоны проводные с беспроводной трубкой", "tnved": "8517 11 000 0", "marking_status": "not_required"},
+                    {"id": "pilot_радиоэлектроника_ii_этап_8517_13_000_0", "name": "Смартфоны", "tnved": "8517 13 000 0", "marking_status": "not_required"},
+                    {"id": "pilot_радиоэлектроника_ii_этап_8517_14_000_0", "name": "Телефоны для сотовых сетей прочие", "tnved": "8517 14 000 0", "marking_status": "not_required"},
+                    {"id": "pilot_радиоэлектроника_ii_этап_8517_18_000_0", "name": "Телефонные аппараты прочие", "tnved": "8517 18 000 0", "marking_status": "not_required"}
+                ]
+            },
+            {
+                "id": "pilot_радиоэлектроника_iii_этап",
+                "name": "Радиоэлектроника (III этап) (завершен)",
+                "products": [
+                    {"id": "pilot_радиоэлектроника_iii_этап_8534_00_110_0", "name": "Печатные схемы многослойные", "tnved": "8534 00 110 0", "marking_status": "not_required"},
+                    {"id": "pilot_радиоэлектроника_iii_этап_8534_00_190_0", "name": "Печатные схемы прочие", "tnved": "8534 00 190 0", "marking_status": "not_required"},
+                    {"id": "pilot_радиоэлектроника_iii_этап_8534_00_900_0", "name": "Печатные схемы с пассивными элементами", "tnved": "8534 00 900 0", "marking_status": "not_required"}
+                ]
+            },
+            {
+                "id": "pilot_радиоэлектроника_iv_этап",
+                "name": "Радиоэлектроника (IV этап)",
+                "products": [
+                    {"id": "pilot_радиоэлектроника_iv_этап_8543_40_000_0", "name": "Электронные сигареты многоразовые", "tnved": "8543 40 000 0", "marking_status": "experiment"}
+                ]
+            },
+            {
+                "id": "pilot_печатная_продукция",
+                "name": "Печатная продукция (завершен)",
+                "products": [
+                    {"id": "pilot_печатная_продукция_4901_99_000_0", "name": "Учебники печатные общеобразовательные", "tnved": "4901 99 000 0", "marking_status": "not_required"}
+                ]
+            },
+            {
+                "id": "pilot_кабельная_продукция",
+                "name": "Кабельная продукция",
+                "products": [
+                    {"id": "pilot_кабельная_продукция_8544_49_990_0", "name": "Кабели и провода на напряжение 1000 В", "tnved": "8544 49 990 0", "marking_status": "experiment"},
+                    {"id": "pilot_кабельная_продукция_8544_49_910_8", "name": "Кабели с изолированными проводниками >0,51 мм", "tnved": "8544 49 910 8", "marking_status": "experiment"}
+                ]
+            },
+            {
+                "id": "pilot_медицинские_изделия_2.0",
+                "name": "Медицинские изделия 2.0",
+                "products": [
+                    {"id": "pilot_медицинские_изделия_2.0_4014_10_000_0", "name": "Презервативы", "tnved": "4014 10 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_медицинские_изделия_2.0_9018_31", "name": "Шприцы", "tnved": "9018 31", "marking_status": "experiment"},
+                    {"id": "pilot_медицинские_изделия_2.0_9018_90_500", "name": "Инфузионные системы", "tnved": "9018 90 500", "marking_status": "experiment"},
+                    {"id": "pilot_медицинские_изделия_2.0_3005_10_000_0", "name": "Салфетки медицинские", "tnved": "3005 10 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_медицинские_изделия_2.0_3005_90_310_0", "name": "Салфетки медицинские", "tnved": "3005 90 310 0", "marking_status": "experiment"},
+                    {"id": "pilot_медицинские_изделия_2.0_3005_90_500_0", "name": "Салфетки медицинские", "tnved": "3005 90 500 0", "marking_status": "experiment"},
+                    {"id": "pilot_медицинские_изделия_2.0_3005_90_990_0", "name": "Салфетки медицинские прочие", "tnved": "3005 90 990 0", "marking_status": "experiment"},
+                    {"id": "pilot_медицинские_изделия_2.0_4803_00_900_0", "name": "Салфетки бумажные медицинские", "tnved": "4803 00 900 0", "marking_status": "experiment"},
+                    {"id": "pilot_медицинские_изделия_2.0_4818_20", "name": "Салфетки носовые медицинские", "tnved": "4818 20", "marking_status": "experiment"},
+                    {"id": "pilot_медицинские_изделия_2.0_4818_30_000_0", "name": "Скатерти медицинские", "tnved": "4818 30 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_медицинские_изделия_2.0_4818_90", "name": "Изделия бумажные медицинские", "tnved": "4818 90", "marking_status": "experiment"},
+                    {"id": "pilot_медицинские_изделия_2.0_5603", "name": "Нетканые материалы медицинские", "tnved": "5603", "marking_status": "experiment"},
+                    {"id": "pilot_медицинские_изделия_2.0_6307_90_920_0", "name": "Изделия текстильные медицинские", "tnved": "6307 90 920 0", "marking_status": "experiment"},
+                    {"id": "pilot_медицинские_изделия_2.0_6307_90_980_0", "name": "Изделия текстильные медицинские прочие", "tnved": "6307 90 980 0", "marking_status": "experiment"},
+                    {"id": "pilot_медицинские_изделия_2.0_3307_90_000_8", "name": "Салфетки косметические медицинские", "tnved": "3307 90 000 8", "marking_status": "experiment"},
+                    {"id": "pilot_медицинские_изделия_2.0_3926_90_970_9", "name": "Пробирки пластиковые", "tnved": "3926 90 970 9", "marking_status": "experiment"},
+                    {"id": "pilot_медицинские_изделия_2.0_7010_10_000_0", "name": "Пробирки стеклянные (ампулы)", "tnved": "7010 10 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_медицинские_изделия_2.0_7017", "name": "Пробирки лабораторные стеклянные", "tnved": "7017", "marking_status": "experiment"},
+                    {"id": "pilot_медицинские_изделия_2.0_9019_10", "name": "Аппаратура для озоновой/кислородной терапии", "tnved": "9019 10", "marking_status": "experiment"},
+                    {"id": "pilot_медицинские_изделия_2.0_9019_20_000_0", "name": "Аппаратура терапевтическая дыхательная", "tnved": "9019 20 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_медицинские_изделия_2.0_9018_90_840_9", "name": "Инкубаторы для новорожденных", "tnved": "9018 90 840 9", "marking_status": "experiment"},
+                    {"id": "pilot_медицинские_изделия_2.0_3006_10_900_0", "name": "Филлеры для пластической хирургии", "tnved": "3006 10 900 0", "marking_status": "experiment"},
+                    {"id": "pilot_медицинские_изделия_2.0_9021_90_900_9", "name": "Имплантаты косметические (нити)", "tnved": "9021 90 900 9", "marking_status": "experiment"},
+                    {"id": "pilot_медицинские_изделия_2.0_3926_20_000_0", "name": "Маски медицинские пластиковые", "tnved": "3926 20 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_медицинские_изделия_2.0_4818_90_100_0", "name": "Маски медицинские бумажные", "tnved": "4818 90 100 0", "marking_status": "experiment"},
+                    {"id": "pilot_медицинские_изделия_2.0_9020_00_000_0", "name": "Маски медицинские дыхательные", "tnved": "9020 00 000 0", "marking_status": "experiment"}
+                ]
+            },
+            {
+                "id": "pilot_полимерные_трубы",
+                "name": "Полимерные трубы",
+                "products": [
+                    {"id": "pilot_полимерные_трубы_3917_21_100_0", "name": "Трубы бесшовные из полимеров этилена", "tnved": "3917 21 100 0", "marking_status": "experiment"},
+                    {"id": "pilot_полимерные_трубы_3917_22", "name": "Трубы из полимеров пропилена (кроме 3917 22 900 1)", "tnved": "3917 22", "marking_status": "experiment"},
+                    {"id": "pilot_полимерные_трубы_3917_23", "name": "Трубы из полимеров винилхлорида", "tnved": "3917 23", "marking_status": "experiment"},
+                    {"id": "pilot_полимерные_трубы_3917_29_000_9", "name": "Трубы из прочих пластмасс", "tnved": "3917 29 000 9", "marking_status": "experiment"},
+                    {"id": "pilot_полимерные_трубы_3917_31_000_8", "name": "Трубы гибкие, давление ≥27,6 МПа", "tnved": "3917 31 000 8", "marking_status": "experiment"},
+                    {"id": "pilot_полимерные_трубы_3917_32_000", "name": "Трубы не армированные без фитингов", "tnved": "3917 32 000", "marking_status": "experiment"},
+                    {"id": "pilot_полимерные_трубы_3917_33_000_9", "name": "Трубы не армированные с фитингами", "tnved": "3917 33 000 9", "marking_status": "experiment"},
+                    {"id": "pilot_полимерные_трубы_3917_40_000_9", "name": "Фитинги из пластмасс", "tnved": "3917 40 000 9", "marking_status": "experiment"},
+                    {"id": "pilot_полимерные_трубы_3901_20_900_9", "name": "Композиции полиэтилена для труб", "tnved": "3901 20 900 9", "marking_status": "experiment"},
+                    {"id": "pilot_полимерные_трубы_3902_10_000_0", "name": "Композиции полипропилена для труб", "tnved": "3902 10 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_полимерные_трубы_3904_10_000_9", "name": "Композиции поливинилхлорида для труб", "tnved": "3904 10 000 9", "marking_status": "experiment"}
+                ]
+            },
+            {
+                "id": "pilot_средства_гигиены",
+                "name": "Средства гигиены",
+                "products": [
+                    {"id": "pilot_средства_гигиены_9603_21_000_0", "name": "Щетки зубные", "tnved": "9603 21 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_средства_гигиены_9603_29_300_0", "name": "Щетки для волос", "tnved": "9603 29 300 0", "marking_status": "experiment"},
+                    {"id": "pilot_средства_гигиены_9603_29_800_0", "name": "Помазки, щеточки для ногтей/ресниц", "tnved": "9603 29 800 0", "marking_status": "experiment"},
+                    {"id": "pilot_средства_гигиены_5601_21_100_0", "name": "Вата из хлопковых волокон", "tnved": "5601 21 100 0", "marking_status": "experiment"},
+                    {"id": "pilot_средства_гигиены_5601_21_900_0", "name": "Вата из хлопковых волокон прочая", "tnved": "5601 21 900 0", "marking_status": "experiment"},
+                    {"id": "pilot_средства_гигиены_8214_20_000_0", "name": "Наборы маникюрные/педикюрные", "tnved": "8214 20 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_средства_гигиены_4818_10_100_0", "name": "Бумага туалетная", "tnved": "4818 10 100 0", "marking_status": "experiment"},
+                    {"id": "pilot_средства_гигиены_4818_10_900_0", "name": "Бумага туалетная прочая", "tnved": "4818 10 900 0", "marking_status": "experiment"},
+                    {"id": "pilot_средства_гигиены_4818_20_100_0", "name": "Платки носовые, косметические салфетки", "tnved": "4818 20 100 0", "marking_status": "experiment"},
+                    {"id": "pilot_средства_гигиены_4818_20_910_0", "name": "Полотенца для рук", "tnved": "4818 20 910 0", "marking_status": "experiment"},
+                    {"id": "pilot_средства_гигиены_4818_20_990_0", "name": "Полотенца для рук прочие", "tnved": "4818 20 990 0", "marking_status": "experiment"},
+                    {"id": "pilot_средства_гигиены_9615_11_000_0", "name": "Расчески из резины/пластмасс", "tnved": "9615 11 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_средства_гигиены_9615_19_000_0", "name": "Расчески прочие", "tnved": "9615 19 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_средства_гигиены_9619_00", "name": "Прокладки, тампоны, подгузники", "tnved": "9619 00", "marking_status": "experiment"},
+                    {"id": "pilot_средства_гигиены_9019_10_900_9", "name": "Аппараты массажные", "tnved": "9019 10 900 9", "marking_status": "experiment"},
+                    {"id": "pilot_средства_гигиены_2513_10_000_0", "name": "Пемза", "tnved": "2513 10 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_средства_гигиены_8203_20_000_1", "name": "Пинцеты", "tnved": "8203 20 000 1", "marking_status": "experiment"},
+                    {"id": "pilot_средства_гигиены_3306_20_000_0", "name": "Нити зубные (зубной шелк)", "tnved": "3306 20 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_средства_гигиены_3924_90_000_1", "name": "Губки и мочалки пластиковые", "tnved": "3924 90 000 1", "marking_status": "experiment"},
+                    {"id": "pilot_средства_гигиены_7323_10_000_0", "name": "Губки и мочалки металлические", "tnved": "7323 10 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_средства_гигиены_7418_10_900_0", "name": "Губки медные", "tnved": "7418 10 900 0", "marking_status": "experiment"},
+                    {"id": "pilot_средства_гигиены_7615_10_800_1", "name": "Губки алюминиевые", "tnved": "7615 10 800 1", "marking_status": "experiment"}
+                ]
+            },
+            {
+                "id": "pilot_удобрения",
+                "name": "Удобрения",
+                "products": [
+                    {"id": "pilot_удобрения_3105", "name": "Удобрения минеральные (N, P, K)", "tnved": "3105", "marking_status": "experiment"},
+                    {"id": "pilot_удобрения_2834_21_000_0", "name": "Нитраты калия", "tnved": "2834 21 000 0", "marking_status": "experiment"},
+                    {"id": "pilot_удобрения_2834_29_800_0", "name": "Нитраты прочие", "tnved": "2834 29 800 0", "marking_status": "experiment"},
+                    {"id": "pilot_удобрения_2835_24_000_0", "name": "Фосфаты калия", "tnved": "2835 24 000 0", "marking_status": "experiment"}
+                ]
+            },
+            {
+                "id": "pilot_мясные_изделия",
+                "name": "Мясные изделия",
+                "products": [
+                    {"id": "pilot_мясные_изделия_1601_00", "name": "Колбасы и аналогичные продукты", "tnved": "1601 00", "marking_status": "experiment"},
+                    {"id": "pilot_мясные_изделия_1602", "name": "Готовые/консервированные продукты из мяса", "tnved": "1602", "marking_status": "experiment"},
+                    {"id": "pilot_мясные_изделия_0209_00", "name": "Свиной жир и жир птицы", "tnved": "0209 00", "marking_status": "experiment"},
+                    {"id": "pilot_мясные_изделия_0210_11", "name": "Свиные окорока, лопатки необваленные", "tnved": "0210 11", "marking_status": "experiment"},
+                    {"id": "pilot_мясные_изделия_0210_12", "name": "Свиные грудинки", "tnved": "0210 12", "marking_status": "experiment"},
+                    {"id": "pilot_мясные_изделия_0210_19", "name": "Прочие части туш свиней", "tnved": "0210 19", "marking_status": "experiment"},
+                    {"id": "pilot_мясные_изделия_0210_20", "name": "Мясо КРС соленое/сушеное/копченое", "tnved": "0210 20", "marking_status": "experiment"},
+                    {"id": "pilot_мясные_изделия_0210_99_100_0", "name": "Мясо лошадей соленое/сушеное", "tnved": "0210 99 100 0", "marking_status": "experiment"},
+                    {"id": "pilot_мясные_изделия_0210_99_210_0", "name": "Баранина/козлятина необваленная", "tnved": "0210 99 210 0", "marking_status": "experiment"},
+                    {"id": "pilot_мясные_изделия_0210_99_290_0", "name": "Баранина/козлятина обваленная", "tnved": "0210 99 290 0", "marking_status": "experiment"},
+                    {"id": "pilot_мясные_изделия_0210_99_310_0", "name": "Мясо северных оленей", "tnved": "0210 99 310 0", "marking_status": "experiment"},
+                    {"id": "pilot_мясные_изделия_0210_99_390_0", "name": "Прочее мясо", "tnved": "0210 99 390 0", "marking_status": "experiment"},
+                    {"id": "pilot_мясные_изделия_0210_99_410_0", "name": "Печень", "tnved": "0210 99 410 0", "marking_status": "experiment"},
+                    {"id": "pilot_мясные_изделия_0210_99_490_0", "name": "Субпродукты свиные прочие", "tnved": "0210 99 490 0", "marking_status": "experiment"},
+                    {"id": "pilot_мясные_изделия_0210_99_510_0", "name": "Диафрагма КРС", "tnved": "0210 99 510 0", "marking_status": "experiment"},
+                    {"id": "pilot_мясные_изделия_0210_99_590_0", "name": "Субпродукты КРС прочие", "tnved": "0210 99 590 0", "marking_status": "experiment"},
+                    {"id": "pilot_мясные_изделия_0210_99_710_0", "name": "Жирная печень гусей/уток соленая", "tnved": "0210 99 710 0", "marking_status": "experiment"},
+                    {"id": "pilot_мясные_изделия_0210_99_790_0", "name": "Жирная печень гусей/уток прочая", "tnved": "0210 99 790 0", "marking_status": "experiment"},
+                    {"id": "pilot_мясные_изделия_0210_99_850_0", "name": "Жирная печень прочая", "tnved": "0210 99 850 0", "marking_status": "experiment"},
+                    {"id": "pilot_мясные_изделия_1501_10_900_0", "name": "Лярд прочий", "tnved": "1501 10 900 0", "marking_status": "experiment"},
+                    {"id": "pilot_мясные_изделия_1501_20_900_0", "name": "Жир свиной прочий", "tnved": "1501 20 900 0", "marking_status": "experiment"},
+                    {"id": "pilot_мясные_изделия_1501_90_000_0", "name": "Жир свиной и жир птицы прочий", "tnved": "1501 90 000 0", "marking_status": "experiment"}
+                ]
+            }
         ]
     }
 ]
@@ -2493,7 +3048,7 @@ async def generate_act(request: ActGenerateRequest):
 async def api_register(data: UserRegister):
     """Регистрация нового пользователя"""
     return register_user(data.email, data.password, name=data.name, phone=data.phone, inn=data.inn,
-                         company_name=data.company_name, city=data.city, region=data.region)
+                         company_name=data.company_name, city=data.city, region=data.region, source=data.source)
 
 
 @app.post("/api/auth/login")
@@ -2792,6 +3347,168 @@ async def api_create_callback(
         background_tasks.add_task(send_email, email.strip(), subject, body)
 
     return {"status": "success", "callback_id": callback_id}
+
+
+# ======================== ПАРТНЁРСКИЕ ЗАЯВКИ ========================
+
+class PartnerRequestData(BaseModel):
+    company_name: str
+    contact_name: str
+    contact_phone: str
+    contact_email: str
+    partner_type: str
+    comment: Optional[str] = None
+
+
+class RepresentativeRequestData(BaseModel):
+    """Заявка на региональное представительство"""
+    contact_name: str
+    contact_phone: str
+    contact_email: str
+    city: str
+    region: Optional[str] = None
+    company_name: Optional[str] = None
+    inn: Optional[str] = None
+    experience: Optional[str] = None  # Опыт в продажах/маркировке
+    comment: Optional[str] = None
+
+@app.post("/api/partner-request")
+async def api_create_partner_request(
+    data: PartnerRequestData,
+    background_tasks: BackgroundTasks
+):
+    """Создать заявку на партнёрство (публичная страница)"""
+
+    # Сохраняем как callback с особым типом
+    callback_data = {
+        "user_id": None,
+        "contact_name": data.contact_name,
+        "contact_phone": data.contact_phone,
+        "contact_email": data.contact_email,
+        "company_inn": None,
+        "company_name": data.company_name,
+        "products": [],
+        "comment": f"[Заявка на партнёрство]\nТип: {data.partner_type}\n{data.comment or ''}",
+        "source": "partner_request"
+    }
+
+    callback_id = CallbackDB.create(callback_data)
+
+    # Отправляем уведомление менеджерам
+    manager_emails = os.getenv('CONTACT_TO_EMAIL', 'damirslk@mail.ru,turbin.ar8@gmail.com').split(',')
+
+    partner_type_names = {
+        "integrator": "Системный интегратор",
+        "accounting": "Бухгалтерские услуги",
+        "logistics": "ВЭД/Логистика",
+        "fulfillment": "Фулфилмент",
+        "consultant": "Бизнес-консультант",
+        "printing": "Типография/Принтинг",
+        "it": "IT-компания",
+        "other": "Другое"
+    }
+
+    subject = f"Заявка на партнёрство #{callback_id}"
+    body = f"""
+    <h2>Новая заявка на партнёрство</h2>
+    <table style="border-collapse: collapse; width: 100%;">
+        <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Компания:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">{data.company_name}</td></tr>
+        <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Контактное лицо:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">{data.contact_name}</td></tr>
+        <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Телефон:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">{data.contact_phone}</td></tr>
+        <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Email:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">{data.contact_email}</td></tr>
+        <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Тип партнёра:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">{partner_type_names.get(data.partner_type, data.partner_type)}</td></tr>
+        <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Комментарий:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">{data.comment or '-'}</td></tr>
+    </table>
+    <p style="margin-top: 20px; color: #666;">Заявка создана через страницу "Партнёрам"</p>
+    """
+
+    for email in manager_emails:
+        background_tasks.add_task(send_email, email.strip(), subject, body)
+
+    return {"status": "success", "request_id": callback_id}
+
+
+@app.post("/api/representative-request")
+async def api_create_representative_request(
+    data: RepresentativeRequestData,
+    background_tasks: BackgroundTasks
+):
+    """Создать заявку на региональное представительство"""
+
+    # Сохраняем как callback с особым типом
+    callback_data = {
+        "user_id": None,
+        "contact_name": data.contact_name,
+        "contact_phone": data.contact_phone,
+        "contact_email": data.contact_email,
+        "company_inn": data.inn,
+        "company_name": data.company_name or f"Представитель: {data.city}",
+        "products": [],
+        "comment": f"[ЗАЯВКА НА ПРЕДСТАВИТЕЛЬСТВО]\nГород: {data.city}\nРегион: {data.region or '-'}\nОпыт: {data.experience or '-'}\nКомментарий: {data.comment or '-'}",
+        "source": "representative_request"
+    }
+
+    callback_id = CallbackDB.create(callback_data)
+
+    # Отправляем уведомление менеджерам
+    manager_emails = os.getenv('CONTACT_TO_EMAIL', 'damirslk@mail.ru,turbin.ar8@gmail.com').split(',')
+
+    subject = f"🌟 ЗАЯВКА НА ПРЕДСТАВИТЕЛЬСТВО #{callback_id} — {data.city}"
+    body = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 600px;">
+        <div style="background: linear-gradient(135deg, #FFDA07, #F5C300); padding: 20px; border-radius: 12px 12px 0 0;">
+            <h2 style="margin: 0; color: #000;">🌟 Заявка на региональное представительство</h2>
+        </div>
+        <div style="background: #fff; padding: 20px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 12px 12px;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: bold; width: 40%;">🏙️ Город:</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #eee; color: #000; font-size: 16px;"><strong>{data.city}</strong></td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: bold;">📍 Регион:</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #eee;">{data.region or 'Не указан'}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: bold;">👤 Контактное лицо:</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #eee;">{data.contact_name}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: bold;">📞 Телефон:</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #eee;"><a href="tel:{data.contact_phone}">{data.contact_phone}</a></td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: bold;">📧 Email:</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #eee;"><a href="mailto:{data.contact_email}">{data.contact_email}</a></td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: bold;">🏢 Компания:</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #eee;">{data.company_name or 'Физ. лицо'}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: bold;">📋 ИНН:</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #eee;">{data.inn or 'Не указан'}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: bold;">💼 Опыт:</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #eee;">{data.experience or 'Не указан'}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; font-weight: bold;">💬 Комментарий:</td>
+                    <td style="padding: 12px;">{data.comment or '-'}</td>
+                </tr>
+            </table>
+            <p style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; color: #666; font-size: 14px;">
+                Заявка создана через страницу "Партнёрам" → "Стать представителем"
+            </p>
+        </div>
+    </div>
+    """
+
+    for email in manager_emails:
+        background_tasks.add_task(send_email, email.strip(), subject, body)
+
+    return {"status": "success", "request_id": callback_id}
 
 
 # ======================== АДМИНКА ========================
@@ -3455,6 +4172,40 @@ async def api_get_overdue_callbacks(user: Dict = Depends(require_employee)):
     return {"callbacks": callbacks, "count": len(callbacks)}
 
 
+# --- Профиль сотрудника ---
+@app.get("/api/employee/profile")
+async def api_get_employee_profile(user: Dict = Depends(require_employee)):
+    """Получить профиль текущего сотрудника"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT id, email, name, phone, role, created_at
+            FROM users WHERE id = ?
+        ''', (user["id"],))
+        row = cursor.fetchone()
+        if row:
+            return dict(row)
+    raise HTTPException(status_code=404, detail="Пользователь не найден")
+
+
+@app.put("/api/employee/profile")
+async def api_update_employee_profile(data: Dict, user: Dict = Depends(require_employee)):
+    """Обновить профиль сотрудника (имя, телефон)"""
+    name = data.get("name")
+    phone = data.get("phone")
+
+    if not name or len(name.strip()) < 2:
+        raise HTTPException(status_code=400, detail="Введите ФИО (минимум 2 символа)")
+
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('''
+            UPDATE users SET name = ?, phone = ? WHERE id = ?
+        ''', (name.strip(), phone, user["id"]))
+
+    return {"success": True, "name": name.strip()}
+
+
 # --- Список менеджеров (для назначения заявок) ---
 @app.get("/api/employee/managers")
 async def api_get_managers(user: Dict = Depends(require_employee)):
@@ -3462,10 +4213,10 @@ async def api_get_managers(user: Dict = Depends(require_employee)):
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute('''
-            SELECT id, email, role
+            SELECT id, email, name, role
             FROM users
             WHERE role IN ('employee', 'superadmin') AND is_active = 1
-            ORDER BY email
+            ORDER BY name, email
         ''')
         managers = [dict(row) for row in cursor.fetchall()]
     return {"managers": managers}
@@ -3482,6 +4233,26 @@ async def api_superadmin_assign_callback(
     manager_id = data.get("manager_id")
     if not manager_id:
         raise HTTPException(status_code=400, detail="manager_id обязателен")
+
+    success = CallbackDBExtended.assign_to(callback_id, manager_id)
+    return {"success": success}
+
+
+# --- Назначение заявки на себя (для любого менеджера) ---
+@app.put("/api/employee/callbacks/{callback_id}/assign")
+async def api_employee_assign_callback(
+    callback_id: int,
+    data: Dict,
+    user: Dict = Depends(require_employee)
+):
+    """Назначить заявку на менеджера (employee может назначить только на себя, superadmin - на любого)"""
+    manager_id = data.get("manager_id")
+    if not manager_id:
+        raise HTTPException(status_code=400, detail="manager_id обязателен")
+
+    # Employee может назначить только на себя, superadmin - на любого
+    if user["role"] == "employee" and manager_id != user["id"]:
+        raise HTTPException(status_code=403, detail="Вы можете назначить заявку только на себя")
 
     success = CallbackDBExtended.assign_to(callback_id, manager_id)
     return {"success": success}
@@ -4625,6 +5396,320 @@ async def api_tnved_stats():
         "mandatory": mandatory,
         "experimental": experimental,
         "not_required": total - mandatory - experimental
+    }
+
+
+# ======================== TIMELINE API ========================
+
+def get_timeline_data():
+    """Load marking_timeline.json"""
+    try:
+        timeline_path = os.path.join(os.path.dirname(__file__), 'data', 'marking_timeline.json')
+        if os.path.exists(timeline_path):
+            with open(timeline_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+    except Exception as e:
+        logger.error(f"Failed to load marking_timeline.json: {e}")
+    return None
+
+
+@app.get("/api/marking/timeline/stats")
+async def api_timeline_stats():
+    """Статистика по срокам маркировки"""
+    data = get_timeline_data()
+    if not data:
+        return {"statistics": {"active": 0, "partial": 0, "upcoming": 0}}
+
+    return {"statistics": data.get("statistics", {"active": 0, "partial": 0, "upcoming": 0})}
+
+
+@app.get("/api/marking/timeline")
+async def api_timeline():
+    """Полные данные по срокам маркировки"""
+    data = get_timeline_data()
+    if not data:
+        return {"categories": {}, "groups": [], "statistics": {}}
+
+    return data
+
+
+@app.get("/api/marking/timeline/category/{category_id}")
+async def api_timeline_category(category_id: str):
+    """Данные по конкретной категории"""
+    data = get_timeline_data()
+    if not data or "categories" not in data:
+        raise HTTPException(status_code=404, detail="Category not found")
+
+    categories = data.get("categories", {})
+
+    if category_id in categories:
+        return categories[category_id]
+
+    from urllib.parse import unquote
+    decoded_id = unquote(category_id)
+    for cat_name, cat_data in categories.items():
+        if cat_name == decoded_id or cat_data.get("id") == category_id:
+            return cat_data
+
+    raise HTTPException(status_code=404, detail="Category not found")
+
+
+# ======================== PILOT EXPERIMENTS API ========================
+
+def get_pilot_experiments_data():
+    """Load pilot_experiments.json"""
+    try:
+        path = os.path.join(os.path.dirname(__file__), 'data', 'pilot_experiments.json')
+        if os.path.exists(path):
+            with open(path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+    except Exception as e:
+        logger.error(f"Failed to load pilot_experiments.json: {e}")
+    return None
+
+
+@app.get("/api/pilot/experiments")
+async def api_pilot_experiments():
+    """Список всех пилотных экспериментов"""
+    data = get_pilot_experiments_data()
+    if not data:
+        return {"experiments": [], "total": 0, "active_count": 0, "completed_count": 0}
+
+    return {
+        "experiments": list(data.get("experiments", {}).values()),
+        "total": data.get("total_experiments", 0),
+        "active_count": data.get("active_count", 0),
+        "completed_count": data.get("completed_count", 0)
+    }
+
+
+@app.get("/api/pilot/stats")
+async def api_pilot_stats():
+    """Статистика по пилотным проектам"""
+    data = get_pilot_experiments_data()
+    if not data:
+        return {"total": 0, "active": 0, "completed": 0, "products_count": 0}
+
+    total_products = sum(
+        exp.get("products_count", 0)
+        for exp in data.get("experiments", {}).values()
+    )
+
+    return {
+        "total": data.get("total_experiments", 0),
+        "active": data.get("active_count", 0),
+        "completed": data.get("completed_count", 0),
+        "products_count": total_products
+    }
+
+
+# ======================== PARTNER API ========================
+
+class PartnerCreateRequest(BaseModel):
+    partner_type: str  # 'legal' or 'individual'
+    contact_name: str
+    contact_phone: str
+    contact_email: str
+    company_name: Optional[str] = None
+    inn: Optional[str] = None
+    commission_rate: float = 10.0
+
+class PartnerUpdateRequest(BaseModel):
+    partner_type: Optional[str] = None
+    contact_name: Optional[str] = None
+    contact_phone: Optional[str] = None
+    contact_email: Optional[str] = None
+    company_name: Optional[str] = None
+    inn: Optional[str] = None
+    commission_rate: Optional[float] = None
+    status: Optional[str] = None
+
+@app.get("/api/employee/partners")
+async def get_partners(status: Optional[str] = None, current_user: dict = Depends(require_employee)):
+    """Получить список партнёров"""
+    partners = PartnerDB.get_all(status)
+
+    # Подсчитываем статистику
+    total = len(partners)
+    active = sum(1 for p in partners if p.get('status') == 'active')
+    pending = sum(1 for p in partners if p.get('status') == 'pending')
+
+    return {
+        "partners": partners,
+        "stats": {
+            "total": total,
+            "active": active,
+            "pending": pending
+        }
+    }
+
+@app.post("/api/employee/partners")
+async def create_partner(data: PartnerCreateRequest, current_user: dict = Depends(require_employee)):
+    """Создать партнёра"""
+    try:
+        result = PartnerDB.create(data.dict(), created_by=current_user.get('id'))
+        return {
+            "success": True,
+            "partner_id": result['id'],
+            "ref_code": result['ref_code'],
+            "password": result['password']
+        }
+    except Exception as e:
+        logger.error(f"Failed to create partner: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/api/employee/partners/{partner_id}")
+async def get_partner(partner_id: int, current_user: dict = Depends(require_employee)):
+    """Получить партнёра по ID"""
+    partner = PartnerDB.get_by_id(partner_id)
+    if not partner:
+        raise HTTPException(status_code=404, detail="Partner not found")
+
+    # Получаем статистику
+    stats = PartnerDB.get_stats(partner_id)
+
+    return {
+        "partner": partner,
+        "stats": stats
+    }
+
+@app.put("/api/employee/partners/{partner_id}")
+async def update_partner(partner_id: int, data: PartnerUpdateRequest, current_user: dict = Depends(require_employee)):
+    """Обновить партнёра"""
+    update_data = {k: v for k, v in data.dict().items() if v is not None}
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No data to update")
+
+    success = PartnerDB.update(partner_id, update_data)
+    if not success:
+        raise HTTPException(status_code=404, detail="Partner not found")
+
+    return {"success": True}
+
+@app.post("/api/employee/partners/{partner_id}/activate")
+async def activate_partner(partner_id: int, current_user: dict = Depends(require_employee)):
+    """Активировать партнёра"""
+    success = PartnerDB.activate(partner_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Partner not found")
+    return {"success": True}
+
+@app.post("/api/employee/partners/{partner_id}/deactivate")
+async def deactivate_partner(partner_id: int, current_user: dict = Depends(require_employee)):
+    """Деактивировать партнёра"""
+    success = PartnerDB.deactivate(partner_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Partner not found")
+    return {"success": True}
+
+@app.post("/api/employee/partners/{partner_id}/invite")
+async def send_partner_invite(partner_id: int, current_user: dict = Depends(require_employee)):
+    """Отправить приглашение партнёру"""
+    partner = PartnerDB.get_by_id(partner_id)
+    if not partner:
+        raise HTTPException(status_code=404, detail="Partner not found")
+
+    try:
+        import secrets
+        import hashlib
+
+        # Генерируем короткий пароль (8 символов)
+        new_password = secrets.token_hex(4)
+
+        # Хэшируем тем же методом что и в database.py (pbkdf2_hmac)
+        salt = secrets.token_hex(16)
+        hash_obj = hashlib.pbkdf2_hmac('sha256', new_password.encode(), salt.encode(), 100000)
+        hashed_password = f"{salt}${hash_obj.hex()}"
+
+        # Обновляем пароль пользователя
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('UPDATE users SET password_hash = ? WHERE id = ?',
+                          (hashed_password, partner['user_id']))
+
+        # Отправляем email с приглашением
+        from email_service import send_partner_invitation_email
+        send_partner_invitation_email(
+            to_email=partner['contact_email'],
+            password=new_password,
+            ref_code=partner['ref_code'],
+            contact_name=partner['contact_name']
+        )
+
+        # Активируем партнёра
+        PartnerDB.activate(partner_id)
+
+        return {"success": True, "message": "Приглашение отправлено"}
+    except Exception as e:
+        logger.error(f"Failed to send partner invite: {e}")
+        raise HTTPException(status_code=500, detail=f"Ошибка отправки: {str(e)}")
+
+@app.delete("/api/employee/partners/{partner_id}")
+async def delete_partner(partner_id: int, current_user: dict = Depends(require_employee)):
+    """Удалить партнёра (для сотрудников)"""
+    success = PartnerDB.delete(partner_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Partner not found")
+    return {"success": True}
+
+@app.delete("/api/admin/partners/{partner_id}")
+async def admin_delete_partner(partner_id: int, current_user: dict = Depends(require_superadmin)):
+    """Удалить партнёра (для супер-админов)"""
+    success = PartnerDB.delete(partner_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Partner not found")
+    return {"success": True}
+
+# Partner cabinet API
+@app.get("/api/partner/me")
+async def get_partner_me(current_user: dict = Depends(require_auth)):
+    """Получить данные текущего партнёра"""
+    if current_user.get('role') != 'partner':
+        raise HTTPException(status_code=403, detail="Not a partner")
+
+    partner = PartnerDB.get_by_user_id(current_user['id'])
+    if not partner:
+        raise HTTPException(status_code=404, detail="Partner not found")
+
+    return {"partner": partner}
+
+@app.get("/api/partner/stats")
+async def get_partner_stats(current_user: dict = Depends(require_auth)):
+    """Получить статистику партнёра"""
+    if current_user.get('role') != 'partner':
+        raise HTTPException(status_code=403, detail="Not a partner")
+
+    partner = PartnerDB.get_by_user_id(current_user['id'])
+    if not partner:
+        raise HTTPException(status_code=404, detail="Partner not found")
+
+    stats = PartnerDB.get_stats(partner['id'])
+    return stats
+
+@app.get("/api/partner/leads")
+async def get_partner_leads(current_user: dict = Depends(require_auth)):
+    """Получить клиентов партнёра"""
+    if current_user.get('role') != 'partner':
+        raise HTTPException(status_code=403, detail="Not a partner")
+
+    partner = PartnerDB.get_by_user_id(current_user['id'])
+    if not partner:
+        raise HTTPException(status_code=404, detail="Partner not found")
+
+    leads = PartnerDB.get_leads(partner['id'])
+    return {"leads": leads}
+
+# Public API for ref code validation
+@app.get("/api/ref/{ref_code}")
+async def validate_ref_code(ref_code: str):
+    """Проверить валидность реферального кода"""
+    partner = PartnerDB.get_by_ref_code(ref_code)
+    if not partner:
+        raise HTTPException(status_code=404, detail="Invalid ref code")
+
+    return {
+        "valid": True,
+        "partner_name": partner.get('company_name') or partner.get('contact_name')
     }
 
 

@@ -103,6 +103,23 @@ export const EmployeeAuthProvider = ({ children }) => {
     return fetch(url, { ...options, headers });
   };
 
+  const updateProfile = async (name, phone) => {
+    const response = await authFetch(`${API_URL}/api/employee/profile`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, phone })
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      setUser(prev => ({ ...prev, name: data.name }));
+      return data;
+    } else {
+      const error = await response.json();
+      throw new Error(error.detail || 'Ошибка сохранения');
+    }
+  };
+
   const value = {
     user,
     token,
@@ -110,9 +127,11 @@ export const EmployeeAuthProvider = ({ children }) => {
     isAuthenticated: !!user,
     isEmployee: ['employee', 'superadmin'].includes(user?.role),
     isSuperAdmin: user?.role === 'superadmin',
+    needsName: !!user && !user.name,
     login,
     logout,
-    authFetch
+    authFetch,
+    updateProfile
   };
 
   return (

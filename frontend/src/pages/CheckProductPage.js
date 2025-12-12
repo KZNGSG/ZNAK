@@ -9,7 +9,8 @@ import {
   CheckCircle, XCircle, ArrowLeft, ArrowRight, Package, FlaskConical,
   Check, Search, X, ChevronDown, ChevronRight, Plus, Trash2, ShoppingCart,
   FileText, AlertTriangle, Sparkles, Send, ClipboardList, Phone, User, Loader2,
-  Utensils, Pill, SprayCan, Box, Car, HardHat, Cpu, Rocket, Database, BarChart3
+  Utensils, Pill, SprayCan, Box, Car, HardHat, Cpu, Rocket, Database, BarChart3,
+  BadgeCheck, HelpCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Stepper from '../components/Stepper';
@@ -62,10 +63,26 @@ const CheckProductPage = () => {
   // TNVED statistics state
   const [tnvedStats, setTnvedStats] = useState({ total: 0, mandatory: 0, experimental: 0, not_required: 0 });
 
+  // Timeline statistics state
+  const [timelineStats, setTimelineStats] = useState({ active: 0, partial: 0, upcoming: 0 });
+
   useEffect(() => {
     fetchCategories();
     fetchTnvedStats();
+    fetchTimelineStats();
   }, []);
+
+  const fetchTimelineStats = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/marking/timeline/stats`);
+      if (response.ok) {
+        const data = await response.json();
+        setTimelineStats(data.statistics || { active: 0, partial: 0, upcoming: 0 });
+      }
+    } catch (error) {
+      console.error('Failed to fetch timeline stats:', error);
+    }
+  };
 
   const fetchTnvedStats = async () => {
     try {
@@ -414,28 +431,61 @@ const CheckProductPage = () => {
             <p className="text-gray-600">Узнайте, подлежат ли ваши товары обязательной маркировке</p>
           </div>
 
-          {/* Statistics Panel */}
-          <div className="bg-white rounded-2xl border-2 border-gray-200 shadow-lg overflow-hidden flex-shrink-0 lg:w-auto">
-            <div className="bg-gradient-to-r from-indigo-500 to-purple-600 px-4 py-2 flex items-center gap-2">
-              <Database size={16} className="text-white" />
-              <span className="text-white font-semibold text-sm">База ТН ВЭД</span>
+          {/* Statistics Panels */}
+          <div className="flex flex-col sm:flex-row gap-3 flex-shrink-0">
+            {/* TNVED Stats */}
+            <div className="bg-white rounded-2xl border-2 border-gray-200 shadow-lg overflow-hidden">
+              <div className="bg-gradient-to-r from-indigo-500 to-purple-600 px-4 py-2 flex items-center gap-2">
+                <Database size={16} className="text-white" />
+                <span className="text-white font-semibold text-sm">База ТН ВЭД</span>
+              </div>
+              <div className="p-3 flex gap-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-gray-900">{tnvedStats.total.toLocaleString()}</div>
+                  <div className="text-xs text-gray-500">Всего кодов</div>
+                </div>
+                <div className="w-px bg-gray-200"></div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-emerald-600">{tnvedStats.mandatory.toLocaleString()}</div>
+                  <div className="text-xs text-gray-500">Обязательных</div>
+                </div>
+                <div className="w-px bg-gray-200"></div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-amber-500">{tnvedStats.experimental.toLocaleString()}</div>
+                  <div className="text-xs text-gray-500">Эксперимент</div>
+                </div>
+              </div>
             </div>
-            <div className="p-3 flex gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900">{tnvedStats.total.toLocaleString()}</div>
-                <div className="text-xs text-gray-500">Всего кодов</div>
+
+            {/* Timeline Status Indicators */}
+            <button
+              onClick={() => navigate('/timeline')}
+              className="bg-white rounded-2xl border-2 border-gray-200 shadow-lg overflow-hidden hover:border-yellow-400 hover:shadow-xl transition-all cursor-pointer group"
+            >
+              <div className="bg-gradient-to-r from-yellow-500 to-amber-500 px-4 py-2 flex items-center gap-2">
+                <BarChart3 size={16} className="text-white" />
+                <span className="text-white font-semibold text-sm">Сроки маркировки</span>
               </div>
-              <div className="w-px bg-gray-200"></div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-emerald-600">{tnvedStats.mandatory.toLocaleString()}</div>
-                <div className="text-xs text-gray-500">Обязательных</div>
+              <div className="p-3 flex gap-3">
+                <div className="text-center" title="Полностью действует">
+                  <div className="text-xl font-bold text-emerald-600">🟢 {timelineStats.active}</div>
+                  <div className="text-xs text-gray-500">Действует</div>
+                </div>
+                <div className="w-px bg-gray-200"></div>
+                <div className="text-center" title="Частично действует">
+                  <div className="text-xl font-bold text-amber-600">🟡 {timelineStats.partial}</div>
+                  <div className="text-xs text-gray-500">Частично</div>
+                </div>
+                <div className="w-px bg-gray-200"></div>
+                <div className="text-center" title="Скоро старт">
+                  <div className="text-xl font-bold text-red-500">🔴 {timelineStats.upcoming}</div>
+                  <div className="text-xs text-gray-500">Скоро</div>
+                </div>
               </div>
-              <div className="w-px bg-gray-200"></div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-amber-500">{tnvedStats.experimental.toLocaleString()}</div>
-                <div className="text-xs text-gray-500">Эксперимент</div>
+              <div className="px-3 pb-2 text-xs text-yellow-600 group-hover:text-yellow-700 flex items-center justify-center gap-1">
+                Посмотреть все сроки →
               </div>
-            </div>
+            </button>
           </div>
         </div>
 
@@ -450,9 +500,16 @@ const CheckProductPage = () => {
                 <div className="p-2 rounded-xl bg-[rgb(var(--brand-yellow-200))]">
                   <Search size={20} className="text-[rgb(var(--grey-800))]" />
                 </div>
-                <div>
+                <div className="flex-1">
                   <h3 className="font-bold text-[rgb(var(--grey-900))]">Быстрый поиск по ТН ВЭД</h3>
-                  <p className="text-xs text-[rgb(var(--grey-600))]">Введите код или название товара</p>
+                  <p className="text-xs text-[rgb(var(--grey-600))]">Поиск по всей базе ({tnvedStats.total.toLocaleString()} кодов). Покажем, нужна ли маркировка</p>
+                </div>
+                <div className="relative group">
+                  <HelpCircle size={18} className="text-[rgb(var(--grey-500))] cursor-help" />
+                  <div className="absolute right-0 top-full mt-2 w-72 p-3 bg-gray-900 text-white text-xs rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                    <p className="mb-2"><strong>Поиск</strong> — по всей базе ТН ВЭД ({tnvedStats.total.toLocaleString()} кодов)</p>
+                    <p><strong>Категории слева</strong> — только товары с обязательной маркировкой ({tnvedStats.mandatory} кодов)</p>
+                  </div>
                 </div>
               </div>
 
@@ -463,7 +520,7 @@ const CheckProductPage = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => setIsSearchFocused(true)}
-                  placeholder="Например: 6403 или шубы..."
+                  placeholder={`Поиск по ${tnvedStats.total.toLocaleString()} кодам: 6403, шубы, молоко...`}
                   className="w-full pl-12 pr-12 py-4 text-base rounded-xl border-2 border-[rgb(var(--brand-yellow-300))] bg-white shadow-md focus:outline-none focus:border-[rgb(var(--brand-yellow-500))] focus:ring-4 focus:ring-[rgb(var(--brand-yellow-200))] transition-all placeholder:text-gray-400 font-medium"
                 />
                 {searchQuery && (
@@ -585,6 +642,11 @@ const CheckProductPage = () => {
             <div className="hidden lg:grid grid-cols-[320px,1fr] gap-8">
               {/* Left: Accordion Categories */}
               <aside className="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
+                {/* Header for categories */}
+                <div className="flex items-center gap-2 px-3 py-2 mb-2 bg-emerald-50 rounded-xl border border-emerald-200">
+                  <BadgeCheck size={18} className="text-emerald-600" />
+                  <span className="text-sm font-semibold text-emerald-700">Товары с обязательной маркировкой</span>
+                </div>
                 {categories.map((category) => {
                   const IconComponent = getCategoryIcon(category.id);
                   const isExpanded = expandedCategory === category.id;
@@ -747,6 +809,11 @@ const CheckProductPage = () => {
 
             {/* Mobile: Accordion */}
             <div className="lg:hidden space-y-3">
+              {/* Header for categories - mobile */}
+              <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 rounded-xl border border-emerald-200">
+                <BadgeCheck size={18} className="text-emerald-600" />
+                <span className="text-sm font-semibold text-emerald-700">Товары с обязательной маркировкой</span>
+              </div>
               {categories.map((category) => {
                 const IconComponent = getCategoryIcon(category.id);
                 const isExpanded = expandedCategory === category.id;
@@ -851,6 +918,36 @@ const CheckProductPage = () => {
                 );
               })}
             </div>
+
+            {/* Sticky Bottom Panel - appears when products selected */}
+            {selectedProducts.length > 0 && (
+              <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-lg border-t-2 border-emerald-200 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] animate-in slide-in-from-bottom duration-300">
+                <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8 py-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="p-2.5 bg-emerald-100 rounded-xl">
+                        <ShoppingCart size={22} className="text-emerald-600" />
+                      </div>
+                      <div>
+                        <div className="font-bold text-gray-900">
+                          Выбрано: {selectedProducts.length} {selectedProducts.length === 1 ? 'товар' : selectedProducts.length < 5 ? 'товара' : 'товаров'}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          Нажмите «Далее» чтобы получить КП
+                        </div>
+                      </div>
+                    </div>
+                    <Button
+                      onClick={handleNext}
+                      className="btn-gradient rounded-xl px-8 py-3 flex items-center gap-2 text-base font-bold shadow-lg hover:shadow-xl transition-all animate-pulse hover:animate-none"
+                    >
+                      Далее — Получить КП
+                      <ArrowRight size={20} />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

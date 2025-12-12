@@ -1,96 +1,82 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useEmployeeAuth } from '../../context/EmployeeAuthContext';
+import { usePartnerAuth } from '../../context/PartnerAuthContext';
 import {
   LayoutDashboard,
-  Inbox,
   Users,
-  FileText,
-  FileCheck,
+  Calculator,
+  BookOpen,
+  Settings,
   ChevronLeft,
   ChevronRight,
   LogOut,
-  Bell,
-  Search,
   Menu,
   X,
-  UserCog,
-  BarChart3,
-  Settings,
-  FolderOpen,
-  Handshake,
-  User
+  Link as LinkIcon,
+  Copy,
+  Check
 } from 'lucide-react';
+import { toast } from 'sonner';
 
-const EmployeeLayout = ({ children }) => {
-  const { user, logout, isSuperAdmin } = useEmployeeAuth();
+const PartnerLayout = ({ children }) => {
+  const { user, partner, logout } = usePartnerAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const handleLogout = () => {
     logout();
-    navigate('/employee/login');
+    navigate('/partner/login');
+  };
+
+  const copyRefLink = () => {
+    if (partner?.ref_code) {
+      const link = `${window.location.origin}/quote?ref=${partner.ref_code}`;
+      navigator.clipboard.writeText(link);
+      setLinkCopied(true);
+      toast.success('Ссылка скопирована!');
+      setTimeout(() => setLinkCopied(false), 2000);
+    }
   };
 
   const menuItems = [
-    // Аналитика для superadmin вместо обычной главной
-    ...(isSuperAdmin ? [{
-      path: '/employee/analytics',
-      icon: BarChart3,
-      label: 'Аналитика',
-      description: 'Статистика и воронка'
-    }] : [{
-      path: '/employee',
+    {
+      path: '/partner',
       icon: LayoutDashboard,
-      label: 'Главная',
+      label: 'Дашборд',
       description: 'Обзор и статистика'
-    }]),
-    {
-      path: '/employee/inbox',
-      icon: Inbox,
-      label: 'Входящие',
-      description: 'Заявки с сайта'
     },
     {
-      path: '/employee/clients',
+      path: '/partner/leads',
       icon: Users,
-      label: 'Клиенты',
-      description: 'База клиентов'
+      label: 'Мои клиенты',
+      description: 'Привлечённые заявки'
     },
     {
-      path: '/employee/documents',
-      icon: FolderOpen,
-      label: 'Документы',
-      description: 'КП, договоры, счета'
+      path: '/partner/calculator',
+      icon: Calculator,
+      label: 'Калькулятор',
+      description: 'Расчёт дохода'
     },
     {
-      path: '/employee/partners',
-      icon: Handshake,
-      label: 'Партнёры',
-      description: 'Партнёрская программа'
+      path: '/partner/materials',
+      icon: BookOpen,
+      label: 'Материалы',
+      description: 'Об услугах и FAQ'
     },
-    // Сотрудники и Настройки только для superadmin
-    ...(isSuperAdmin ? [
-      {
-        path: '/employee/staff',
-        icon: UserCog,
-        label: 'Сотрудники',
-        description: 'Управление пользователями'
-      },
-      {
-        path: '/employee/settings',
-        icon: Settings,
-        label: 'Настройки',
-        description: 'Уведомления и SLA'
-      }
-    ] : [])
+    {
+      path: '/partner/settings',
+      icon: Settings,
+      label: 'Настройки',
+      description: 'Профиль партнёра'
+    }
   ];
 
   const NavItem = ({ item, collapsed }) => {
     const isActive = location.pathname === item.path ||
-      (item.path !== '/employee' && location.pathname.startsWith(item.path));
+      (item.path !== '/partner' && location.pathname.startsWith(item.path));
     const Icon = item.icon;
 
     return (
@@ -100,18 +86,18 @@ const EmployeeLayout = ({ children }) => {
         className={`
           group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200
           ${isActive
-            ? 'bg-yellow-500/10 text-yellow-600 border border-yellow-500/30'
+            ? 'bg-amber-500/10 text-amber-700 border border-amber-500/30'
             : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 border border-transparent'
           }
         `}
       >
         <Icon
-          className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-yellow-600' : 'text-gray-400 group-hover:text-gray-600'}`}
+          className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-amber-600' : 'text-gray-400 group-hover:text-gray-600'}`}
           strokeWidth={1.5}
         />
         {!collapsed && (
           <div className="flex-1 min-w-0">
-            <div className={`text-sm font-medium ${isActive ? 'text-yellow-600' : ''}`}>
+            <div className={`text-sm font-medium ${isActive ? 'text-amber-700' : ''}`}>
               {item.label}
             </div>
             <div className="text-xs text-gray-400 truncate">
@@ -124,7 +110,7 @@ const EmployeeLayout = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-amber-50/30 flex">
       {/* Mobile menu overlay */}
       {mobileMenuOpen && (
         <div
@@ -139,12 +125,12 @@ const EmployeeLayout = ({ children }) => {
           fixed lg:static inset-y-0 left-0 z-50
           ${sidebarCollapsed ? 'w-[72px]' : 'w-64'}
           ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-          bg-white border-r border-gray-200
+          bg-white border-r border-amber-200/50
           transition-all duration-300 flex flex-col
         `}
       >
         {/* Header */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200">
+        <div className="h-16 flex items-center justify-between px-4 border-b border-amber-200/50">
           {!sidebarCollapsed ? (
             <Link to="/" className="flex items-center gap-2 group">
               <div className="flex items-center gap-0.5 p-2 rounded-lg bg-gradient-to-br from-yellow-100 to-yellow-200 group-hover:scale-105 transition-transform shadow-sm">
@@ -185,6 +171,28 @@ const EmployeeLayout = ({ children }) => {
           </button>
         </div>
 
+        {/* Ref link card */}
+        {!sidebarCollapsed && partner?.ref_code && (
+          <div className="mx-3 mt-4 p-3 bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200 rounded-xl">
+            <div className="flex items-center gap-2 mb-2">
+              <LinkIcon className="w-4 h-4 text-amber-600" />
+              <span className="text-xs font-medium text-amber-700">Ваша ссылка</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 text-xs bg-white/80 px-2 py-1.5 rounded border border-amber-200 text-amber-800 truncate">
+                ref={partner.ref_code}
+              </code>
+              <button
+                onClick={copyRefLink}
+                className="p-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-colors"
+                title="Копировать ссылку"
+              >
+                {linkCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {menuItems.map((item) => (
@@ -193,18 +201,20 @@ const EmployeeLayout = ({ children }) => {
         </nav>
 
         {/* User section */}
-        <div className="border-t border-gray-200 p-3">
+        <div className="border-t border-amber-200/50 p-3">
           {!sidebarCollapsed ? (
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
-                <span className="text-gray-600 text-sm font-medium">
-                  {user?.email?.charAt(0).toUpperCase()}
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-200 to-amber-300 flex items-center justify-center">
+                <span className="text-amber-700 text-sm font-medium">
+                  {partner?.contact_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase()}
                 </span>
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-sm text-gray-900 truncate">{user?.email}</div>
+                <div className="text-sm text-gray-900 truncate">
+                  {partner?.contact_name || user?.email}
+                </div>
                 <div className="text-xs text-gray-400">
-                  {user?.role === 'superadmin' ? 'Супер-админ' : 'Сотрудник'}
+                  {partner?.company_name || 'Партнёр'}
                 </div>
               </div>
               <button
@@ -230,7 +240,7 @@ const EmployeeLayout = ({ children }) => {
       {/* Main content area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 lg:px-6">
+        <header className="h-16 bg-white border-b border-amber-200/50 flex items-center justify-between px-4 lg:px-6">
           <div className="flex items-center gap-4">
             <button
               onClick={() => setMobileMenuOpen(true)}
@@ -238,28 +248,21 @@ const EmployeeLayout = ({ children }) => {
             >
               <Menu className="w-5 h-5" />
             </button>
-
-            {/* Search */}
-            <div className="hidden sm:flex items-center gap-2 bg-gray-100 border border-gray-200 rounded-lg px-3 py-2 w-64 lg:w-80">
-              <Search className="w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Поиск клиентов, заявок..."
-                className="bg-transparent border-none outline-none text-sm text-gray-900 placeholder-gray-400 w-full"
-              />
-              <kbd className="hidden lg:inline-flex px-1.5 py-0.5 text-[10px] text-gray-400 bg-gray-200 rounded">
-                /
-              </kbd>
-            </div>
+            <h1 className="text-lg font-semibold text-gray-900">
+              Партнёрский кабинет
+            </h1>
           </div>
 
-          <div className="flex items-center gap-2">
-            {/* Notifications */}
-            <button className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-yellow-500 rounded-full"></span>
+          {/* Copy link button for mobile */}
+          {partner?.ref_code && (
+            <button
+              onClick={copyRefLink}
+              className="lg:hidden flex items-center gap-2 px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-lg text-sm transition-colors"
+            >
+              {linkCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              <span>Ссылка</span>
             </button>
-          </div>
+          )}
         </header>
 
         {/* Page content */}
@@ -273,4 +276,4 @@ const EmployeeLayout = ({ children }) => {
   );
 };
 
-export default EmployeeLayout;
+export default PartnerLayout;
