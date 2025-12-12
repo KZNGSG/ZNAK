@@ -7,6 +7,7 @@ import { Label } from '../components/ui/label';
 import { ArrowLeft, ArrowRight, Printer, ScanLine, Smartphone, Monitor } from 'lucide-react';
 import { toast } from 'sonner';
 import Stepper from '../components/Stepper';
+import SEO from '../components/SEO';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -80,6 +81,7 @@ const EquipmentPage = () => {
 
   return (
     <div className="py-12 bg-gradient-to-b from-slate-50 to-white min-h-screen">
+      <SEO />
       <div className="mx-auto max-w-[1200px] px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="text-3xl sm:text-4xl font-semibold text-primary mb-2">Оснащение производства</h1>

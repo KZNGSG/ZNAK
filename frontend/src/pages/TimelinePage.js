@@ -17,6 +17,7 @@ import {
   ArrowRight,
   AlertTriangle
 } from 'lucide-react';
+import SEO from '../components/SEO';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -210,6 +211,7 @@ const TimelinePage = () => {
 
   return (
     <div className="max-w-[1400px] mx-auto px-4 py-6">
+      <SEO />
       {/* Header with Moscow Time */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>

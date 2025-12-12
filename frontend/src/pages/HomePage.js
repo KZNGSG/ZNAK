@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { ScanLine, Ship, Settings, FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
+import SEO from '../components/SEO';
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -40,6 +41,7 @@ const HomePage = () => {
 
   return (
     <div className="fade-in">
+      <SEO />
       {/* Hero Section - Enhanced */}
       <section className="relative py-20 sm:py-32 noise-bg overflow-hidden" data-testid="hero-section">
         {/* Enhanced decorative elements - Yellow glow */}

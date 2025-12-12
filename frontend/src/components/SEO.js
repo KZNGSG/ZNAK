@@ -1,0 +1,220 @@
+import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+
+const SEO_CONFIG = {
+  '/': {
+    title: 'Про.Маркируй - полное сопровождение в маркировке товаров',
+    description: 'Про.Маркируй - ваш надёжный партнёр в маркировке товаров. Проверка товаров по ТН ВЭД, подбор оборудования, консультации по системе Честный ЗНАК.',
+    keywords: 'маркировка товаров, честный знак, DataMatrix, маркировка одежды, маркировка обуви, проверка маркировки'
+  },
+  '/check': {
+    title: 'Проверка товаров на маркировку | Про.Маркируй',
+    description: 'Проверьте, подлежит ли ваш товар обязательной маркировке. База ТН ВЭД с 25,000+ кодами. Узнайте сроки и требования к маркировке.',
+    keywords: 'проверка маркировки, ТН ВЭД, подлежит ли товар маркировке, честный знак проверка, коды ТН ВЭД'
+  },
+  '/timeline': {
+    title: 'Сроки маркировки товаров 2024-2025 | Про.Маркируй',
+    description: 'Актуальные сроки введения обязательной маркировки по категориям товаров. Календарь дедлайнов и этапов маркировки в России.',
+    keywords: 'сроки маркировки, дедлайны маркировки, этапы маркировки, календарь маркировки, обязательная маркировка сроки'
+  },
+  '/equipment': {
+    title: 'Оборудование для маркировки товаров | Про.Маркируй',
+    description: 'Подбор оборудования для маркировки: принтеры этикеток, сканеры DataMatrix, ТСД. Рекомендации по выбору оборудования под ваши задачи.',
+    keywords: 'оборудование для маркировки, принтер этикеток, сканер DataMatrix, ТСД для маркировки, принтер для честного знака'
+  },
+  '/contact': {
+    title: 'Контакты | Про.Маркируй',
+    description: 'Свяжитесь с нами для консультации по маркировке товаров. Мы поможем с подключением к Честному ЗНАКу и выбором оборудования.',
+    keywords: 'контакты про маркируй, консультация по маркировке, помощь с маркировкой'
+  },
+  '/partners': {
+    title: 'Партнёрская программа | Про.Маркируй',
+    description: 'Станьте партнёром Про.Маркируй и зарабатывайте на рекомендациях. Выгодные условия сотрудничества для интеграторов и консультантов.',
+    keywords: 'партнёрская программа маркировка, стать партнёром, сотрудничество маркировка'
+  },
+  '/quote': {
+    title: 'Запрос коммерческого предложения | Про.Маркируй',
+    description: 'Получите персональное коммерческое предложение на услуги маркировки. Расчёт стоимости оборудования и внедрения за 24 часа.',
+    keywords: 'коммерческое предложение маркировка, расчёт стоимости маркировки, КП маркировка'
+  }
+};
+
+const DEFAULT_SEO = {
+  title: 'Про.Маркируй - полное сопровождение в маркировке',
+  description: 'Про.Маркируй - полное сопровождение в маркировке товаров. Проверка товаров, подбор оборудования, консультации по системе Честный ЗНАК.',
+  keywords: 'маркировка товаров, честный знак, DataMatrix, ТН ВЭД'
+};
+
+const SITE_URL = 'https://promarkirui.ru';
+const SITE_NAME = 'Про.Маркируй';
+
+// JSON-LD структурированные данные для организации
+const organizationSchema = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Про.Маркируй",
+  "url": "https://promarkirui.ru",
+  "logo": "https://promarkirui.ru/favicon.svg",
+  "description": "Полное сопровождение в маркировке товаров. Проверка, оборудование, консультации.",
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "contactType": "customer service",
+    "availableLanguage": "Russian"
+  },
+  "sameAs": []
+};
+
+// JSON-LD для веб-сайта
+const websiteSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "Про.Маркируй",
+  "url": "https://promarkirui.ru",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://promarkirui.ru/check?q={search_term_string}",
+    "query-input": "required name=search_term_string"
+  }
+};
+
+// Генерация BreadcrumbList
+const generateBreadcrumbs = (pathname) => {
+  const paths = pathname.split('/').filter(Boolean);
+  if (paths.length === 0) return null;
+
+  const breadcrumbNames = {
+    'check': 'Проверка товаров',
+    'timeline': 'Сроки маркировки',
+    'equipment': 'Оборудование',
+    'contact': 'Контакты',
+    'partners': 'Партнёрам',
+    'quote': 'Запрос КП'
+  };
+
+  const items = [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Главная",
+      "item": SITE_URL
+    }
+  ];
+
+  let currentPath = '';
+  paths.forEach((path, index) => {
+    currentPath += `/${path}`;
+    const name = breadcrumbNames[path] || path;
+    items.push({
+      "@type": "ListItem",
+      "position": index + 2,
+      "name": name,
+      "item": `${SITE_URL}${currentPath}`
+    });
+  });
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": items
+  };
+};
+
+const SEO = ({
+  title: customTitle,
+  description: customDescription,
+  keywords: customKeywords,
+  noindex = false
+}) => {
+  const location = useLocation();
+  const pathname = location.pathname;
+
+  // Получаем SEO данные для текущей страницы
+  const pageConfig = SEO_CONFIG[pathname] || DEFAULT_SEO;
+  const title = customTitle || pageConfig.title;
+  const description = customDescription || pageConfig.description;
+  const keywords = customKeywords || pageConfig.keywords;
+  const canonicalUrl = `${SITE_URL}${pathname === '/' ? '' : pathname}`;
+
+  useEffect(() => {
+    // Обновляем title
+    document.title = title;
+
+    // Функция для обновления или создания мета-тега
+    const updateMetaTag = (name, content, property = false) => {
+      const attr = property ? 'property' : 'name';
+      let meta = document.querySelector(`meta[${attr}="${name}"]`);
+      if (!meta) {
+        meta = document.createElement('meta');
+        meta.setAttribute(attr, name);
+        document.head.appendChild(meta);
+      }
+      meta.setAttribute('content', content);
+    };
+
+    // Обновляем мета-теги
+    updateMetaTag('description', description);
+    updateMetaTag('keywords', keywords);
+
+    // Open Graph
+    updateMetaTag('og:title', title, true);
+    updateMetaTag('og:description', description, true);
+    updateMetaTag('og:url', canonicalUrl, true);
+    updateMetaTag('og:type', 'website', true);
+    updateMetaTag('og:site_name', SITE_NAME, true);
+    updateMetaTag('og:locale', 'ru_RU', true);
+
+    // Twitter
+    updateMetaTag('twitter:title', title);
+    updateMetaTag('twitter:description', description);
+    updateMetaTag('twitter:url', canonicalUrl);
+
+    // Robots
+    if (noindex) {
+      updateMetaTag('robots', 'noindex, nofollow');
+    } else {
+      updateMetaTag('robots', 'index, follow');
+    }
+
+    // Canonical URL
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonical);
+    }
+    canonical.setAttribute('href', canonicalUrl);
+
+    // JSON-LD структурированные данные
+    const updateJsonLd = (id, schema) => {
+      let script = document.getElementById(id);
+      if (!script) {
+        script = document.createElement('script');
+        script.id = id;
+        script.type = 'application/ld+json';
+        document.head.appendChild(script);
+      }
+      script.textContent = JSON.stringify(schema);
+    };
+
+    // Добавляем схемы
+    updateJsonLd('schema-organization', organizationSchema);
+    updateJsonLd('schema-website', websiteSchema);
+
+    // Breadcrumbs (только для вложенных страниц)
+    const breadcrumbs = generateBreadcrumbs(pathname);
+    if (breadcrumbs) {
+      updateJsonLd('schema-breadcrumbs', breadcrumbs);
+    } else {
+      const breadcrumbScript = document.getElementById('schema-breadcrumbs');
+      if (breadcrumbScript) {
+        breadcrumbScript.remove();
+      }
+    }
+
+    // Cleanup не нужен - теги остаются при переходе между страницами
+  }, [title, description, keywords, canonicalUrl, pathname, noindex]);
+
+  return null; // Компонент не рендерит ничего в DOM
+};
+
+export default SEO;
