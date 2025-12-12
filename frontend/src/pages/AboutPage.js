@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   CheckCircle, Users, Target, Zap, Shield, BookOpen,
-  Settings, FileText, Ship, ScanLine, Phone, Mail,
+  Settings, FileText, Ship, ScanLine, Mail,
   Building, ArrowRight, Play
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -325,30 +325,29 @@ const AboutPage = () => {
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="text-white"
             >
-              <h2 className="text-3xl font-bold mb-6">
+              <h2 className="text-3xl font-bold mb-6 text-yellow-400">
                 Остались вопросы?
               </h2>
-              <p className="text-gray-300 text-lg mb-8 leading-relaxed">
+              <p className="text-gray-200 text-lg mb-8 leading-relaxed">
                 Оставьте заявку, и наш специалист свяжется с вами для бесплатной консультации.
                 Поможем разобраться с маркировкой, подберём оборудование, ответим на любые вопросы.
               </p>
 
               <div className="space-y-4">
-                <div className="flex items-center gap-3 text-gray-300">
+                <div className="flex items-center gap-3 text-gray-200">
                   <div className="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center">
                     <CheckCircle className="w-5 h-5 text-yellow-400" />
                   </div>
                   <span>Бесплатная консультация</span>
                 </div>
-                <div className="flex items-center gap-3 text-gray-300">
+                <div className="flex items-center gap-3 text-gray-200">
                   <div className="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center">
                     <CheckCircle className="w-5 h-5 text-yellow-400" />
                   </div>
                   <span>Ответ в течение 1 рабочего дня</span>
                 </div>
-                <div className="flex items-center gap-3 text-gray-300">
+                <div className="flex items-center gap-3 text-gray-200">
                   <div className="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center">
                     <CheckCircle className="w-5 h-5 text-yellow-400" />
                   </div>
@@ -357,16 +356,10 @@ const AboutPage = () => {
               </div>
 
               <div className="mt-8 pt-8 border-t border-gray-700">
-                <div className="flex flex-wrap gap-6">
-                  <a href="tel:+79000000000" className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors">
-                    <Phone className="w-5 h-5" />
-                    <span>+7 (900) 000-00-00</span>
-                  </a>
-                  <a href="mailto:info@promarkirui.ru" className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors">
-                    <Mail className="w-5 h-5" />
-                    <span>info@promarkirui.ru</span>
-                  </a>
-                </div>
+                <a href="mailto:info@promarkirui.ru" className="flex items-center gap-2 text-gray-200 hover:text-yellow-400 transition-colors">
+                  <Mail className="w-5 h-5" />
+                  <span>info@promarkirui.ru</span>
+                </a>
               </div>
             </motion.div>
 
