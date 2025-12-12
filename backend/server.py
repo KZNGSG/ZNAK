@@ -167,6 +167,18 @@ class ContactRequest(BaseModel):
             raise ValueError('Необходимо согласие на обработку данных')
         return v
 
+# ======================== TRAINING ENROLLMENT ========================
+
+class TrainingEnrollRequest(BaseModel):
+    name: str
+    phone: str
+    email: Optional[EmailStr] = None
+    company: Optional[str] = None
+    comment: Optional[str] = None
+    plan_id: Optional[str] = None  # standard, premium, vip, cashier, accountant, corporate
+    plan_name: Optional[str] = None
+    plan_price: Optional[str] = None
+
 # ======================== COMPANY LOOKUP ========================
 
 class CompanyInfo(BaseModel):
@@ -2332,6 +2344,130 @@ async def send_contact(request: ContactRequest, background_tasks: BackgroundTask
         "message": "Ваша заявка принята! Мы свяжемся с вами в ближайшее время.",
         "callback_id": callback_id
     }
+
+
+# ======================== TRAINING ENROLLMENT ========================
+
+def format_training_enrollment_email(request: TrainingEnrollRequest, enrollment_id: int) -> str:
+    """Форматирование email для заявки на обучение"""
+    plan_info = ""
+    if request.plan_name:
+        plan_info = f"""
+        <tr>
+            <td style="padding: 8px 16px; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Тариф:</td>
+            <td style="padding: 8px 16px; border-bottom: 1px solid #e5e7eb; font-weight: 500;">{request.plan_name}</td>
+        </tr>
+        """
+    if request.plan_price:
+        plan_info += f"""
+        <tr>
+            <td style="padding: 8px 16px; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Стоимость:</td>
+            <td style="padding: 8px 16px; border-bottom: 1px solid #e5e7eb; font-weight: 500;">{request.plan_price} ₽</td>
+        </tr>
+        """
+
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+    </head>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f3f4f6; padding: 20px;">
+        <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); padding: 24px; text-align: center;">
+                <h1 style="margin: 0; color: white; font-size: 24px;">🎓 Заявка на обучение #{enrollment_id}</h1>
+            </div>
+
+            <!-- Content -->
+            <div style="padding: 24px;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 8px 16px; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Имя:</td>
+                        <td style="padding: 8px 16px; border-bottom: 1px solid #e5e7eb; font-weight: 500;">{request.name}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 16px; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Телефон:</td>
+                        <td style="padding: 8px 16px; border-bottom: 1px solid #e5e7eb; font-weight: 500;">
+                            <a href="tel:{request.phone}" style="color: #7c3aed;">{request.phone}</a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 16px; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Email:</td>
+                        <td style="padding: 8px 16px; border-bottom: 1px solid #e5e7eb; font-weight: 500;">
+                            <a href="mailto:{request.email or '-'}" style="color: #7c3aed;">{request.email or '-'}</a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 16px; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Компания:</td>
+                        <td style="padding: 8px 16px; border-bottom: 1px solid #e5e7eb; font-weight: 500;">{request.company or '-'}</td>
+                    </tr>
+                    {plan_info}
+                    <tr>
+                        <td style="padding: 8px 16px; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Комментарий:</td>
+                        <td style="padding: 8px 16px; border-bottom: 1px solid #e5e7eb;">{request.comment or '-'}</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Footer -->
+            <div style="background-color: #f9fafb; padding: 16px 24px; text-align: center;">
+                <p style="margin: 0; color: #6b7280; font-size: 14px;">
+                    Заявка создана: {datetime.now().strftime('%d.%m.%Y %H:%M')}
+                </p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
+
+@app.post("/api/training/enroll")
+async def training_enroll(request: TrainingEnrollRequest, background_tasks: BackgroundTasks):
+    """Отправка заявки на обучение"""
+
+    if not request.name or not request.phone:
+        raise HTTPException(status_code=400, detail="Имя и телефон обязательны")
+
+    # Сохраняем заявку в БД как callback
+    plan_info = ""
+    if request.plan_name:
+        plan_info = f"Тариф: {request.plan_name}"
+    if request.plan_price:
+        plan_info += f" ({request.plan_price} ₽)"
+
+    callback_data = {
+        "user_id": None,
+        "contact_name": request.name,
+        "contact_phone": request.phone,
+        "contact_email": request.email,
+        "company_inn": None,
+        "company_name": request.company,
+        "products": [],
+        "comment": f"🎓 ЗАЯВКА НА ОБУЧЕНИЕ\n{plan_info}\n\n{request.comment or ''}".strip(),
+        "source": "training_enrollment"
+    }
+    enrollment_id = CallbackDB.create(callback_data)
+
+    # Отправляем на все адреса менеджеров
+    contact_emails = os.getenv('CONTACT_TO_EMAIL', 'damirslk@mail.ru,turbin.ar8@gmail.com').split(',')
+    subject = f"🎓 Заявка на обучение #{enrollment_id} от {request.name}"
+    if request.plan_name:
+        subject += f" - {request.plan_name}"
+    body = format_training_enrollment_email(request, enrollment_id)
+
+    # Send email to all managers in background
+    for email in contact_emails:
+        background_tasks.add_task(send_email, email.strip(), subject, body)
+
+    logger.info(f"Training enrollment #{enrollment_id} received from {request.name}, plan: {request.plan_name}")
+
+    return {
+        "status": "success",
+        "message": "Заявка на обучение принята! Мы свяжемся с вами в ближайшее время.",
+        "enrollment_id": enrollment_id
+    }
+
 
 # ======================== DADATA COMPANY LOOKUP ========================
 

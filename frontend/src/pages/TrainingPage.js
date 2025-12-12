@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   GraduationCap, Users, Target, CheckCircle2, Clock, Star,
   BookOpen, Award, Headphones, ArrowRight, ChevronDown, ChevronUp,
   Briefcase, TrendingUp, Shield, Zap, MessageCircle, Calendar,
   Play, FileCheck, Laptop, Building2, UserCheck, Rocket,
-  BadgeCheck, Gift, Mail
+  BadgeCheck, Gift, Mail, X, Loader2, Check
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
 import SEO from '../components/SEO';
+import { toast } from 'sonner';
+
+const API_URL = process.env.REACT_APP_API_URL || 'https://promarkirui.ru/api';
 
 // Модули курса
 const COURSE_MODULES = [
@@ -159,7 +163,7 @@ const PRICING_PLANS = [
     id: 'vip',
     name: 'VIP',
     price: '150 000',
-    description: 'Полное сопровождение + выезд',
+    description: 'Полное сопровождение',
     popular: false,
     features: [
       { text: '32 часа онлайн-занятий', included: true },
@@ -170,8 +174,29 @@ const PRICING_PLANS = [
       { text: 'Практика на вашем ЛК', included: true },
       { text: 'Настройка вашей 1С', included: true },
       { text: 'Личный чат с экспертом 24/7', included: true },
-      { text: 'Выезд специалиста (2 дня)', included: true },
     ]
+  }
+];
+
+// Дополнительные форматы
+const ADDITIONAL_FORMATS = [
+  {
+    id: 'cashier',
+    name: 'Мини-курс для кассиров',
+    duration: '4 часа практики',
+    price: '10 000'
+  },
+  {
+    id: 'accountant',
+    name: 'Курс для бухгалтера',
+    duration: '8 часов практики',
+    price: '20 000'
+  },
+  {
+    id: 'corporate',
+    name: 'Корпоративное',
+    duration: 'до 10 человек',
+    price: 'от 120 000'
   }
 ];
 
@@ -335,7 +360,7 @@ const CourseModule = ({ module, isOpen, onToggle }) => {
 };
 
 // Компонент тарифа
-const PricingCard = ({ plan }) => {
+const PricingCard = ({ plan, onSelect }) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -348,9 +373,9 @@ const PricingCard = ({ plan }) => {
       }`}
     >
       {plan.popular && (
-        <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-          <span className="bg-yellow-400 text-gray-900 px-4 py-1 rounded-full text-sm font-bold">
-            Популярный выбор
+        <div className="absolute -top-4 left-1/2 -translate-x-1/2 whitespace-nowrap">
+          <span className="bg-yellow-400 text-gray-900 px-4 py-1.5 rounded-full text-sm font-bold shadow-md">
+            Популярный
           </span>
         </div>
       )}
@@ -379,17 +404,16 @@ const PricingCard = ({ plan }) => {
         ))}
       </ul>
 
-      <Link to="/quote">
-        <Button
-          className={`w-full py-6 text-lg font-bold rounded-xl ${
-            plan.popular
-              ? 'bg-yellow-400 hover:bg-yellow-500 text-gray-900'
-              : 'bg-gray-900 hover:bg-gray-800 text-white'
-          }`}
-        >
-          Записаться на курс
-        </Button>
-      </Link>
+      <Button
+        onClick={() => onSelect(plan)}
+        className={`w-full py-6 text-lg font-bold rounded-xl ${
+          plan.popular
+            ? 'bg-yellow-400 hover:bg-yellow-500 text-gray-900'
+            : 'bg-gray-900 hover:bg-gray-800 text-white'
+        }`}
+      >
+        Записаться на курс
+      </Button>
     </motion.div>
   );
 };
@@ -422,9 +446,236 @@ const FAQItem = ({ item, isOpen, onToggle }) => {
   );
 };
 
+// Модальное окно записи на курс
+const EnrollmentModal = ({ isOpen, onClose, selectedPlan }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    company: '',
+    comment: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!formData.name || !formData.phone) {
+      toast.error('Заполните обязательные поля');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${API_URL}/training/enroll`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...formData,
+          plan_id: selectedPlan?.id,
+          plan_name: selectedPlan?.name,
+          plan_price: selectedPlan?.price
+        }),
+      });
+
+      if (response.ok) {
+        setSuccess(true);
+        toast.success('Заявка отправлена! Мы свяжемся с вами в ближайшее время.');
+      } else {
+        throw new Error('Ошибка отправки');
+      }
+    } catch (error) {
+      toast.error('Произошла ошибка. Попробуйте позже.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClose = () => {
+    setFormData({ name: '', phone: '', email: '', company: '', comment: '' });
+    setSuccess(false);
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+        onClick={handleClose}
+      >
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.9, opacity: 0 }}
+          className="bg-white rounded-3xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="sticky top-0 bg-white border-b border-gray-100 p-6 rounded-t-3xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Запись на курс</h2>
+                {selectedPlan && (
+                  <p className="text-gray-500 mt-1">
+                    Тариф: <span className="font-semibold text-yellow-600">{selectedPlan.name}</span>
+                    {' — '}{selectedPlan.price} ₽
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={handleClose}
+                className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+              >
+                <X className="w-6 h-6 text-gray-400" />
+              </button>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="p-6">
+            {success ? (
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="text-center py-8"
+              >
+                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Check className="w-10 h-10 text-green-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">Заявка отправлена!</h3>
+                <p className="text-gray-600 mb-6">
+                  Мы свяжемся с вами в течение часа, чтобы обсудить детали обучения.
+                </p>
+                <Button
+                  onClick={handleClose}
+                  className="bg-gray-900 hover:bg-gray-800 text-white px-8 py-3 rounded-xl"
+                >
+                  Закрыть
+                </Button>
+              </motion.div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Ваше имя <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    type="text"
+                    placeholder="Иван Иванов"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-yellow-400"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Телефон <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    type="tel"
+                    placeholder="+7 (999) 123-45-67"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-yellow-400"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email
+                  </label>
+                  <Input
+                    type="email"
+                    placeholder="email@example.com"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-yellow-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Компания
+                  </label>
+                  <Input
+                    type="text"
+                    placeholder="Название компании"
+                    value={formData.company}
+                    onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-yellow-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Комментарий
+                  </label>
+                  <textarea
+                    placeholder="Расскажите о ваших задачах или вопросах"
+                    value={formData.comment}
+                    onChange={(e) => setFormData({ ...formData, comment: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-yellow-400 resize-none"
+                    rows={3}
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-yellow-400 hover:bg-yellow-500 text-gray-900 py-4 text-lg font-bold rounded-xl disabled:opacity-50"
+                >
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Отправляем...
+                    </span>
+                  ) : (
+                    'Отправить заявку'
+                  )}
+                </Button>
+
+                <p className="text-xs text-gray-500 text-center">
+                  Нажимая кнопку, вы соглашаетесь с{' '}
+                  <Link to="/privacy" className="text-yellow-600 hover:underline">
+                    политикой конфиденциальности
+                  </Link>
+                </p>
+              </form>
+            )}
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+
 const TrainingPage = () => {
   const [openModule, setOpenModule] = useState(1);
   const [openFaq, setOpenFaq] = useState(null);
+  const [showEnrollModal, setShowEnrollModal] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState(null);
+
+  const handleSelectPlan = (plan) => {
+    setSelectedPlan(plan);
+    setShowEnrollModal(true);
+  };
+
+  const handleEnrollClick = () => {
+    // Скролл к тарифам
+    document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   // JSON-LD Schema для SEO
   useEffect(() => {
@@ -579,12 +830,13 @@ const TrainingPage = () => {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                <Link to="/quote">
-                  <Button className="w-full sm:w-auto bg-yellow-400 hover:bg-yellow-500 text-gray-900 px-8 py-6 text-lg font-bold rounded-xl shadow-lg shadow-yellow-200">
-                    Записаться на курс
-                    <ArrowRight className="w-5 h-5 ml-2" />
-                  </Button>
-                </Link>
+                <Button
+                  onClick={handleEnrollClick}
+                  className="w-full sm:w-auto bg-yellow-400 hover:bg-yellow-500 text-gray-900 px-8 py-6 text-lg font-bold rounded-xl shadow-lg shadow-yellow-200"
+                >
+                  Записаться на курс
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </Button>
                 <a href="#program">
                   <Button variant="outline" className="w-full sm:w-auto border-2 border-gray-300 hover:border-gray-400 px-8 py-6 text-lg rounded-xl">
                     Смотреть программу
@@ -841,7 +1093,7 @@ const TrainingPage = () => {
       </section>
 
       {/* Pricing */}
-      <section className="py-16 bg-gray-50">
+      <section id="pricing" className="py-16 bg-gray-50">
         <div className="mx-auto max-w-[1200px] px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -859,7 +1111,7 @@ const TrainingPage = () => {
 
           <div className="grid lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {PRICING_PLANS.map((plan) => (
-              <PricingCard key={plan.id} plan={plan} />
+              <PricingCard key={plan.id} plan={plan} onSelect={handleSelectPlan} />
             ))}
           </div>
 
@@ -874,21 +1126,20 @@ const TrainingPage = () => {
               Дополнительные форматы
             </h3>
             <div className="grid sm:grid-cols-3 gap-6">
-              <div className="text-center p-4 rounded-xl bg-gray-50">
-                <p className="font-bold text-gray-900 mb-1">Мини-курс для кассиров</p>
-                <p className="text-sm text-gray-500 mb-2">4 часа практики</p>
-                <p className="text-2xl font-bold text-yellow-600">10 000 ₽</p>
-              </div>
-              <div className="text-center p-4 rounded-xl bg-gray-50">
-                <p className="font-bold text-gray-900 mb-1">Курс для бухгалтера</p>
-                <p className="text-sm text-gray-500 mb-2">8 часов практики</p>
-                <p className="text-2xl font-bold text-yellow-600">20 000 ₽</p>
-              </div>
-              <div className="text-center p-4 rounded-xl bg-gray-50">
-                <p className="font-bold text-gray-900 mb-1">Корпоративное</p>
-                <p className="text-sm text-gray-500 mb-2">до 10 человек</p>
-                <p className="text-2xl font-bold text-yellow-600">от 120 000 ₽</p>
-              </div>
+              {ADDITIONAL_FORMATS.map((format) => (
+                <div key={format.id} className="text-center p-6 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors">
+                  <p className="font-bold text-gray-900 mb-1">{format.name}</p>
+                  <p className="text-sm text-gray-500 mb-3">{format.duration}</p>
+                  <p className="text-2xl font-bold text-yellow-600 mb-4">{format.price} ₽</p>
+                  <Button
+                    onClick={() => handleSelectPlan({ id: format.id, name: format.name, price: format.price })}
+                    variant="outline"
+                    className="w-full border-2 border-gray-300 hover:border-yellow-400 hover:bg-yellow-50 rounded-xl py-2"
+                  >
+                    Выбрать
+                  </Button>
+                </div>
+              ))}
             </div>
           </motion.div>
         </div>
@@ -939,12 +1190,13 @@ const TrainingPage = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-              <Link to="/quote">
-                <Button className="bg-gray-900 hover:bg-gray-800 text-white px-8 py-6 text-lg font-bold rounded-xl shadow-lg">
-                  Записаться на курс
-                  <ArrowRight className="w-5 h-5 ml-2" />
-                </Button>
-              </Link>
+              <Button
+                onClick={handleEnrollClick}
+                className="bg-gray-900 hover:bg-gray-800 text-white px-8 py-6 text-lg font-bold rounded-xl shadow-lg"
+              >
+                Выбрать тариф
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </Button>
             </div>
 
             <div className="flex items-center justify-center text-gray-800">
@@ -956,6 +1208,13 @@ const TrainingPage = () => {
           </motion.div>
         </div>
       </section>
+
+      {/* Модальное окно записи */}
+      <EnrollmentModal
+        isOpen={showEnrollModal}
+        onClose={() => setShowEnrollModal(false)}
+        selectedPlan={selectedPlan}
+      />
     </div>
   );
 };
