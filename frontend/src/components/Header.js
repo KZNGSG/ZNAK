@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { CheckCircle, Wrench, Mail, User, LogIn, Handshake } from 'lucide-react';
+import { CheckCircle, Wrench, Info, User, LogIn, Handshake } from 'lucide-react';
 import CitySelector from './CitySelector';
 import { useAuth } from '../context/AuthContext';
 
@@ -64,16 +64,16 @@ const Header = () => {
               Оснащение
             </Link>
             <Link
-              to="/contact"
+              to="/about"
               className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-bold transition-all ${
-                isActive('/contact')
+                isActive('/about')
                   ? 'bg-[rgb(var(--grey-900))] text-white shadow-lg'
                   : 'text-[rgb(var(--grey-700))] hover:bg-[rgb(var(--grey-200))] hover:text-[rgb(var(--black))]'
               }`}
-              data-testid="nav-contact"
+              data-testid="nav-about"
             >
-              <Mail size={20} strokeWidth={2.5} />
-              Контакт
+              <Info size={20} strokeWidth={2.5} />
+              О нас
             </Link>
             <Link
               to="/partners"

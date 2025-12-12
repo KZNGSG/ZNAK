@@ -24,6 +24,7 @@ import VerifyEmailPage from './pages/VerifyEmailPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import PartnersPage from './pages/PartnersPage';
+import AboutPage from './pages/AboutPage';
 
 // Client cabinet pages
 import ClientLayout from './components/cabinet/ClientLayout';
@@ -111,6 +112,7 @@ function App() {
                 <Route path="/forgot-password" element={<MainLayout><ForgotPasswordPage /></MainLayout>} />
                 <Route path="/reset-password" element={<MainLayout><ResetPasswordPage /></MainLayout>} />
                 <Route path="/partners" element={<MainLayout><PartnersPage /></MainLayout>} />
+                <Route path="/about" element={<MainLayout><AboutPage /></MainLayout>} />
 
                 {/* Client cabinet routes */}
                 <Route path="/cabinet" element={
