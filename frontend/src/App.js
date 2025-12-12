@@ -15,7 +15,8 @@ import ContactPage from './pages/ContactPage';
 import ConsultationPage from './pages/ConsultationPage';
 import ChecklistPage from './pages/ChecklistPage';
 import ScannerPage from './pages/ScannerPage';
-import KnowledgePage from './pages/KnowledgePage';
+import KnowledgeBasePage from './pages/KnowledgeBasePage';
+import ArticlePage from './pages/ArticlePage';
 import QuotePage from './pages/QuotePage';
 import TimelinePage from './pages/TimelinePage';
 import LoginPage from './pages/LoginPage';
@@ -102,7 +103,8 @@ function App() {
                 <Route path="/consultation" element={<MainLayout><ConsultationPage /></MainLayout>} />
                 <Route path="/checklist" element={<MainLayout><ChecklistPage /></MainLayout>} />
                 <Route path="/scanner" element={<MainLayout><ScannerPage /></MainLayout>} />
-                <Route path="/knowledge" element={<MainLayout><KnowledgePage /></MainLayout>} />
+                <Route path="/knowledge" element={<MainLayout><KnowledgeBasePage /></MainLayout>} />
+                <Route path="/knowledge/:articleId" element={<MainLayout><ArticlePage /></MainLayout>} />
                 <Route path="/timeline" element={<MainLayout><TimelinePage /></MainLayout>} />
                 <Route path="/login" element={<MainLayout><LoginPage /></MainLayout>} />
                 <Route path="/verify-email" element={<MainLayout><VerifyEmailPage /></MainLayout>} />

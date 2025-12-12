@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
-import { ScanLine, Ship, Settings, FileText } from 'lucide-react';
+import { BookOpen, Ship, Settings, FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
 import SEO from '../components/SEO';
 
@@ -10,10 +10,10 @@ const HomePage = () => {
 
   const actions = [
     {
-      icon: ScanLine,
-      title: 'Проверить товар',
-      description: 'Узнайте, подлежит ли ваш товар обязательной маркировке',
-      path: '/check',
+      icon: BookOpen,
+      title: 'База знаний',
+      description: 'Полезные статьи и инструкции по маркировке товаров',
+      path: '/knowledge',
       disabled: false
     },
     {
