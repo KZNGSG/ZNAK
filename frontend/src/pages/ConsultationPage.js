@@ -4,6 +4,7 @@ import { Button } from '../components/ui/button';
 import { MessageSquare, Sparkles, Clock, ArrowLeft, Bot, Zap, Shield } from 'lucide-react';
 import { motion } from 'framer-motion';
 import AIChatWidget from '../components/AIChatWidget';
+import SEO from '../components/SEO';
 
 const ConsultationPage = () => {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ const ConsultationPage = () => {
 
   return (
     <div className="py-12 bg-gradient-to-b from-[rgb(var(--brand-yellow-50))] to-white min-h-screen">
+      <SEO />
       <div className="mx-auto max-w-[900px] px-4 sm:px-6 lg:px-8">
         {/* Back button */}
         <Button

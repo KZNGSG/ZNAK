@@ -4,6 +4,7 @@ import { Button } from '../components/ui/button';
 import { ArrowLeft, ArrowRight, CheckCircle, XCircle, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import Stepper from '../components/Stepper';
+import SEO from '../components/SEO';
 import {
   Select,
   SelectContent,
@@ -92,6 +93,7 @@ const ImportPage = () => {
 
   return (
     <div className="py-12 bg-gradient-to-b from-slate-50 to-white min-h-screen">
+      <SEO />
       <div className="mx-auto max-w-[1200px] px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="text-3xl sm:text-4xl font-semibold text-primary mb-2">Импорт товаров</h1>

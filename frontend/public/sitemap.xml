@@ -36,12 +36,12 @@
     <priority>0.8</priority>
   </url>
 
-  <!-- Контакты -->
+  <!-- О нас -->
   <url>
-    <loc>https://promarkirui.ru/contact</loc>
+    <loc>https://promarkirui.ru/about</loc>
     <lastmod>2025-12-12</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.8</priority>
   </url>
 
   <!-- Партнёрам -->
@@ -52,20 +52,44 @@
     <priority>0.7</priority>
   </url>
 
-  <!-- О нас -->
-  <url>
-    <loc>https://promarkirui.ru/about</loc>
-    <lastmod>2025-12-12</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-
   <!-- Запрос КП -->
   <url>
     <loc>https://promarkirui.ru/quote</loc>
     <lastmod>2025-12-12</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+  </url>
+
+  <!-- Импорт товаров -->
+  <url>
+    <loc>https://promarkirui.ru/import</loc>
+    <lastmod>2025-12-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Чек-лист -->
+  <url>
+    <loc>https://promarkirui.ru/checklist</loc>
+    <lastmod>2025-12-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Сканер кодов -->
+  <url>
+    <loc>https://promarkirui.ru/scanner</loc>
+    <lastmod>2025-12-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- AI-консультация -->
+  <url>
+    <loc>https://promarkirui.ru/consultation</loc>
+    <lastmod>2025-12-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
 
   <!-- База знаний -->
@@ -211,24 +235,6 @@
   </url>
   <url>
     <loc>https://promarkirui.ru/knowledge/markirovka-moloka</loc>
-    <lastmod>2025-12-12</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://promarkirui.ru/knowledge/markirovka-importnyh-tovarov</loc>
-    <lastmod>2025-12-12</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://promarkirui.ru/knowledge/chto-takoe-kiz</loc>
-    <lastmod>2025-12-12</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://promarkirui.ru/knowledge/skaner-dlya-chestnogo-znaka</loc>
     <lastmod>2025-12-12</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>

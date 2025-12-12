@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { QrCode, Camera, Search, CheckCircle, XCircle, AlertCircle, Package, Calendar, Building, Info } from 'lucide-react';
 import { Button } from '../components/ui/button';
+import SEO from '../components/SEO';
 
 const ScannerPage = () => {
   const [code, setCode] = useState('');
@@ -47,6 +48,7 @@ const ScannerPage = () => {
 
   return (
     <div className="fade-in">
+      <SEO />
       {/* Hero Section */}
       <section className="relative py-16 sm:py-20 noise-bg overflow-hidden">
         <motion.div

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ClipboardList, Check, Circle, ChevronRight, ExternalLink, FileText, Building, Key, Printer, Package } from 'lucide-react';
 import { Button } from '../components/ui/button';
+import SEO from '../components/SEO';
 
 const ChecklistPage = () => {
   const [completedSteps, setCompletedSteps] = useState([]);
@@ -104,6 +105,7 @@ const ChecklistPage = () => {
 
   return (
     <div className="fade-in">
+      <SEO />
       {/* Hero Section */}
       <section className="relative py-16 sm:py-20 noise-bg overflow-hidden">
         <motion.div

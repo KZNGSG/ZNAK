@@ -5,6 +5,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
+import SEO from '../components/SEO';
 import {
   Mail, Lock, User, ArrowRight, LogIn, UserPlus, Building2, Phone,
   AlertCircle, Send, MapPin, Search, CheckCircle, ChevronDown
@@ -360,6 +361,7 @@ const LoginPage = () => {
 
   return (
     <div className="py-8 bg-gradient-to-b from-slate-50 to-white min-h-screen">
+      <SEO noindex={true} />
       <div className={`mx-auto px-4 ${mode === 'register' ? 'max-w-2xl' : 'max-w-md'}`}>
         {/* Logo */}
         <div className="text-center mb-6">
