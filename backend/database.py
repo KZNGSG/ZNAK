@@ -477,12 +477,13 @@ def get_next_document_number(doc_type: str) -> str:
         doc_type: 'quote' для КП или 'contract' для Договора
 
     Returns:
-        Номер в формате КП-ДДММГГ-0001 или ДОГ-ДДММГГ-0001
+        Номер в формате KP-ДДММГГ-0001 или DOG-ДДММГГ-0001
     """
     now = datetime.now()
     year = now.year
     date_str = now.strftime("%d%m%y")
-    prefix = "КП" if doc_type == "quote" else "ДОГ"
+    # Используем латиницу для совместимости с HTTP заголовками
+    prefix = "KP" if doc_type == "quote" else "DOG"
 
     with get_db() as conn:
         cursor = conn.cursor()

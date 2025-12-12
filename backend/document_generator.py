@@ -299,6 +299,9 @@ def generate_contract_pdf(
     if contract_number is None:
         contract_number = generate_contract_number(contract_date)
 
+    # Преобразуем латинские префиксы в кириллицу для отображения в PDF
+    display_contract_number = contract_number.replace("DOG-", "ДОГ-").replace("KP-", "КП-")
+
     # Создаём буфер для PDF
     buffer = io.BytesIO()
 
@@ -324,7 +327,7 @@ def generate_contract_pdf(
 
     # Заголовок
     story.append(Paragraph(
-        f"<b>ДОГОВОР № {contract_number}</b>",
+        f"<b>ДОГОВОР № {display_contract_number}</b>",
         styles['DocTitle']
     ))
 
@@ -540,7 +543,7 @@ def generate_contract_pdf(
     story.append(PageBreak())
 
     story.append(Paragraph(
-        f"<b>Приложение № 1</b><br/>к Договору № {contract_number} от {date_str}",
+        f"<b>Приложение № 1</b><br/>к Договору № {display_contract_number} от {date_str}",
         styles['DocTitle']
     ))
     story.append(Paragraph("<b>СПЕЦИФИКАЦИЯ УСЛУГ</b>", styles['DocSubtitle']))
@@ -625,7 +628,7 @@ def generate_contract_pdf(
         story.append(Spacer(1, 0.3*cm))
 
     # Номер счёта (берём из номера договора)
-    invoice_number = contract_number.replace("ДОГ", "СЧ")
+    invoice_number = display_contract_number.replace("ДОГ", "СЧ")
 
     story.append(Paragraph(
         f"<b>СЧЁТ НА ОПЛАТУ № {invoice_number}</b>",
@@ -660,7 +663,7 @@ def generate_contract_pdf(
 
     # Основание
     story.append(Paragraph(
-        f"<b>Основание:</b> Договор № {contract_number} от {date_str}",
+        f"<b>Основание:</b> Договор № {display_contract_number} от {date_str}",
         styles['Normal_RU']
     ))
     story.append(Spacer(1, 0.5*cm))
@@ -981,8 +984,11 @@ def generate_act_pdf(
     if act_date is None:
         act_date = datetime.now()
 
+    # Преобразуем латинские префиксы в кириллицу для отображения
+    display_contract_number = contract_number.replace("DOG-", "ДОГ-").replace("KP-", "КП-")
+
     if act_number is None:
-        act_number = contract_number.replace("ДОГ", "АКТ")
+        act_number = display_contract_number.replace("ДОГ", "АКТ")
 
     buffer = io.BytesIO()
 
@@ -1047,7 +1053,7 @@ def generate_act_pdf(
 
     # Основание
     story.append(Paragraph(
-        f"<b>Основание:</b> Договор № {contract_number} от {contract_date_str}",
+        f"<b>Основание:</b> Договор № {display_contract_number} от {contract_date_str}",
         styles['Normal_RU']
     ))
     story.append(Spacer(1, 0.5*cm))
