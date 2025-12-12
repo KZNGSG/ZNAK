@@ -64,7 +64,10 @@ const CheckProductPage = () => {
   const [tnvedStats, setTnvedStats] = useState({ total: 0, mandatory: 0, experimental: 0, not_required: 0 });
 
   // Timeline statistics state
-  const [timelineStats, setTimelineStats] = useState({ active: 0, partial: 0, upcoming: 0 });
+  const [timelineStats, setTimelineStats] = useState({ active: 0, partial: 0, upcoming_count: 0, upcoming_events: [] });
+
+  // Upcoming deadlines modal
+  const [showUpcomingModal, setShowUpcomingModal] = useState(false);
 
   // Initial data loading state
   const [initialLoading, setInitialLoading] = useState(true);
@@ -87,7 +90,7 @@ const CheckProductPage = () => {
         setTnvedStats(data.tnved_stats || { total: 0, mandatory: 0, experimental: 0, not_required: 0 });
 
         // Set timeline stats
-        setTimelineStats(data.timeline_stats || { active: 0, partial: 0, upcoming: 0 });
+        setTimelineStats(data.timeline_stats || { active: 0, partial: 0, upcoming_count: 0, upcoming_events: [] });
 
         // Expand first category with subcategories
         if (data.groups && data.groups.length > 0) {
@@ -450,7 +453,7 @@ const CheckProductPage = () => {
 
             {/* Timeline Status Indicators */}
             <button
-              onClick={() => navigate('/timeline')}
+              onClick={() => setShowUpcomingModal(true)}
               className="bg-white rounded-2xl border-2 border-gray-200 shadow-lg overflow-hidden hover:border-yellow-400 hover:shadow-xl transition-all cursor-pointer group"
             >
               <div className="bg-gradient-to-r from-yellow-500 to-amber-500 px-4 py-2 flex items-center gap-2">
@@ -465,16 +468,16 @@ const CheckProductPage = () => {
                 <div className="w-px bg-gray-200"></div>
                 <div className="text-center" title="Частично действует">
                   <div className="text-xl font-bold text-amber-600">🟡 {timelineStats.partial}</div>
-                  <div className="text-xs text-gray-500">Частично</div>
+                  <div className="text-xs text-gray-500">В процессе</div>
                 </div>
                 <div className="w-px bg-gray-200"></div>
-                <div className="text-center" title="Скоро старт">
-                  <div className="text-xl font-bold text-red-500">🔴 {timelineStats.upcoming}</div>
-                  <div className="text-xs text-gray-500">Скоро</div>
+                <div className="text-center" title="Ближайшие дедлайны (6 мес)">
+                  <div className="text-xl font-bold text-red-500">📅 {timelineStats.upcoming_count || 0}</div>
+                  <div className="text-xs text-gray-500">Дедлайны</div>
                 </div>
               </div>
               <div className="px-3 pb-2 text-xs text-yellow-600 group-hover:text-yellow-700 flex items-center justify-center gap-1">
-                Посмотреть все сроки →
+                Посмотреть ближайшие сроки →
               </div>
             </button>
           </div>
@@ -1397,6 +1400,111 @@ const CheckProductPage = () => {
               <p className="text-xs text-center text-gray-500">
                 Нажимая кнопку, вы соглашаетесь на обработку персональных данных
               </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Upcoming Deadlines Modal */}
+      {showUpcomingModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowUpcomingModal(false)}
+          />
+
+          <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl mx-4 max-h-[85vh] overflow-hidden flex flex-col">
+            <div className="bg-gradient-to-r from-yellow-500 to-amber-500 px-6 py-5 flex-shrink-0">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-white/20 rounded-xl">
+                    <BarChart3 size={24} className="text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white">Ближайшие дедлайны</h3>
+                    <p className="text-sm text-white/80">Требования на ближайшие 6 месяцев</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowUpcomingModal(false)}
+                  className="p-2 rounded-full hover:bg-white/20 transition-colors"
+                >
+                  <X size={20} className="text-white" />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6">
+              {/* Summary */}
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className="bg-emerald-50 rounded-xl p-4 text-center border border-emerald-200">
+                  <div className="text-2xl font-bold text-emerald-600">🟢 {timelineStats.active}</div>
+                  <div className="text-sm text-emerald-700">Полностью действует</div>
+                </div>
+                <div className="bg-amber-50 rounded-xl p-4 text-center border border-amber-200">
+                  <div className="text-2xl font-bold text-amber-600">🟡 {timelineStats.partial}</div>
+                  <div className="text-sm text-amber-700">В процессе внедрения</div>
+                </div>
+                <div className="bg-red-50 rounded-xl p-4 text-center border border-red-200">
+                  <div className="text-2xl font-bold text-red-600">📅 {timelineStats.upcoming_count || 0}</div>
+                  <div className="text-sm text-red-700">Дедлайны (6 мес)</div>
+                </div>
+              </div>
+
+              {/* Upcoming Events List */}
+              <h4 className="font-semibold text-gray-900 mb-4">Ближайшие требования:</h4>
+              {timelineStats.upcoming_events && timelineStats.upcoming_events.length > 0 ? (
+                <div className="space-y-3">
+                  {timelineStats.upcoming_events.map((event, index) => (
+                    <div
+                      key={index}
+                      className="bg-gray-50 rounded-xl p-4 border border-gray-200 hover:border-yellow-300 transition-colors"
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="flex-shrink-0 w-16 text-center">
+                          <div className="text-lg font-bold text-red-600">{event.date_display?.split('.')[0]}</div>
+                          <div className="text-xs text-gray-500">
+                            {['', 'янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'][parseInt(event.date_display?.split('.')[1])] || ''} {event.date_display?.split('.')[2]}
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="px-2 py-0.5 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">
+                              {event.category}
+                            </span>
+                            <span className="px-2 py-0.5 bg-gray-200 text-gray-600 text-xs rounded-full">
+                              {event.type_label}
+                            </span>
+                          </div>
+                          <p className="text-sm font-medium text-gray-900 line-clamp-2">{event.title}</p>
+                          {event.description && (
+                            <p className="text-xs text-gray-500 mt-1 line-clamp-2">{event.description}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <CheckCircle size={48} className="mx-auto text-emerald-400 mb-3" />
+                  <p>Нет ближайших дедлайнов в следующие 6 месяцев</p>
+                </div>
+              )}
+
+              {/* Link to full timeline */}
+              <div className="mt-6 pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => {
+                    setShowUpcomingModal(false);
+                    navigate('/timeline');
+                  }}
+                  className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
+                >
+                  Посмотреть все сроки по категориям
+                  <ArrowRight size={18} />
+                </button>
+              </div>
             </div>
           </div>
         </div>

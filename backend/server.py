@@ -2186,8 +2186,7 @@ async def get_categories():
 @app.get("/api/check/init")
 async def get_check_init():
     """Unified endpoint for initial page load - returns categories, stats, timeline in one request"""
-    timeline_data = get_timeline_data_cached()
-    timeline_stats = timeline_data.get("statistics", {"active": 0, "partial": 0, "upcoming": 0}) if timeline_data else {"active": 0, "partial": 0, "upcoming": 0}
+    timeline_stats = get_timeline_stats_with_upcoming()
 
     return {
         "groups": CATEGORIES_DATA,
@@ -5431,14 +5430,68 @@ async def api_tnved_stats():
 
 # ======================== TIMELINE API ========================
 
-@app.get("/api/marking/timeline/stats")
-async def api_timeline_stats():
-    """Статистика по срокам маркировки"""
+def get_timeline_stats_with_upcoming():
+    """Расчёт статистики с ближайшими дедлайнами"""
+    from datetime import datetime, timedelta
+
     data = get_timeline_data_cached()
     if not data:
-        return {"statistics": {"active": 0, "partial": 0, "upcoming": 0}}
+        return {
+            "active": 0,
+            "partial": 0,
+            "upcoming_count": 0,
+            "upcoming_events": []
+        }
 
-    return {"statistics": data.get("statistics", {"active": 0, "partial": 0, "upcoming": 0})}
+    categories = data.get("categories", {})
+    today = datetime.now().date()
+    six_months_later = today + timedelta(days=180)
+
+    active = 0
+    partial = 0
+    upcoming_events = []
+
+    for cat_name, cat_data in categories.items():
+        status = cat_data.get("status", "")
+        if status == "active":
+            active += 1
+        elif status == "partial":
+            partial += 1
+
+        # Собираем будущие события
+        for event in cat_data.get("events", []):
+            if not event.get("is_completed", False):
+                date_str = event.get("date", "")
+                if date_str:
+                    try:
+                        event_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+                        if today < event_date <= six_months_later:
+                            upcoming_events.append({
+                                "date": date_str,
+                                "date_display": event.get("date_display", ""),
+                                "category": cat_name,
+                                "title": event.get("title", ""),
+                                "type_label": event.get("type_label", ""),
+                                "description": event.get("description", "")[:200] if event.get("description") else ""
+                            })
+                    except:
+                        pass
+
+    # Сортируем по дате
+    upcoming_events.sort(key=lambda x: x["date"])
+
+    return {
+        "active": active,
+        "partial": partial,
+        "upcoming_count": len(upcoming_events),
+        "upcoming_events": upcoming_events[:10]  # Топ 10 ближайших
+    }
+
+@app.get("/api/marking/timeline/stats")
+async def api_timeline_stats():
+    """Статистика по срокам маркировки с ближайшими дедлайнами"""
+    stats = get_timeline_stats_with_upcoming()
+    return {"statistics": stats}
 
 
 @app.get("/api/marking/timeline")
