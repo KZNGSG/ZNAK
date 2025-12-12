@@ -6,14 +6,14 @@ import {
   BookOpen, Award, Headphones, ArrowRight, ChevronDown, ChevronUp,
   Briefcase, TrendingUp, Shield, Zap, MessageCircle, Calendar,
   Play, FileCheck, Laptop, Building2, UserCheck, Rocket,
-  BadgeCheck, Gift, Mail, X, Loader2, Check
+  BadgeCheck, Mail, X, Loader2, Check
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import SEO from '../components/SEO';
 import { toast } from 'sonner';
 
-const API_URL = process.env.REACT_APP_API_URL || 'https://promarkirui.ru/api';
+const API_URL = process.env.REACT_APP_BACKEND_URL || 'https://promarkirui.ru';
 
 // Модули курса
 const COURSE_MODULES = [
@@ -469,7 +469,7 @@ const EnrollmentModal = ({ isOpen, onClose, selectedPlan }) => {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/training/enroll`, {
+      const response = await fetch(`${API_URL}/api/training/enroll`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -884,15 +884,6 @@ const TrainingPage = () => {
                   ))}
                 </ul>
 
-                <div className="mt-8 p-4 bg-yellow-50 rounded-xl border border-yellow-200">
-                  <div className="flex items-center gap-3">
-                    <Gift className="w-8 h-8 text-yellow-600" />
-                    <div>
-                      <p className="font-semibold text-gray-900">Бонус при записи сегодня</p>
-                      <p className="text-sm text-gray-600">Чек-листы и шаблоны документов в подарок</p>
-                    </div>
-                  </div>
-                </div>
               </div>
             </motion.div>
           </div>
