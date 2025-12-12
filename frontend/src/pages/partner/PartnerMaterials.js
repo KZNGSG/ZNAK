@@ -3,7 +3,6 @@ import {
   BookOpen,
   FileText,
   HelpCircle,
-  Phone,
   Mail,
   MessageCircle,
   ChevronDown,
@@ -173,20 +172,7 @@ const PartnerMaterials = () => {
           <p className="text-gray-600 mb-4">
             Если у вас есть вопросы или нужна помощь — свяжитесь с нами:
           </p>
-          <div className="grid md:grid-cols-3 gap-4">
-            <a
-              href="tel:+79999999999"
-              className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
-            >
-              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
-                <Phone className="w-5 h-5 text-amber-600" />
-              </div>
-              <div>
-                <div className="text-sm text-gray-500">Телефон</div>
-                <div className="font-medium text-gray-900">+7 (999) 999-99-99</div>
-              </div>
-            </a>
-
+          <div className="grid md:grid-cols-2 gap-4">
             <a
               href="mailto:partner@promarkirui.ru"
               className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"

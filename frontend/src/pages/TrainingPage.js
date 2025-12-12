@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -6,7 +6,7 @@ import {
   BookOpen, Award, Headphones, ArrowRight, ChevronDown, ChevronUp,
   Briefcase, TrendingUp, Shield, Zap, MessageCircle, Calendar,
   Play, FileCheck, Laptop, Building2, UserCheck, Rocket,
-  BadgeCheck, Gift, Phone, Mail
+  BadgeCheck, Gift, Mail
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import SEO from '../components/SEO';
@@ -425,6 +425,105 @@ const FAQItem = ({ item, isOpen, onToggle }) => {
 const TrainingPage = () => {
   const [openModule, setOpenModule] = useState(1);
   const [openFaq, setOpenFaq] = useState(null);
+
+  // JSON-LD Schema для SEO
+  useEffect(() => {
+    // Course Schema
+    const courseSchema = {
+      "@context": "https://schema.org",
+      "@type": "Course",
+      "name": "Обучение маркировке товаров — Академия Про.Маркируй",
+      "description": "Профессиональное обучение работе с системой Честный ЗНАК. 32 часа практики с экспертом, 8 модулей программы, гарантия результата.",
+      "provider": {
+        "@type": "Organization",
+        "name": "Про.Маркируй",
+        "url": "https://promarkirui.ru"
+      },
+      "hasCourseInstance": [
+        {
+          "@type": "CourseInstance",
+          "courseMode": "Online",
+          "courseWorkload": "PT32H",
+          "instructor": {
+            "@type": "Organization",
+            "name": "Эксперты Про.Маркируй"
+          }
+        }
+      ],
+      "offers": [
+        {
+          "@type": "Offer",
+          "name": "Стандарт",
+          "price": "50000",
+          "priceCurrency": "RUB",
+          "availability": "https://schema.org/InStock"
+        },
+        {
+          "@type": "Offer",
+          "name": "Премиум",
+          "price": "80000",
+          "priceCurrency": "RUB",
+          "availability": "https://schema.org/InStock"
+        },
+        {
+          "@type": "Offer",
+          "name": "VIP",
+          "price": "150000",
+          "priceCurrency": "RUB",
+          "availability": "https://schema.org/InStock"
+        }
+      ],
+      "about": [
+        "Маркировка товаров",
+        "Честный ЗНАК",
+        "Data Matrix",
+        "Электронный документооборот",
+        "1С интеграция"
+      ],
+      "audience": {
+        "@type": "Audience",
+        "audienceType": "Предприниматели, сотрудники компаний, руководители, партнёры"
+      },
+      "educationalLevel": "Начинающий - Продвинутый",
+      "inLanguage": "ru"
+    };
+
+    // FAQ Schema
+    const faqSchema = {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": FAQ_ITEMS.map(item => ({
+        "@type": "Question",
+        "name": item.question,
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": item.answer
+        }
+      }))
+    };
+
+    // Add schemas to head
+    const addSchema = (id, schema) => {
+      let script = document.getElementById(id);
+      if (!script) {
+        script = document.createElement('script');
+        script.id = id;
+        script.type = 'application/ld+json';
+        document.head.appendChild(script);
+      }
+      script.textContent = JSON.stringify(schema);
+    };
+
+    addSchema('training-course-schema', courseSchema);
+    addSchema('training-faq-schema', faqSchema);
+
+    return () => {
+      const courseScript = document.getElementById('training-course-schema');
+      const faqScript = document.getElementById('training-faq-schema');
+      if (courseScript) courseScript.remove();
+      if (faqScript) faqScript.remove();
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
@@ -848,11 +947,7 @@ const TrainingPage = () => {
               </Link>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-6 text-gray-800">
-              <a href="tel:+79999999999" className="flex items-center gap-2 hover:text-gray-900">
-                <Phone className="w-5 h-5" />
-                <span className="font-medium">+7 (999) 999-99-99</span>
-              </a>
+            <div className="flex items-center justify-center text-gray-800">
               <a href="mailto:info@promarkirui.ru" className="flex items-center gap-2 hover:text-gray-900">
                 <Mail className="w-5 h-5" />
                 <span className="font-medium">info@promarkirui.ru</span>
