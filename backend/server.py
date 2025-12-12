@@ -46,6 +46,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Contract-Number", "X-Quote-Number", "Content-Disposition"],
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -3048,7 +3049,14 @@ async def generate_contract(request: ContractGenerateRequest):
     Возвращает PDF файл для скачивания.
     """
     try:
+        # Получаем номер договора из общего реестра
+        contract_number = get_next_contract_number()
+
         # Подготавливаем данные клиента
+        # ФИО руководителя берём из DaData (management_name) или оставляем пустым для заполнения вручную
+        manager_name = request.company.management_name if request.company.management_name else ""
+        manager_post = request.company.management_post if request.company.management_post else "Генеральный директор"
+
         client_info = {
             "name": request.company.name,
             "name_short": request.company.name_short or request.company.name,
@@ -3056,43 +3064,56 @@ async def generate_contract(request: ContractGenerateRequest):
             "kpp": request.company.kpp or "",
             "ogrn": request.company.ogrn or "",
             "address": request.company.address or "",
-            "manager_name": request.company.management_name or request.contact_name,
-            "manager_post": request.company.management_post or "Директор",
+            "management_name": manager_name,
+            "management_post": manager_post,
             "basis": "Устава" if request.company.type == "LEGAL" else "ОГРНИП",
+            "contact_name": request.contact_name,
+            "contact_phone": request.contact_phone,
+            "contact_email": request.contact_email or ""
         }
 
-        # Подготавливаем услуги
+        # Подготавливаем услуги с округлением цен
         services_list = []
         total_amount = 0
         for s in request.services:
-            subtotal = s.price * s.quantity
+            # Округляем цену и сумму до целых рублей для крупных сумм,
+            # до 2 знаков для мелких (КИЗы, коды)
+            price = s.price
+            subtotal = price * s.quantity
+
+            # Округляем subtotal до 2 знаков после запятой
+            subtotal = round(subtotal, 2)
             total_amount += subtotal
+
             services_list.append({
                 "name": s.name,
                 "quantity": s.quantity,
                 "unit": s.unit,
-                "price": s.price,
+                "price": price,
                 "subtotal": subtotal
             })
+
+        # Округляем итоговую сумму до целых рублей
+        total_amount = round(total_amount, 2)
 
         # Генерируем PDF
         pdf_bytes = generate_contract_pdf(
             client_info=client_info,
             services=services_list,
-            total_amount=total_amount
+            total_amount=total_amount,
+            contract_number=contract_number
         )
 
-        # Формируем имя файла (URL-кодируем для заголовка)
-        contract_date = datetime.now()
-        contract_number = f"DOG-{contract_date.strftime('%d%m%y')}-001"
-        filename = f"Contract_{contract_number}_{request.company.inn}.pdf"
+        # Формируем имя файла с номером договора
+        filename = f"Договор_{contract_number}.pdf"
         filename_encoded = url_quote(filename)
 
         return Response(
             content=pdf_bytes,
             media_type="application/pdf",
             headers={
-                "Content-Disposition": f"attachment; filename=\"{filename}\"; filename*=UTF-8''{filename_encoded}"
+                "Content-Disposition": f"attachment; filename*=UTF-8''{filename_encoded}",
+                "X-Contract-Number": contract_number
             }
         )
 

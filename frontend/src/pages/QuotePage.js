@@ -613,18 +613,21 @@ const QuotePage = () => {
         throw new Error(error.detail || 'Ошибка генерации договора');
       }
 
+      // Получаем номер договора из заголовка ответа
+      const contractNumber = response.headers.get('X-Contract-Number') || 'договор';
+
       // Скачиваем файл
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Договор_${selectedCompany.inn}.pdf`;
+      a.download = `Договор_${contractNumber}.pdf`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
-      toast.success('Договор скачан!');
+      toast.success(`Договор ${contractNumber} скачан!`);
     } catch (error) {
       console.error('Contract download error:', error);
       toast.error(error.message || 'Ошибка скачивания договора');
