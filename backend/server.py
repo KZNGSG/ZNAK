@@ -25,7 +25,7 @@ from document_generator import generate_contract_pdf, generate_quote_pdf, genera
 # Импорт авторизации и БД
 from auth import (
     UserRegister, UserLogin, register_user, login_user,
-    get_current_user, require_auth, require_admin, require_superadmin, require_employee
+    get_current_user, require_auth, require_admin, require_superadmin, require_employee, require_partner
 )
 from database import (
     CompanyDB, QuoteDB, ContractDB, CallbackDB, UserDB,
@@ -33,6 +33,7 @@ from database import (
     NotificationSettingsDB, CRMSettingsDB, CallbackSLADB,
     get_next_contract_number, get_db, PartnerDB
 )
+from education_db import EducationDB
 
 # Load environment variables first
 load_dotenv()
@@ -192,6 +193,7 @@ class CompanyInfo(BaseModel):
     opf: Optional[str] = None  # Организационно-правовая форма
     type: Optional[str] = None  # LEGAL или INDIVIDUAL
     address: Optional[str] = None
+    city: Optional[str] = None
     management_name: Optional[str] = None
     management_post: Optional[str] = None
     status: Optional[str] = None  # ACTIVE, LIQUIDATED, etc.
@@ -3564,6 +3566,17 @@ async def api_create_callback(
 
     callback_id = CallbackDB.create(callback_data)
 
+    # Создаём уведомление для всех сотрудников
+    with get_db() as conn:
+        notify_all_employees(
+            conn,
+            'callback',
+            'Новая заявка на звонок',
+            f'{contact_name} - {contact_phone}',
+            '/employee/inbox',
+            'phone'
+        )
+
     # Отправляем уведомление всем менеджерам
     manager_emails = os.getenv('CONTACT_TO_EMAIL', 'damirslk@mail.ru,turbin.ar8@gmail.com').split(',')
     source_name = {
@@ -3971,6 +3984,7 @@ class ClientCreate(BaseModel):
     kpp: Optional[str] = None
     ogrn: Optional[str] = None
     address: Optional[str] = None
+    city: Optional[str] = None
     director_name: Optional[str] = None  # ФИО генерального директора
     comment: Optional[str] = None
     source: Optional[str] = "manual"
@@ -3988,6 +4002,7 @@ class ClientUpdate(BaseModel):
     kpp: Optional[str] = None
     ogrn: Optional[str] = None
     address: Optional[str] = None
+    city: Optional[str] = None
     director_name: Optional[str] = None  # ФИО генерального директора
     comment: Optional[str] = None
     status: Optional[str] = None
@@ -4515,6 +4530,10 @@ async def api_employee_get_quotes(
         '''
         params = []
 
+        if client_id:
+            query += " AND t.client_id = ?"
+            params.append(client_id)
+
         if status:
             query += ' AND q.status = ?'
             params.append(status)
@@ -4665,6 +4684,10 @@ async def api_employee_get_contracts(
         '''
         params = []
 
+        if client_id:
+            query += " AND t.client_id = ?"
+            params.append(client_id)
+
         if status:
             query += ' AND ct.status = ?'
             params.append(status)
@@ -4706,6 +4729,10 @@ async def api_employee_get_callbacks(
             WHERE 1=1
         '''
         params = []
+
+        if client_id:
+            query += " AND t.client_id = ?"
+            params.append(client_id)
 
         if status:
             query += ' AND cb.status = ?'
@@ -4790,6 +4817,40 @@ async def api_employee_update_callback_comment(
     return {"success": True}
 
 
+
+# --- Удаление заявок ---
+class BulkDeleteRequest(BaseModel):
+    ids: List[int]
+
+@app.delete("/api/employee/callbacks/{callback_id}")
+async def api_employee_delete_callback(
+    callback_id: int,
+    user: Dict = Depends(require_employee)
+):
+    """Удалить одну заявку"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM callbacks WHERE id = ?", (callback_id,))
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Заявка не найдена")
+    return {"success": True}
+
+@app.post("/api/employee/callbacks/bulk-delete")
+async def api_employee_bulk_delete_callbacks(
+    request: BulkDeleteRequest,
+    user: Dict = Depends(require_employee)
+):
+    """Массовое удаление заявок"""
+    if not request.ids:
+        raise HTTPException(status_code=400, detail="Не выбраны заявки")
+    with get_db() as conn:
+        cursor = conn.cursor()
+        placeholders = ",".join(["?"] * len(request.ids))
+        cursor.execute(f"DELETE FROM callbacks WHERE id IN ({placeholders})", request.ids)
+        deleted_count = cursor.rowcount
+    return {"success": True, "deleted_count": deleted_count}
+
+
 @app.post("/api/employee/callbacks/{callback_id}/convert")
 async def api_employee_convert_callback(
     callback_id: int,
@@ -4853,7 +4914,89 @@ async def api_employee_get_clients(
                     client['manager_name'] = manager['name'] or manager['email'].split('@')[0]
                     client['manager_email'] = manager['email']
 
+            # Количество задач
+            cursor.execute("SELECT COUNT(*) as cnt FROM tasks WHERE client_id = ? AND status != 'completed'", (client_id,))
+            tasks_row = cursor.fetchone()
+            client["tasks_count"] = tasks_row["cnt"] if tasks_row else 0
+
     return {"clients": clients}
+
+
+
+# --- Проверка дублей контактов ---
+@app.get("/api/employee/clients/check-duplicate")
+async def check_client_duplicate(
+    phone: str = None,
+    email: str = None,
+    inn: str = None,
+    user: Dict = Depends(require_employee)
+):
+    """Проверить есть ли клиент с таким телефоном/email/ИНН"""
+    duplicates = []
+    
+    with get_db() as conn:
+        cursor = conn.cursor()
+        
+        if phone and len(phone) >= 5:
+            # Очищаем телефон от форматирования для поиска
+            clean_phone = ''.join(filter(str.isdigit, phone))
+            if len(clean_phone) >= 5:
+                cursor.execute('''
+                    SELECT id, contact_name, company_name, contact_phone, contact_email
+                    FROM clients 
+                    WHERE REPLACE(REPLACE(REPLACE(REPLACE(contact_phone, ' ', ''), '-', ''), '(', ''), ')', '') LIKE ?
+                    LIMIT 5
+                ''', (f'%{clean_phone[-10:]}%',))
+                for row in cursor.fetchall():
+                    duplicates.append({
+                        "id": row["id"],
+                        "name": row["contact_name"],
+                        "company": row["company_name"],
+                        "phone": row["contact_phone"],
+                        "email": row["contact_email"],
+                        "match_type": "phone"
+                    })
+        
+        if email and len(email) >= 3 and '@' in email:
+            cursor.execute('''
+                SELECT id, contact_name, company_name, contact_phone, contact_email
+                FROM clients 
+                WHERE LOWER(contact_email) = LOWER(?)
+                LIMIT 5
+            ''', (email,))
+            for row in cursor.fetchall():
+                if not any(d["id"] == row["id"] for d in duplicates):
+                    duplicates.append({
+                        "id": row["id"],
+                        "name": row["contact_name"],
+                        "company": row["company_name"],
+                        "phone": row["contact_phone"],
+                        "email": row["contact_email"],
+                        "match_type": "email"
+                    })
+        
+        if inn and len(inn) >= 10:
+            cursor.execute('''
+                SELECT id, contact_name, company_name, contact_phone, contact_email, inn
+                FROM clients 
+                WHERE inn = ?
+                LIMIT 5
+            ''', (inn,))
+            for row in cursor.fetchall():
+                if not any(d["id"] == row["id"] for d in duplicates):
+                    duplicates.append({
+                        "id": row["id"],
+                        "name": row["contact_name"],
+                        "company": row["company_name"],
+                        "phone": row["contact_phone"],
+                        "email": row["contact_email"],
+                        "match_type": "inn"
+                    })
+    
+    return {
+        "has_duplicates": len(duplicates) > 0,
+        "duplicates": duplicates
+    }
 
 
 @app.post("/api/employee/clients")
@@ -6006,3 +6149,1273 @@ async def validate_ref_code(ref_code: str):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
+
+
+# ======================== API ОБУЧЕНИЯ ДЛЯ ПАРТНЁРОВ ========================
+
+# --- Список курсов партнёра ---
+@app.get("/api/partner/courses")
+async def get_partner_courses(user: Dict = Depends(require_partner)):
+    """Получить курсы с прогрессом партнёра"""
+    with get_db() as conn:
+        # Получаем partner_id из users
+        cursor = conn.cursor()
+        cursor.execute('SELECT id FROM partners WHERE user_id = ?', (user['id'],))
+        partner_row = cursor.fetchone()
+        if not partner_row:
+            raise HTTPException(status_code=404, detail="Партнёр не найден")
+        partner_id = partner_row['id']
+
+        courses = EducationDB.get_partner_courses(conn, partner_id)
+        return {"courses": courses}
+
+
+# --- Детали курса с главами ---
+@app.get("/api/partner/courses/{course_id}")
+async def get_partner_course_detail(course_id: int, user: Dict = Depends(require_partner)):
+    """Получить курс с главами и прогрессом"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT id FROM partners WHERE user_id = ?', (user['id'],))
+        partner_row = cursor.fetchone()
+        if not partner_row:
+            raise HTTPException(status_code=404, detail="Партнёр не найден")
+        partner_id = partner_row['id']
+
+        course = EducationDB.get_partner_course_detail(conn, partner_id, course_id)
+        if not course:
+            raise HTTPException(status_code=404, detail="Курс не найден")
+        return course
+
+
+# --- Начать главу ---
+@app.post("/api/partner/chapters/{chapter_id}/start")
+async def start_chapter(chapter_id: int, user: Dict = Depends(require_partner)):
+    """Начать прохождение главы"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT id FROM partners WHERE user_id = ?', (user['id'],))
+        partner_row = cursor.fetchone()
+        if not partner_row:
+            raise HTTPException(status_code=404, detail="Партнёр не найден")
+        partner_id = partner_row['id']
+
+        # Проверяем что глава существует
+        chapter = EducationDB.get_chapter(conn, chapter_id)
+        if not chapter:
+            raise HTTPException(status_code=404, detail="Глава не найдена")
+
+        # Проверяем доступ к курсу
+        course_detail = EducationDB.get_partner_course_detail(conn, partner_id, chapter['course_id'])
+        if not course_detail or not course_detail.get('has_access'):
+            raise HTTPException(status_code=403, detail="Нет доступа к курсу")
+
+        # Проверяем что глава доступна (не заблокирована)
+        chapter_in_list = next((ch for ch in course_detail['chapters'] if ch['id'] == chapter_id), None)
+        if not chapter_in_list or chapter_in_list['progress_status'] == 'locked':
+            raise HTTPException(status_code=403, detail="Глава ещё не доступна")
+
+        EducationDB.start_chapter(conn, partner_id, chapter_id)
+        return {"success": True, "message": "Глава начата"}
+
+
+# --- Обновить прогресс видео ---
+class VideoProgressRequest(BaseModel):
+    progress_seconds: int
+    watched: bool = False
+
+@app.post("/api/partner/chapters/{chapter_id}/video-progress")
+async def update_video_progress(
+    chapter_id: int,
+    request: VideoProgressRequest,
+    user: Dict = Depends(require_partner)
+):
+    """Обновить прогресс просмотра видео"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT id FROM partners WHERE user_id = ?', (user['id'],))
+        partner_row = cursor.fetchone()
+        if not partner_row:
+            raise HTTPException(status_code=404, detail="Партнёр не найден")
+        partner_id = partner_row['id']
+
+        EducationDB.update_video_progress(
+            conn,
+            partner_id,
+            chapter_id,
+            request.progress_seconds,
+            request.watched
+        )
+        return {"success": True}
+
+
+# --- Получить тест главы ---
+@app.get("/api/partner/chapters/{chapter_id}/test")
+async def get_chapter_test(chapter_id: int, user: Dict = Depends(require_partner)):
+    """Получить тест главы (без правильных ответов!)"""
+    import json as json_lib
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT id FROM partners WHERE user_id = ?', (user['id'],))
+        partner_row = cursor.fetchone()
+        if not partner_row:
+            raise HTTPException(status_code=404, detail="Партнёр не найден")
+        partner_id = partner_row['id']
+
+        test = EducationDB.get_chapter_test(conn, chapter_id)
+        if not test:
+            raise HTTPException(status_code=404, detail="Тест не найден")
+
+        # Убираем правильные ответы из вопросов!
+        questions = json_lib.loads(test['questions_json'])
+        for q in questions:
+            q.pop('correct', None)
+            q.pop('explanation', None)
+
+        # Получаем попытки
+        attempts = EducationDB.get_partner_test_attempts(conn, partner_id, test['id'])
+
+        return {
+            "test_id": test['id'],
+            "title": test['title'],
+            "passing_score": test['passing_score'],
+            "max_attempts": test['max_attempts'],
+            "attempts_used": len(attempts),
+            "questions": questions,
+            "last_attempt": attempts[0] if attempts else None
+        }
+
+
+# --- Сдать тест ---
+class SubmitTestRequest(BaseModel):
+    answers: dict  # {"1": [0], "2": [1, 2], ...}
+
+@app.post("/api/partner/tests/{test_id}/submit")
+async def submit_test(
+    test_id: int,
+    request: SubmitTestRequest,
+    user: Dict = Depends(require_partner)
+):
+    """Сдать тест"""
+    import json as json_lib
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT id FROM partners WHERE user_id = ?', (user['id'],))
+        partner_row = cursor.fetchone()
+        if not partner_row:
+            raise HTTPException(status_code=404, detail="Партнёр не найден")
+        partner_id = partner_row['id']
+
+        result = EducationDB.submit_test(
+            conn,
+            partner_id,
+            test_id,
+            json_lib.dumps(request.answers)
+        )
+
+        if result and 'error' in result:
+            raise HTTPException(status_code=400, detail=result['error'])
+
+        return result
+
+
+# ======================== API ОБУЧЕНИЯ ДЛЯ АДМИНКИ ========================
+
+# --- Статистика обучения ---
+@app.get("/api/admin/education/stats")
+async def get_education_stats(user: Dict = Depends(require_admin)):
+    """Статистика по обучению"""
+    with get_db() as conn:
+        stats = EducationDB.get_education_stats(conn)
+        # Добавляем дополнительные поля для совместимости с фронтендом
+        stats['partners_in_progress'] = stats.get('partners_learning', 0)
+        stats['certificates_issued'] = stats.get('partners_completed', 0)
+        stats['avg_completion_rate'] = stats.get('average_progress', 0)
+        return stats
+
+
+# --- Прогресс партнёров ---
+@app.get("/api/admin/education/progress")
+async def get_partners_progress(
+    course_id: Optional[int] = None,
+    user: Dict = Depends(require_admin)
+):
+    """Прогресс партнёров по обучению"""
+    with get_db() as conn:
+        progress_list = EducationDB.get_partners_progress(conn, course_id)
+        # Форматируем для фронтенда
+        result = []
+        for p in progress_list:
+            total = p.get('total_chapters', 0)
+            completed = p.get('completed_chapters', 0)
+            progress_pct = round((completed / total) * 100) if total > 0 else 0
+            result.append({
+                'partner_id': p['partner_id'],
+                'partner_name': p['contact_name'],
+                'company_name': p['company_name'],
+                'course_id': p['course_id'],
+                'course_title': p['course_title'],
+                'status': p['course_status'],
+                'progress': progress_pct,
+                'certificate_number': p.get('certificate_number')
+            })
+        return {"partners": result}
+
+
+# --- Список курсов для админки ---
+@app.get("/api/admin/education/courses")
+async def admin_get_courses(user: Dict = Depends(require_admin)):
+    """Получить все курсы (включая неактивные)"""
+    with get_db() as conn:
+        courses = EducationDB.get_all_courses(conn, include_inactive=True)
+        return {"courses": courses}
+
+
+# --- Создать курс ---
+class CreateCourseRequest(BaseModel):
+    title: str
+    description: Optional[str] = None
+    cover_url: Optional[str] = None
+    price: float = 0
+
+@app.post("/api/admin/education/courses")
+async def admin_create_course(
+    request: CreateCourseRequest,
+    user: Dict = Depends(require_admin)
+):
+    """Создать новый курс"""
+    with get_db() as conn:
+        course_id = EducationDB.create_course(
+            conn,
+            request.title,
+            request.description,
+            request.cover_url,
+            request.price
+        )
+        return {"success": True, "course_id": course_id}
+
+
+# --- Обновить курс ---
+class UpdateCourseRequest(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    cover_url: Optional[str] = None
+    price: Optional[float] = None
+    is_active: Optional[bool] = None
+    sort_order: Optional[int] = None
+
+@app.put("/api/admin/education/courses/{course_id}")
+async def admin_update_course(
+    course_id: int,
+    request: UpdateCourseRequest,
+    user: Dict = Depends(require_admin)
+):
+    """Обновить курс"""
+    with get_db() as conn:
+        updates = request.model_dump(exclude_none=True)
+        if updates:
+            EducationDB.update_course(conn, course_id, **updates)
+        return {"success": True}
+
+
+# --- Получить главы курса ---
+@app.get("/api/admin/education/courses/{course_id}/chapters")
+async def admin_get_chapters(course_id: int, user: Dict = Depends(require_admin)):
+    """Получить главы курса"""
+    with get_db() as conn:
+        chapters = EducationDB.get_course_chapters(conn, course_id, include_inactive=True)
+        return {"chapters": chapters}
+
+
+# --- Создать главу ---
+class CreateChapterRequest(BaseModel):
+    title: str
+    description: Optional[str] = None
+    video_url: Optional[str] = None
+    video_duration: Optional[int] = None
+    content_html: Optional[str] = None
+
+@app.post("/api/admin/education/courses/{course_id}/chapters")
+async def admin_create_chapter(
+    course_id: int,
+    request: CreateChapterRequest,
+    user: Dict = Depends(require_admin)
+):
+    """Создать главу"""
+    with get_db() as conn:
+        chapter_id = EducationDB.create_chapter(
+            conn,
+            course_id,
+            request.title,
+            request.description,
+            request.video_url,
+            request.video_duration,
+            request.content_html
+        )
+        return {"success": True, "chapter_id": chapter_id}
+
+
+# --- Обновить главу ---
+class UpdateChapterRequest(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    video_url: Optional[str] = None
+    video_duration: Optional[int] = None
+    content_html: Optional[str] = None
+    sort_order: Optional[int] = None
+    is_active: Optional[bool] = None
+
+@app.put("/api/admin/education/chapters/{chapter_id}")
+async def admin_update_chapter(
+    chapter_id: int,
+    request: UpdateChapterRequest,
+    user: Dict = Depends(require_admin)
+):
+    """Обновить главу"""
+    with get_db() as conn:
+        updates = request.model_dump(exclude_none=True)
+        if updates:
+            EducationDB.update_chapter(conn, chapter_id, **updates)
+        return {"success": True}
+
+
+# --- Удалить главу ---
+@app.delete("/api/admin/education/chapters/{chapter_id}")
+async def admin_delete_chapter(chapter_id: int, user: Dict = Depends(require_admin)):
+    """Удалить главу"""
+    with get_db() as conn:
+        EducationDB.delete_chapter(conn, chapter_id)
+        return {"success": True}
+
+
+# --- Получить тест главы (для админа) ---
+@app.get("/api/admin/education/chapters/{chapter_id}/test")
+async def admin_get_test(chapter_id: int, user: Dict = Depends(require_admin)):
+    """Получить тест главы"""
+    import json as json_lib
+    with get_db() as conn:
+        test = EducationDB.get_chapter_test(conn, chapter_id)
+        if test:
+            test['questions'] = json_lib.loads(test['questions_json'])
+        return {"test": test}
+
+
+# --- Сохранить тест главы ---
+class SaveTestRequest(BaseModel):
+    title: str = "Тест по главе"
+    passing_score: int = 80
+    max_attempts: int = 3
+    questions: list  # Список вопросов
+
+@app.post("/api/admin/education/chapters/{chapter_id}/test")
+async def admin_save_test(
+    chapter_id: int,
+    request: SaveTestRequest,
+    user: Dict = Depends(require_admin)
+):
+    """Сохранить тест главы"""
+    import json as json_lib
+    with get_db() as conn:
+        test_id = EducationDB.create_or_update_test(
+            conn,
+            chapter_id,
+            json_lib.dumps(request.questions, ensure_ascii=False),
+            request.passing_score,
+            request.max_attempts,
+            request.title
+        )
+        return {"success": True, "test_id": test_id}
+
+
+# --- Выдать доступ к курсу ---
+class GrantAccessRequest(BaseModel):
+    partner_id: int
+    course_id: int
+    expires_at: Optional[str] = None
+
+@app.post("/api/admin/education/grant-access")
+async def admin_grant_access(
+    request: GrantAccessRequest,
+    user: Dict = Depends(require_admin)
+):
+    """Выдать партнёру доступ к курсу"""
+    with get_db() as conn:
+        EducationDB.grant_course_access(
+            conn,
+            request.partner_id,
+            request.course_id,
+            user.get('id'),
+            request.expires_at
+        )
+        return {"success": True}
+
+
+# --- Отозвать доступ к курсу ---
+@app.delete("/api/admin/education/access/{partner_id}/{course_id}")
+async def admin_revoke_access(
+    partner_id: int,
+    course_id: int,
+    user: Dict = Depends(require_admin)
+):
+    """Отозвать доступ к курсу"""
+    with get_db() as conn:
+        EducationDB.revoke_course_access(conn, partner_id, course_id)
+        return {"success": True}
+
+
+# ======================== СЕРТИФИКАТ ========================
+
+@app.get("/api/partner/courses/{course_id}/certificate")
+async def get_certificate(course_id: int, user: Dict = Depends(require_partner)):
+    """Получить информацию о сертификате"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT id FROM partners WHERE user_id = ?', (user['id'],))
+        partner_row = cursor.fetchone()
+        if not partner_row:
+            raise HTTPException(status_code=404, detail="Партнёр не найден")
+        partner_id = partner_row['id']
+
+        # Проверяем что курс завершён
+        cursor.execute('''
+            SELECT pcp.*, c.title as course_title, p.contact_name, p.company_name
+            FROM partner_course_progress pcp
+            JOIN courses c ON c.id = pcp.course_id
+            JOIN partners p ON p.id = pcp.partner_id
+            WHERE pcp.partner_id = ? AND pcp.course_id = ? AND pcp.status = 'completed'
+        ''', (partner_id, course_id))
+
+        row = cursor.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Курс не завершён")
+
+        data = dict(row)
+
+        # Генерируем номер сертификата если его нет
+        if not data.get('certificate_number'):
+            import datetime
+            cert_num = f"CERT-{datetime.datetime.now().strftime('%Y%m%d')}-{partner_id}-{course_id}"
+            cursor.execute('''
+                UPDATE partner_course_progress
+                SET certificate_number = ?
+                WHERE partner_id = ? AND course_id = ?
+            ''', (cert_num, partner_id, course_id))
+            conn.commit()
+            data['certificate_number'] = cert_num
+
+        return {
+            "certificate_number": data['certificate_number'],
+            "partner_name": data['contact_name'],
+            "company_name": data['company_name'],
+            "course_title": data['course_title'],
+            "completed_at": data['completed_at'],
+            "download_url": f"/api/partner/courses/{course_id}/certificate/download"
+        }
+
+
+@app.get("/api/partner/courses/{course_id}/certificate/download")
+async def download_certificate(course_id: int, user: Dict = Depends(require_partner)):
+    """Скачать PDF сертификат"""
+    from certificate_generator import CertificateGenerator
+
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT id FROM partners WHERE user_id = ?', (user['id'],))
+        partner_row = cursor.fetchone()
+        if not partner_row:
+            raise HTTPException(status_code=404, detail="Партнёр не найден")
+        partner_id = partner_row['id']
+
+        cursor.execute('''
+            SELECT pcp.*, c.title as course_title, p.contact_name, p.company_name
+            FROM partner_course_progress pcp
+            JOIN courses c ON c.id = pcp.course_id
+            JOIN partners p ON p.id = pcp.partner_id
+            WHERE pcp.partner_id = ? AND pcp.course_id = ? AND pcp.status = 'completed'
+        ''', (partner_id, course_id))
+
+        row = cursor.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Курс не завершён")
+
+        data = dict(row)
+
+        # Генерируем номер если нет
+        if not data.get('certificate_number'):
+            import datetime
+            cert_num = f"CERT-{datetime.datetime.now().strftime('%Y%m%d')}-{partner_id}-{course_id}"
+            cursor.execute('''
+                UPDATE partner_course_progress
+                SET certificate_number = ?
+                WHERE partner_id = ? AND course_id = ?
+            ''', (cert_num, partner_id, course_id))
+            conn.commit()
+            data['certificate_number'] = cert_num
+
+        # Генерируем PDF
+        generator = CertificateGenerator()
+        pdf_bytes = generator.generate_certificate(
+            partner_name=data['contact_name'],
+            company_name=data['company_name'],
+            course_title=data['course_title'],
+            certificate_number=data['certificate_number'],
+            completed_at=data['completed_at'],
+            verify_url=f"https://promarkirui.ru/verify/{data['certificate_number']}"
+        )
+
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"attachment; filename=certificate_{data['certificate_number']}.pdf"
+            }
+        )
+
+# --- Удаление клиентов ---
+@app.delete("/api/employee/clients/{client_id}")
+async def api_employee_delete_client(client_id: int, user: Dict = Depends(require_employee)):
+    """Удалить одного клиента"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM clients WHERE id = ?", (client_id,))
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Клиент не найден")
+    return {"success": True}
+
+@app.post("/api/employee/clients/bulk-delete")
+async def api_employee_bulk_delete_clients(request: BulkDeleteRequest, user: Dict = Depends(require_employee)):
+    """Массовое удаление клиентов"""
+    if not request.ids:
+        raise HTTPException(status_code=400, detail="Не выбраны клиенты")
+    with get_db() as conn:
+        cursor = conn.cursor()
+        placeholders = ",".join(["?"] * len(request.ids))
+        cursor.execute(f"DELETE FROM clients WHERE id IN ({placeholders})", request.ids)
+        deleted_count = cursor.rowcount
+    return {"success": True, "deleted_count": deleted_count}
+
+# --- Удаление договоров ---
+@app.delete("/api/employee/contracts/{contract_id}")
+async def api_employee_delete_contract(contract_id: int, user: Dict = Depends(require_employee)):
+    """Удалить один договор"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM contracts WHERE id = ?", (contract_id,))
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Договор не найден")
+    return {"success": True}
+
+@app.post("/api/employee/contracts/bulk-delete")
+async def api_employee_bulk_delete_contracts(request: BulkDeleteRequest, user: Dict = Depends(require_employee)):
+    """Массовое удаление договоров"""
+    if not request.ids:
+        raise HTTPException(status_code=400, detail="Не выбраны договоры")
+    with get_db() as conn:
+        cursor = conn.cursor()
+        placeholders = ",".join(["?"] * len(request.ids))
+        cursor.execute(f"DELETE FROM contracts WHERE id IN ({placeholders})", request.ids)
+        deleted_count = cursor.rowcount
+    return {"success": True, "deleted_count": deleted_count}
+
+# --- Удаление КП ---
+@app.delete("/api/employee/quotes/{quote_id}")
+async def api_employee_delete_quote(quote_id: int, user: Dict = Depends(require_employee)):
+    """Удалить одно КП"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM quotes WHERE id = ?", (quote_id,))
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="КП не найдено")
+    return {"success": True}
+
+@app.post("/api/employee/quotes/bulk-delete")
+async def api_employee_bulk_delete_quotes(request: BulkDeleteRequest, user: Dict = Depends(require_employee)):
+    """Массовое удаление КП"""
+    if not request.ids:
+        raise HTTPException(status_code=400, detail="Не выбраны КП")
+    with get_db() as conn:
+        cursor = conn.cursor()
+        placeholders = ",".join(["?"] * len(request.ids))
+        cursor.execute(f"DELETE FROM quotes WHERE id IN ({placeholders})", request.ids)
+        deleted_count = cursor.rowcount
+    return {"success": True, "deleted_count": deleted_count}
+
+# --- Удаление счетов ---
+@app.delete("/api/employee/invoices/{invoice_id}")
+async def api_employee_delete_invoice(invoice_id: int, user: Dict = Depends(require_employee)):
+    """Удалить один счёт"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM invoices WHERE id = ?", (invoice_id,))
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Счёт не найден")
+    return {"success": True}
+
+@app.post("/api/employee/invoices/bulk-delete")
+async def api_employee_bulk_delete_invoices(request: BulkDeleteRequest, user: Dict = Depends(require_employee)):
+    """Массовое удаление счетов"""
+    if not request.ids:
+        raise HTTPException(status_code=400, detail="Не выбраны счета")
+    with get_db() as conn:
+        cursor = conn.cursor()
+        placeholders = ",".join(["?"] * len(request.ids))
+        cursor.execute(f"DELETE FROM invoices WHERE id IN ({placeholders})", request.ids)
+        deleted_count = cursor.rowcount
+    return {"success": True, "deleted_count": deleted_count}
+
+
+# --- Удаление курса ---
+@app.delete("/api/admin/education/courses/{course_id}")
+async def admin_delete_course(
+    course_id: int,
+    user: Dict = Depends(require_admin)
+):
+    """Удалить курс и все связанные данные"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        
+        # 1. Удаляем попытки тестов
+        cursor.execute('''
+            DELETE FROM partner_test_attempts WHERE test_id IN (
+                SELECT id FROM chapter_tests WHERE chapter_id IN (
+                    SELECT id FROM course_chapters WHERE course_id = ?
+                )
+            )
+        ''', (course_id,))
+        
+        # 2. Удаляем тесты глав
+        cursor.execute('''
+            DELETE FROM chapter_tests WHERE chapter_id IN (
+                SELECT id FROM course_chapters WHERE course_id = ?
+            )
+        ''', (course_id,))
+        
+        # 3. Удаляем прогресс по главам
+        cursor.execute('''
+            DELETE FROM partner_chapter_progress WHERE chapter_id IN (
+                SELECT id FROM course_chapters WHERE course_id = ?
+            )
+        ''', (course_id,))
+        
+        # 4. Удаляем главы курса
+        cursor.execute('DELETE FROM course_chapters WHERE course_id = ?', (course_id,))
+        
+        # 5. Удаляем доступы к курсу
+        cursor.execute('DELETE FROM partner_course_access WHERE course_id = ?', (course_id,))
+        
+        # 6. Удаляем прогресс по курсу
+        cursor.execute('DELETE FROM partner_course_progress WHERE course_id = ?', (course_id,))
+        
+        # 7. Удаляем сам курс
+        cursor.execute('DELETE FROM courses WHERE id = ?', (course_id,))
+        
+        conn.commit()
+        return {"success": True, "message": "Курс удалён"}
+
+
+@app.get("/api/admin/education/courses/{course_id}/access")
+async def get_course_access_list(
+    course_id: int,
+    user: Dict = Depends(require_admin)
+):
+    """Получить список партнёров с информацией о доступе к курсу"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        
+        # Получаем всех партнёров с информацией о доступе
+        cursor.execute('''
+            SELECT 
+                p.id,
+                p.company_name,
+                p.contact_name,
+                p.inn,
+                p.contact_email,
+                CASE WHEN pca.id IS NOT NULL THEN 1 ELSE 0 END as has_access,
+                pca.granted_at,
+                pca.expires_at,
+                pcp.status as progress_status,
+                pcp.status as progress
+            FROM partners p
+            LEFT JOIN partner_course_access pca ON pca.partner_id = p.id AND pca.course_id = ?
+            LEFT JOIN partner_course_progress pcp ON pcp.partner_id = p.id AND pcp.course_id = ?
+            ORDER BY p.company_name
+        ''', (course_id, course_id))
+        
+        partners = [dict(row) for row in cursor.fetchall()]
+        
+        return {"partners": partners}
+
+
+# --- Выдать доступ всем партнёрам ---
+@app.post("/api/admin/education/courses/{course_id}/grant-all")
+async def grant_access_to_all_partners(
+    course_id: int,
+    user: Dict = Depends(require_admin)
+):
+    """Выдать доступ к курсу всем партнёрам"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        
+        # Получаем всех партнёров без доступа к этому курсу
+        cursor.execute('''
+            SELECT p.id FROM partners p
+            WHERE NOT EXISTS (
+                SELECT 1 FROM partner_course_access pca 
+                WHERE pca.partner_id = p.id AND pca.course_id = ?
+            )
+        ''', (course_id,))
+        
+        partners = cursor.fetchall()
+        granted_count = 0
+        
+        for partner in partners:
+            EducationDB.grant_course_access(
+                conn,
+                partner['id'],
+                course_id,
+                user.get('id'),
+                None
+            )
+            granted_count += 1
+        
+        return {"success": True, "granted_count": granted_count}
+
+
+
+
+# ======================== СИСТЕМА УВЕДОМЛЕНИЙ ========================
+
+# --- Получить уведомления пользователя ---
+@app.get("/api/notifications")
+async def get_notifications(
+    limit: int = 50,
+    unread_only: bool = False,
+    user: Dict = Depends(get_current_user)
+):
+    """Получить уведомления текущего пользователя"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        
+        user_type = 'employee'
+        user_id = user.get('id')
+        
+        if user.get('partner_id'):
+            user_type = 'partner'
+            user_id = user.get('partner_id')
+        elif user.get('client_id'):
+            user_type = 'client'
+            user_id = user.get('client_id')
+        
+        query = '''
+            SELECT id, type, title, message, link, icon, is_read, created_at
+            FROM notifications
+            WHERE user_id = ? AND user_type = ?
+        '''
+        params = [user_id, user_type]
+        
+        if unread_only:
+            query += ' AND is_read = 0'
+        
+        query += ' ORDER BY created_at DESC LIMIT ?'
+        params.append(limit)
+        
+        cursor.execute(query, params)
+        notifications = [dict(row) for row in cursor.fetchall()]
+        
+        cursor.execute('''
+            SELECT COUNT(*) as count FROM notifications 
+            WHERE user_id = ? AND user_type = ? AND is_read = 0
+        ''', (user_id, user_type))
+        unread_count = cursor.fetchone()['count']
+        
+        return {
+            "notifications": notifications,
+            "unread_count": unread_count
+        }
+
+
+@app.put("/api/notifications/{notification_id}/read")
+async def mark_notification_read(
+    notification_id: int,
+    user: Dict = Depends(get_current_user)
+):
+    """Пометить уведомление как прочитанное"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('''
+            UPDATE notifications 
+            SET is_read = 1, read_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        ''', (notification_id,))
+        conn.commit()
+        return {"success": True}
+
+
+@app.put("/api/notifications/read-all")
+async def mark_all_notifications_read(user: Dict = Depends(get_current_user)):
+    """Пометить все уведомления как прочитанные"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        
+        user_type = 'employee'
+        user_id = user.get('id')
+        
+        if user.get('partner_id'):
+            user_type = 'partner'
+            user_id = user.get('partner_id')
+        elif user.get('client_id'):
+            user_type = 'client'
+            user_id = user.get('client_id')
+        
+        cursor.execute('''
+            UPDATE notifications 
+            SET is_read = 1, read_at = CURRENT_TIMESTAMP
+            WHERE user_id = ? AND user_type = ? AND is_read = 0
+        ''', (user_id, user_type))
+        conn.commit()
+        return {"success": True, "updated": cursor.rowcount}
+
+
+@app.delete("/api/notifications/{notification_id}")
+async def delete_notification(
+    notification_id: int,
+    user: Dict = Depends(get_current_user)
+):
+    """Удалить уведомление"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM notifications WHERE id = ?', (notification_id,))
+        conn.commit()
+        return {"success": True}
+
+
+@app.delete("/api/notifications/clear-read")
+async def clear_read_notifications(user: Dict = Depends(get_current_user)):
+    """Удалить все прочитанные уведомления"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        
+        user_type = 'employee'
+        user_id = user.get('id')
+        
+        if user.get('partner_id'):
+            user_type = 'partner'
+            user_id = user.get('partner_id')
+        elif user.get('client_id'):
+            user_type = 'client'
+            user_id = user.get('client_id')
+        
+        cursor.execute('''
+            DELETE FROM notifications 
+            WHERE user_id = ? AND user_type = ? AND is_read = 1
+        ''', (user_id, user_type))
+        conn.commit()
+        return {"success": True, "deleted": cursor.rowcount}
+
+
+def create_notification(conn, user_id, user_type, notif_type, title, message, link=None, icon='bell'):
+    """Создать уведомление для пользователя"""
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO notifications (user_id, user_type, type, title, message, link, icon)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ''', (user_id, user_type, notif_type, title, message, link, icon))
+    conn.commit()
+    return cursor.lastrowid
+
+
+def notify_all_employees(conn, notif_type, title, message, link=None, icon='bell'):
+    """Отправить уведомление всем сотрудникам"""
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM users WHERE role IN ('admin', 'manager', 'superadmin', 'employee')")
+    employees = cursor.fetchall()
+    
+    for emp in employees:
+        create_notification(conn, emp['id'], 'employee', notif_type, title, message, link, icon)
+
+
+# ======================== ГЛОБАЛЬНЫЙ ПОИСК ========================
+
+
+# ======================== ГЛОБАЛЬНЫЙ ПОИСК ========================
+
+@app.get("/api/search")
+async def global_search(q: str, limit: int = 15, user: Dict = Depends(get_current_user)):
+    """Глобальный поиск по клиентам, заявкам, партнёрам, договорам"""
+    if not q or len(q) < 2:
+        return {"results": []}
+    
+    results = []
+    
+    # Для кириллицы делаем варианты регистра
+    q_original = q.strip()
+    q_capitalized = q_original.capitalize()
+    q_lower = q_original.lower()
+    q_upper = q_original.upper()
+    
+    search_variants = list(set([
+        f"%{q_original}%",
+        f"%{q_capitalized}%", 
+        f"%{q_lower}%",
+        f"%{q_upper}%"
+    ]))
+    
+    with get_db() as conn:
+        cursor = conn.cursor()
+        
+        # Поиск по клиентам
+        client_conditions = []
+        client_params = []
+        for field in ['company_name', 'contact_name', 'contact_phone', 'inn']:
+            for v in search_variants:
+                client_conditions.append(f"{field} LIKE ?")
+                client_params.append(v)
+        
+        cursor.execute(f'''
+            SELECT id, company_name, contact_name, contact_phone, inn
+            FROM clients
+            WHERE {" OR ".join(client_conditions)}
+            ORDER BY created_at DESC
+            LIMIT ?
+        ''', client_params + [limit])
+        
+        for row in cursor.fetchall():
+            client = dict(row)
+            results.append({
+                "type": "client",
+                "id": client["id"],
+                "title": client["company_name"] or client["contact_name"],
+                "subtitle": f"{client.get('contact_phone', '')} • ИНН: {client.get('inn', '-')}"
+            })
+        
+        # Поиск по заявкам (callbacks)
+        cb_conditions = []
+        cb_params = []
+        for field in ['contact_name', 'contact_phone', 'company_name']:
+            for v in search_variants:
+                cb_conditions.append(f"{field} LIKE ?")
+                cb_params.append(v)
+        
+        cursor.execute(f'''
+            SELECT id, contact_name, contact_phone, company_name
+            FROM callbacks
+            WHERE {" OR ".join(cb_conditions)}
+            ORDER BY created_at DESC
+            LIMIT ?
+        ''', cb_params + [limit])
+        
+        for row in cursor.fetchall():
+            cb = dict(row)
+            results.append({
+                "type": "callback",
+                "id": cb["id"],
+                "title": cb["contact_name"],
+                "subtitle": f"{cb.get('contact_phone', '')} • {cb.get('company_name', '')}"
+            })
+        
+        # Поиск по партнёрам
+        partner_conditions = []
+        partner_params = []
+        for field in ['company_name', 'contact_name', 'contact_phone', 'inn']:
+            for v in search_variants:
+                partner_conditions.append(f"{field} LIKE ?")
+                partner_params.append(v)
+        
+        cursor.execute(f'''
+            SELECT id, company_name, contact_name, contact_phone, inn
+            FROM partners
+            WHERE {" OR ".join(partner_conditions)}
+            ORDER BY created_at DESC
+            LIMIT ?
+        ''', partner_params + [limit])
+        
+        for row in cursor.fetchall():
+            partner = dict(row)
+            results.append({
+                "type": "partner",
+                "id": partner["id"],
+                "title": partner["company_name"] or partner["contact_name"],
+                "subtitle": f"{partner.get('contact_phone', '')} • ИНН: {partner.get('inn', '-')}"
+            })
+        
+        # Поиск по договорам (только по номеру и клиенту)
+        contract_conditions = []
+        contract_params = []
+        for field in ['c.contract_number', 'cl.company_name', 'cl.contact_name']:
+            for v in search_variants:
+                contract_conditions.append(f"{field} LIKE ?")
+                contract_params.append(v)
+        
+        cursor.execute(f'''
+            SELECT c.id, c.contract_number, c.total_amount, cl.company_name as client_name, cl.contact_name
+            FROM contracts c
+            LEFT JOIN clients cl ON cl.id = c.client_id
+            WHERE {" OR ".join(contract_conditions)}
+            ORDER BY c.created_at DESC
+            LIMIT ?
+        ''', contract_params + [limit])
+        
+        for row in cursor.fetchall():
+            contract = dict(row)
+            client_display = contract.get('client_name') or contract.get('contact_name') or ''
+            results.append({
+                "type": "contract",
+                "id": contract["id"],
+                "title": f"Договор {contract.get('contract_number', '')}",
+                "subtitle": client_display
+            })
+        
+        # Поиск по КП (только по номеру и клиенту)
+        quote_conditions = []
+        quote_params = []
+        for field in ['q.quote_number', 'cl.company_name', 'cl.contact_name', 'q.contact_name']:
+            for v in search_variants:
+                quote_conditions.append(f"{field} LIKE ?")
+                quote_params.append(v)
+        
+        cursor.execute(f'''
+            SELECT q.id, q.quote_number, q.total_amount, cl.company_name as client_name, 
+                   COALESCE(cl.contact_name, q.contact_name) as contact
+            FROM quotes q
+            LEFT JOIN clients cl ON cl.id = q.client_id
+            WHERE {" OR ".join(quote_conditions)}
+            ORDER BY q.created_at DESC
+            LIMIT ?
+        ''', quote_params + [limit])
+        
+        for row in cursor.fetchall():
+            quote = dict(row)
+            client_display = quote.get('client_name') or quote.get('contact') or ''
+            results.append({
+                "type": "quote",
+                "id": quote["id"],
+                "title": f"КП {quote.get('quote_number', '')}",
+                "subtitle": client_display
+            })
+    
+    # Убираем дубликаты
+    seen = set()
+    unique_results = []
+    for item in results:
+        key = (item["type"], item["id"])
+        if key not in seen:
+            seen.add(key)
+            unique_results.append(item)
+    
+    # Сортируем по релевантности
+    def relevance_score(item):
+        title_lower = (item.get("title") or "").lower()
+        q_check = q.lower()
+        if title_lower == q_check:
+            return 0
+        if title_lower.startswith(q_check):
+            return 1
+        if q_check in title_lower:
+            return 2
+        return 3
+    
+    unique_results.sort(key=relevance_score)
+    
+    return {"results": unique_results[:limit]}
+
+
+# ======================== СИСТЕМА ЗАДАЧ ДЛЯ МЕНЕДЖЕРОВ ========================
+
+# --- Получить задачи ---
+@app.get("/api/employee/tasks")
+async def get_tasks(
+    status: str = None,
+    assigned_to: int = None,
+    client_id: int = None,
+    user: Dict = Depends(require_employee)
+):
+    """Получить задачи (свои или все для superadmin)"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        
+        is_superadmin = user.get('role') == 'superadmin'
+        
+        query = '''
+            SELECT t.*, 
+                   u1.email as assigned_email,
+                   u2.email as creator_email,
+                   c.company_name as client_name
+            FROM tasks t
+            LEFT JOIN users u1 ON t.assigned_to = u1.id
+            LEFT JOIN users u2 ON t.created_by = u2.id
+            LEFT JOIN clients c ON t.client_id = c.id
+            WHERE 1=1
+        '''
+        params = []
+        
+        if not is_superadmin:
+            query += ' AND t.assigned_to = ?'
+            params.append(user['id'])
+        elif assigned_to:
+            query += ' AND t.assigned_to = ?'
+            params.append(assigned_to)
+        
+        if client_id:
+            query += " AND t.client_id = ?"
+            params.append(client_id)
+
+        if status:
+            query += ' AND t.status = ?'
+            params.append(status)
+        
+        query += ' ORDER BY t.due_date ASC NULLS LAST, t.created_at DESC'
+        
+        cursor.execute(query, params)
+        tasks = [dict(row) for row in cursor.fetchall()]
+        
+        return {"tasks": tasks}
+
+
+# --- Создать задачу (только superadmin) ---
+@app.post("/api/employee/tasks")
+async def create_task(
+    request: Request,
+    user: Dict = Depends(require_employee)
+):
+    """Создать задачу для сотрудника"""
+    
+    data = await request.json()
+    
+    title = data.get('title')
+    if not title:
+        raise HTTPException(status_code=400, detail="Укажите название задачи")
+    
+    assigned_to = data.get('assigned_to')
+    if not assigned_to:
+        assigned_to = user["id"]  # По умолчанию назначаем себе
+    if False:  # Старая проверка отключена
+        raise HTTPException(status_code=400, detail="Укажите исполнителя")
+    
+    # Не-superadmin может назначать задачи только себе
+    if user.get("role") != "superadmin" and int(assigned_to) != user["id"]:
+        raise HTTPException(status_code=403, detail="Вы можете назначать задачи только себе")
+    
+    with get_db() as conn:
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            INSERT INTO tasks (title, description, assigned_to, created_by, client_id, priority, due_date)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            title,
+            data.get('description'),
+            assigned_to,
+            user['id'],
+            data.get('client_id'),
+            data.get('priority', 'normal'),
+            data.get('due_date')
+        ))
+        conn.commit()
+        task_id = cursor.lastrowid
+        
+        create_notification(
+            conn, 
+            assigned_to, 
+            'employee',
+            'task',
+            'Новая задача',
+            title,
+            '/employee/tasks',
+            'file'
+        )
+        
+        return {"success": True, "task_id": task_id}
+
+
+# --- Обновить задачу ---
+@app.put("/api/employee/tasks/{task_id}")
+async def update_task(
+    task_id: int,
+    request: Request,
+    user: Dict = Depends(require_employee)
+):
+    """Обновить статус или данные задачи"""
+    data = await request.json()
+    
+    with get_db() as conn:
+        cursor = conn.cursor()
+        
+        cursor.execute('SELECT * FROM tasks WHERE id = ?', (task_id,))
+        task = cursor.fetchone()
+        
+        if not task:
+            raise HTTPException(status_code=404, detail="Задача не найдена")
+        
+        is_superadmin = user.get('role') == 'superadmin'
+        is_assigned = task['assigned_to'] == user['id']
+        
+        if not is_superadmin and not is_assigned:
+            raise HTTPException(status_code=403, detail="Нет доступа к этой задаче")
+        
+        if not is_superadmin:
+            new_status = data.get('status')
+            if new_status:
+                if new_status == 'completed':
+                    cursor.execute('''
+                        UPDATE tasks SET status = ?, completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+                        WHERE id = ?
+                    ''', (new_status, task_id))
+                else:
+                    cursor.execute('''
+                        UPDATE tasks SET status = ?, completed_at = NULL, updated_at = CURRENT_TIMESTAMP
+                        WHERE id = ?
+                    ''', (new_status, task_id))
+        else:
+            updates = []
+            params = []
+            
+            for field in ['title', 'description', 'assigned_to', 'client_id', 'priority', 'status', 'due_date']:
+                if field in data:
+                    updates.append(f'{field} = ?')
+                    params.append(data[field])
+            
+            if data.get('status') == 'completed':
+                updates.append('completed_at = CURRENT_TIMESTAMP')
+            elif data.get('status') and data.get('status') != 'completed':
+                updates.append('completed_at = NULL')
+            
+            if updates:
+                updates.append('updated_at = CURRENT_TIMESTAMP')
+                params.append(task_id)
+                query = f"UPDATE tasks SET {', '.join(updates)} WHERE id = ?"
+                cursor.execute(query, params)
+        
+        conn.commit()
+        return {"success": True}
+
+
+# --- Удалить задачу (только superadmin) ---
+@app.delete("/api/employee/tasks/{task_id}")
+async def delete_task(
+    task_id: int,
+    user: Dict = Depends(require_employee)
+):
+    """Удалить задачу"""
+    if user.get('role') != 'superadmin':
+        raise HTTPException(status_code=403, detail="Только superadmin может удалять задачи")
+    
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM tasks WHERE id = ?', (task_id,))
+        conn.commit()
+        return {"success": True}
+
+
+# --- Получить сотрудников для назначения задач ---
+@app.get("/api/employee/staff-list")
+async def get_staff_list(user: Dict = Depends(require_employee)):
+    """Получить список сотрудников для выбора исполнителя"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT id, email, role FROM users 
+            WHERE role IN ('admin', 'manager', 'superadmin', 'employee')
+            ORDER BY email
+        ''')
+        staff = [dict(row) for row in cursor.fetchall()]
+        return {"staff": staff}

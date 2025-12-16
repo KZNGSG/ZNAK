@@ -447,6 +447,10 @@ def init_database():
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_quotes_partner ON quotes(partner_id)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_contracts_partner ON contracts(partner_id)')
 
+        # Таблицы обучения
+        from education_db import EducationDB
+        EducationDB.init_tables(conn)
+
         print("Database initialized successfully!")
 
 
@@ -615,6 +619,7 @@ class CompanyDB:
                     data.get('kpp'), data.get('ogrn'), data['name'],
                     data.get('name_short'), data.get('name_full'),
                     data.get('opf'), data.get('type'), data.get('address'),
+                data.get('city'),
                     data.get('management_name'), data.get('management_post'),
                     data.get('status'), existing['id']
                 ))
@@ -630,6 +635,7 @@ class CompanyDB:
                     user_id, data['inn'], data.get('kpp'), data.get('ogrn'),
                     data['name'], data.get('name_short'), data.get('name_full'),
                     data.get('opf'), data.get('type'), data.get('address'),
+                data.get('city'),
                     data.get('management_name'), data.get('management_post'),
                     data.get('status')
                 ))
@@ -1145,8 +1151,8 @@ class ClientDB:
                 INSERT INTO clients (
                     inn, kpp, ogrn, company_name, company_type,
                     contact_name, contact_phone, contact_email, contact_position,
-                    address, comment, source, status, assigned_manager_id, user_id, products_json, director_name
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    address, city, comment, source, status, assigned_manager_id, user_id, products_json, director_name
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 data.get('inn'),
                 data.get('kpp'),
@@ -1158,6 +1164,7 @@ class ClientDB:
                 data.get('contact_email'),
                 data.get('contact_position'),
                 data.get('address'),
+                data.get('city'),
                 data.get('comment'),
                 data.get('source', 'manual'),
                 data.get('status', 'lead'),
@@ -1819,7 +1826,15 @@ class PartnerDB:
     @staticmethod
     def activate(partner_id: int) -> bool:
         """Активировать партнёра"""
-        return PartnerDB.update(partner_id, {'status': 'active'})
+        # Также подтверждаем email пользователя
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT user_id FROM partners WHERE id = ?", (partner_id,))
+            row = cursor.fetchone()
+            if row and row["user_id"]:
+                cursor.execute("UPDATE users SET email_verified = 1 WHERE id = ?", (row["user_id"],))
+            conn.commit()
+        return PartnerDB.update(partner_id, {"status": "active"})
 
     @staticmethod
     def deactivate(partner_id: int) -> bool:
