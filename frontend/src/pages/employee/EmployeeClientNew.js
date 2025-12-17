@@ -11,7 +11,9 @@ import {
   FileText,
   Save,
   Loader2,
-  Search
+  Search,
+  AlertTriangle,
+  ExternalLink
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -23,6 +25,8 @@ const EmployeeClientNew = () => {
 
   const [loading, setLoading] = useState(false);
   const [innLoading, setInnLoading] = useState(false);
+  const [duplicates, setDuplicates] = useState([]);
+  const [checkingDuplicates, setCheckingDuplicates] = useState(false);
   const [formData, setFormData] = useState({
     contact_name: '',
     contact_phone: '',
@@ -34,6 +38,7 @@ const EmployeeClientNew = () => {
     kpp: '',
     ogrn: '',
     address: '',
+    city: '',
     director_name: '',
     comment: '',
     source: 'manual',
@@ -43,6 +48,42 @@ const EmployeeClientNew = () => {
   const handleChange = (field, value) => {
     setFormData({ ...formData, [field]: value });
   };
+
+  // Проверка дублей при изменении телефона/email/ИНН
+  const checkDuplicates = async (phone, email, inn) => {
+    if (!phone && !email && !inn) {
+      setDuplicates([]);
+      return;
+    }
+    
+    const params = new URLSearchParams();
+    if (phone && phone.length >= 5) params.append('phone', phone);
+    if (email && email.includes('@')) params.append('email', email);
+    if (inn && inn.length >= 10) params.append('inn', inn);
+    
+    if (params.toString() === '') return;
+    
+    setCheckingDuplicates(true);
+    try {
+      const response = await authFetch(`${API_URL}/api/employee/clients/check-duplicate?${params}`);
+      if (response.ok) {
+        const data = await response.json();
+        setDuplicates(data.duplicates || []);
+      }
+    } catch (error) {
+      console.error('Error checking duplicates:', error);
+    } finally {
+      setCheckingDuplicates(false);
+    }
+  };
+
+  // Debounce для проверки дублей
+  const handleFieldBlur = (field) => {
+    if (['contact_phone', 'contact_email', 'inn'].includes(field)) {
+      checkDuplicates(formData.contact_phone, formData.contact_email, formData.inn);
+    }
+  };
+
 
   const handleInnLookup = async () => {
     if (!formData.inn || formData.inn.length < 5) {
@@ -138,6 +179,47 @@ const EmployeeClientNew = () => {
         <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
             <User className="w-5 h-5 text-gray-400" />
+
+          {/* Предупреждение о дублях */}
+          {duplicates.length > 0 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="font-medium text-amber-800">Возможный дубликат</h3>
+                  <p className="text-sm text-amber-600 mt-1">
+                    Найдены похожие контакты в базе. Убедитесь, что это новый клиент.
+                  </p>
+                  <div className="mt-3 space-y-2">
+                    {duplicates.map((dup) => (
+                      <div key={dup.id} className="flex items-center justify-between bg-white rounded-lg p-3 border border-amber-200">
+                        <div>
+                          <div className="font-medium text-gray-900">{dup.name || 'Без имени'}</div>
+                          <div className="text-sm text-gray-500">
+                            {dup.company && <span>{dup.company} • </span>}
+                            {dup.phone && <span>{dup.phone}</span>}
+                            {dup.email && <span> • {dup.email}</span>}
+                          </div>
+                          <div className="text-xs text-amber-600 mt-1">
+                            Совпадение по: {dup.match_type === 'phone' ? 'телефону' : dup.match_type === 'email' ? 'email' : 'ИНН'}
+                          </div>
+                        </div>
+                        <a
+                          href={`/employee/clients/${dup.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-sm text-violet-600 hover:text-violet-700"
+                        >
+                          Открыть <ExternalLink className="w-4 h-4" />
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
             <h2 className="text-lg font-medium text-gray-900">Контактная информация</h2>
           </div>
 
@@ -175,6 +257,7 @@ const EmployeeClientNew = () => {
                   type="tel"
                   value={formData.contact_phone}
                   onChange={(e) => handleChange('contact_phone', e.target.value)}
+                  onBlur={() => handleFieldBlur('contact_phone')}
                   placeholder="+7 999 123-45-67"
                   className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-yellow-500"
                   required
@@ -189,6 +272,7 @@ const EmployeeClientNew = () => {
                   type="email"
                   value={formData.contact_email}
                   onChange={(e) => handleChange('contact_email', e.target.value)}
+                  onBlur={() => handleFieldBlur('contact_email')}
                   placeholder="ivan@company.ru"
                   className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-yellow-500"
                 />
@@ -288,6 +372,20 @@ const EmployeeClientNew = () => {
                 placeholder="Иванов Иван Иванович"
                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-yellow-500"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-600 mb-1.5">Город</label>
+              <div className="relative">
+                <MapPin className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  value={formData.city}
+                  onChange={(e) => handleChange("city", e.target.value)}
+                  placeholder="Москва"
+                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-yellow-500"
+                />
+              </div>
             </div>
 
             <div className="md:col-span-2">

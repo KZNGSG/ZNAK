@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import {
   BookOpen, Search, Clock, ArrowRight, Tag,
   Shield, Printer, Ship, AlertTriangle, FileText,
-  ChevronRight, TrendingUp, Package
+  ChevronRight, ChevronLeft, TrendingUp, Package
 } from 'lucide-react';
 import { Input } from '../components/ui/input';
 import SEO from '../components/SEO';
@@ -353,6 +353,108 @@ const ARTICLES = [
     popular: true,
     tags: ['вода', 'питьевая вода', 'минеральная', '2025']
   },
+  // Новые статьи от 17.12.2025
+  {
+    id: 'kupil-etiketki-pochemu-ne-rabotaet',
+    title: 'Купил этикетки Честного знака — почему это не работает',
+    excerpt: 'Разбираем схему покупки готовых этикеток маркировки. Почему это незаконно, чем грозит и реальный кейс с уголовкой.',
+    category: 'shtrafy',
+    readTime: 6,
+    date: '2025-12-17',
+    popular: true,
+    tags: ['этикетки честный знак', 'купить коды маркировки', 'штраф за маркировку', 'уголовная ответственность']
+  },
+  {
+    id: 'import-iz-kitaya-kak-markirovat',
+    title: 'Импорт из Китая: как маркировать, если поставщик отказался',
+    excerpt: 'Китайский поставщик не хочет маркировать товар для России? 3 легальных способа решить проблему: склад в РФ, СНГ, поиск нового поставщика.',
+    category: 'import',
+    readTime: 7,
+    date: '2025-12-17',
+    popular: true,
+    tags: ['импорт из китая маркировка', 'маркировка китайских товаров', 'честный знак импорт', 'склад маркировки']
+  },
+  {
+    id: 'shtraf-ili-ugolovka-granitsa',
+    title: 'Штраф или уголовка за маркировку: где проходит граница',
+    excerpt: 'Когда за нарушение маркировки дают штраф, а когда — реальный срок. Разбираем статьи КоАП и УК РФ простым языком.',
+    category: 'shtrafy',
+    readTime: 5,
+    date: '2025-12-17',
+    popular: true,
+    tags: ['штраф за маркировку', 'уголовная ответственность маркировка', 'статья 171.1', 'наказание за честный знак']
+  },
+  {
+    id: 'serye-shemy-markirovki',
+    title: 'Серые схемы маркировки: почему все они ведут в тупик',
+    excerpt: 'Разбираем популярные схемы обхода Честного знака: остатки, б/у, другой код ТН ВЭД, прокладки. Почему они не работают.',
+    category: 'chestny-znak',
+    readTime: 6,
+    date: '2025-12-17',
+    popular: false,
+    tags: ['обойти честный знак', 'серая маркировка', 'схемы маркировки', 'как избежать маркировки']
+  },
+  {
+    id: 'konsultatsiya-po-markirovke',
+    title: 'Консультация по маркировке: разберём вашу ситуацию за 1 час',
+    excerpt: 'Не понимаете, как работает Честный знак? Запутались в схемах? Разберём вашу конкретную ситуацию и дадим план действий.',
+    category: 'chestny-znak',
+    readTime: 4,
+    date: '2025-12-17',
+    popular: false,
+    tags: ['консультация честный знак', 'помощь с маркировкой', 'эксперт по маркировке', 'разбор маркировки']
+  },
+  // Новые статьи (batch 2)
+  {
+    id: 'piot-chto-eto-2026',
+    title: 'ПИОТ: что это и почему магазин могут закрыть на 90 дней',
+    excerpt: 'С 7 января 2026 ПИОТ обязателен для всех касс. Разбираем что это, зачем нужно и как подготовиться.',
+    category: 'chestny-znak',
+    readTime: 6,
+    date: '2025-12-17',
+    popular: true,
+    tags: ['ПИОТ', 'пиот маркировка', 'техническое средство маркировка', 'касса честный знак 2026']
+  },
+  {
+    id: 'markirovka-konditerskih-izdeliy',
+    title: 'Маркировка кондитерских изделий 2025: что нужно знать',
+    excerpt: 'Кондитерские изделия попадают под маркировку. Разбираем сроки, требования и как подготовиться заранее.',
+    category: 'tovary',
+    readTime: 5,
+    date: '2025-12-17',
+    popular: false,
+    tags: ['маркировка кондитерских изделий', 'честный знак кондитерка', 'маркировка сладостей', 'кондитер маркировка']
+  },
+  {
+    id: 'kod-ne-chitaetsya-na-kasse',
+    title: 'Код маркировки не читается на кассе: что делать',
+    excerpt: 'DataMatrix не сканируется, касса блокирует продажу. Разбираем причины, последствия и как решить проблему.',
+    category: 'chestny-znak',
+    readTime: 5,
+    date: '2025-12-17',
+    popular: false,
+    tags: ['код не читается', 'datamatrix не сканируется', 'маркировка не пикается', 'проблемы с кодом маркировки']
+  },
+  {
+    id: 'edo-i-markirovka-nastrojka',
+    title: 'ЭДО и маркировка: зачем нужен и как настроить',
+    excerpt: 'Без ЭДО маркировка не работает. Разбираем что такое электронный документооборот, как выбрать оператора и настроить обмен.',
+    category: 'chestny-znak',
+    readTime: 6,
+    date: '2025-12-17',
+    popular: false,
+    tags: ['ЭДО маркировка', 'электронный документооборот честный знак', 'УПД маркировка', 'оператор ЭДО']
+  },
+  {
+    id: 'markirovka-dlya-proizvoditelei',
+    title: 'Маркировка для производителей: как внедрить без остановки',
+    excerpt: 'Пошаговый план внедрения маркировки на производстве. Оборудование, интеграция, обучение персонала.',
+    category: 'chestny-znak',
+    readTime: 7,
+    date: '2025-12-17',
+    popular: false,
+    tags: ['маркировка производство', 'честный знак производитель', 'оборудование для маркировки', 'внедрение маркировки']
+  },
 ];
 
 const getCategoryColor = (categoryId) => {
@@ -371,9 +473,12 @@ const getCategoryName = (categoryId) => {
   return cat ? cat.name : categoryId;
 };
 
+const ARTICLES_PER_PAGE = 10;
+
 const KnowledgeBasePage = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Фильтрация статей
   const filteredArticles = ARTICLES.filter(article => {
@@ -384,6 +489,22 @@ const KnowledgeBasePage = () => {
       article.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesCategory && matchesSearch;
   });
+
+  // Пагинация
+  const totalPages = Math.ceil(filteredArticles.length / ARTICLES_PER_PAGE);
+  const startIndex = (currentPage - 1) * ARTICLES_PER_PAGE;
+  const paginatedArticles = filteredArticles.slice(startIndex, startIndex + ARTICLES_PER_PAGE);
+
+  // Сброс страницы при изменении фильтров
+  const handleCategoryChange = (category) => {
+    setSelectedCategory(category);
+    setCurrentPage(1);
+  };
+
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+    setCurrentPage(1);
+  };
 
   const popularArticles = ARTICLES.filter(a => a.popular).slice(0, 3);
 
@@ -439,7 +560,7 @@ const KnowledgeBasePage = () => {
                 type="text"
                 placeholder="Поиск по статьям..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={handleSearchChange}
                 className="pl-12 pr-4 py-6 text-lg rounded-2xl border-2 border-gray-200 focus:border-blue-400 shadow-lg"
               />
             </div>
@@ -458,7 +579,7 @@ const KnowledgeBasePage = () => {
               return (
                 <button
                   key={category.id}
-                  onClick={() => setSelectedCategory(category.id)}
+                  onClick={() => handleCategoryChange(category.id)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all ${
                     isActive
                       ? 'bg-gray-900 text-white shadow-lg'
@@ -492,7 +613,7 @@ const KnowledgeBasePage = () => {
                 <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                 <p className="text-gray-500">Статьи не найдены</p>
                 <button
-                  onClick={() => { setSelectedCategory('all'); setSearchQuery(''); }}
+                  onClick={() => { handleCategoryChange('all'); setSearchQuery(''); }}
                   className="mt-4 text-blue-600 hover:underline"
                 >
                   Сбросить фильтры
@@ -500,7 +621,7 @@ const KnowledgeBasePage = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                {filteredArticles.map((article, index) => (
+                {paginatedArticles.map((article, index) => (
                   <motion.div
                     key={article.id}
                     initial={{ opacity: 0, y: 20 }}
@@ -549,6 +670,45 @@ const KnowledgeBasePage = () => {
                     </Link>
                   </motion.div>
                 ))}
+              </div>
+            )}
+
+            {/* Пагинация */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-8">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="flex items-center gap-1 px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Назад
+                </button>
+
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-10 h-10 rounded-lg font-medium transition-colors ${
+                        currentPage === page
+                          ? 'bg-gray-900 text-white'
+                          : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="flex items-center gap-1 px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Вперёд
+                  <ChevronRight className="w-4 h-4" />
+                </button>
               </div>
             )}
           </div>

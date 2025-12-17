@@ -19,7 +19,10 @@ import {
   Calendar,
   MessageSquare,
   Send,
-  X
+  X,
+  Trash2,
+  CheckSquare,
+  Square
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -41,10 +44,24 @@ const EmployeeInbox = () => {
   const [commentModal, setCommentModal] = useState({ open: false, callbackId: null });
   const [commentText, setCommentText] = useState('');
   const [savingComment, setSavingComment] = useState(false);
+  
+  // Bulk delete state
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [taskCallback, setTaskCallback] = useState(null);
+  const [taskData, setTaskData] = useState({ title: "", description: "", priority: "high", due_date: "" });
+  const [creatingTask, setCreatingTask] = useState(false);
 
   useEffect(() => {
     fetchCallbacks();
     fetchManagers();
+  }, [statusFilter, showOverdue, periodFilter]);
+
+  // Clear selection when callbacks change
+  useEffect(() => {
+    setSelectedIds([]);
   }, [statusFilter, showOverdue, periodFilter]);
 
   const fetchCallbacks = async () => {
@@ -79,6 +96,113 @@ const EmployeeInbox = () => {
       }
     } catch (error) {
       console.error('Failed to fetch managers:', error);
+    }
+  };
+
+  // Bulk delete functions
+  const toggleSelectAll = () => {
+    if (selectedIds.length === filteredCallbacks.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredCallbacks.map(cb => cb.id));
+    }
+  };
+
+  const toggleSelectOne = (id, e) => {
+    e?.stopPropagation();
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    
+    setDeleting(true);
+    try {
+      const response = await authFetch(`${API_URL}/api/employee/callbacks/bulk-delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: selectedIds })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(`Удалено заявок: ${data.deleted_count}`);
+        setSelectedIds([]);
+        setDeleteConfirm(false);
+        fetchCallbacks();
+      } else {
+        toast.error('Ошибка удаления');
+      }
+    } catch (error) {
+      console.error('Failed to delete callbacks:', error);
+      toast.error('Ошибка удаления');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleDeleteSingle = async (id, e) => {
+    e?.stopPropagation();
+    if (!window.confirm('Удалить эту заявку?')) return;
+    
+
+  const openTaskModal = (callback, e) => {
+    e.stopPropagation();
+    setTaskCallback(callback);
+    setTaskData({
+      title: "Перезвонить " + (callback.name || callback.phone),
+      description: callback.comment || "",
+      priority: "high",
+      due_date: new Date().toISOString().split("T")[0]
+    });
+    setShowTaskModal(true);
+  };
+
+  const createTask = async () => {
+    if (!taskData.title) {
+      toast.error("Укажите название");
+      return;
+    }
+    setCreatingTask(true);
+    try {
+      const response = await authFetch(API_URL + "/api/employee/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...taskData,
+          client_id: taskCallback?.client_id || null
+        })
+      });
+      if (response.ok) {
+        toast.success("Задача создана");
+        setShowTaskModal(false);
+        setTaskCallback(null);
+      } else {
+        toast.error("Ошибка");
+      }
+    } catch (error) {
+      toast.error("Ошибка");
+    } finally {
+      setCreatingTask(false);
+    }
+  };
+
+    try {
+      const response = await authFetch(`${API_URL}/api/employee/callbacks/${id}`, {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        toast.success('Заявка удалена');
+        fetchCallbacks();
+      } else {
+        toast.error('Ошибка удаления');
+      }
+    } catch (error) {
+      console.error('Failed to delete callback:', error);
+      toast.error('Ошибка удаления');
     }
   };
 
@@ -149,19 +273,15 @@ const EmployeeInbox = () => {
   const handleAssignToManager = async (callbackId, managerId, e) => {
     e?.stopPropagation();
     try {
-      // Используем employee endpoint - он позволяет superadmin назначать на любого, а employee только на себя
-      const response = await authFetch(`${API_URL}/api/employee/callbacks/${callbackId}/assign`, {
+      const response = await authFetch(`${API_URL}/api/superadmin/callbacks/${callbackId}/assign`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ manager_id: managerId })
       });
       if (response.ok) {
         setAssigningId(null);
-        toast.success('Заявка назначена');
+        toast.success('Менеджер назначен');
         fetchCallbacks();
-      } else {
-        const data = await response.json();
-        toast.error(data.detail || 'Ошибка назначения');
       }
     } catch (error) {
       console.error('Failed to assign callback:', error);
@@ -227,12 +347,7 @@ const EmployeeInbox = () => {
     const labels = {
       check_page: 'Проверка товара',
       quote_page: 'Запрос КП',
-      contact_form: 'Контактная форма',
-      partner_request: 'Партнёрство',
-      representative_request: 'Представительство',
-      callback: 'Обратный звонок',
-      website: 'Сайт',
-      manual: 'Вручную',
+      contact_form: 'Контакт',
       unknown: 'Другое'
     };
     return labels[source] || source || 'Другое';
@@ -334,6 +449,33 @@ const EmployeeInbox = () => {
         </div>
       </div>
 
+      {/* Bulk delete bar */}
+      {selectedIds.length > 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <CheckSquare className="w-5 h-5 text-red-600" />
+            <span className="text-sm font-medium text-red-800">
+              Выбрано: {selectedIds.length}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSelectedIds([])}
+              className="px-3 py-1.5 text-sm text-gray-600 hover:bg-red-100 rounded-lg transition-colors"
+            >
+              Отменить
+            </button>
+            <button
+              onClick={() => setDeleteConfirm(true)}
+              className="px-4 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors flex items-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              Удалить
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Filters & Search */}
       <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
         <div className="flex flex-col lg:flex-row lg:items-center gap-3">
@@ -433,6 +575,18 @@ const EmployeeInbox = () => {
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
+                  <th className="px-4 py-3 w-12">
+                    <button
+                      onClick={toggleSelectAll}
+                      className="p-1 hover:bg-gray-200 rounded transition-colors"
+                    >
+                      {selectedIds.length === filteredCallbacks.length && filteredCallbacks.length > 0 ? (
+                        <CheckSquare className="w-5 h-5 text-yellow-600" />
+                      ) : (
+                        <Square className="w-5 h-5 text-gray-400" />
+                      )}
+                    </button>
+                  </th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                     Время
                   </th>
@@ -454,7 +608,7 @@ const EmployeeInbox = () => {
                   <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                     Менеджер
                   </th>
-                  <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
+                  <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider w-36">
                     Действия
                   </th>
                 </tr>
@@ -463,6 +617,7 @@ const EmployeeInbox = () => {
                 {filteredCallbacks.map((callback) => {
                   const overdue = isOverdue(callback);
                   const isExpanded = expandedId === callback.id;
+                  const isSelected = selectedIds.includes(callback.id);
 
                   return (
                     <React.Fragment key={callback.id}>
@@ -470,8 +625,22 @@ const EmployeeInbox = () => {
                         onClick={() => setExpandedId(isExpanded ? null : callback.id)}
                         className={`hover:bg-gray-50 transition-colors cursor-pointer ${
                           overdue ? 'bg-red-50/50' : ''
-                        } ${isExpanded ? 'bg-yellow-50' : ''}`}
+                        } ${isExpanded ? 'bg-yellow-50' : ''} ${isSelected ? 'bg-yellow-100/50' : ''}`}
                       >
+                        {/* Checkbox */}
+                        <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={(e) => toggleSelectOne(callback.id, e)}
+                            className="p-1 hover:bg-gray-200 rounded transition-colors"
+                          >
+                            {isSelected ? (
+                              <CheckSquare className="w-5 h-5 text-yellow-600" />
+                            ) : (
+                              <Square className="w-5 h-5 text-gray-400" />
+                            )}
+                          </button>
+                        </td>
+
                         {/* Время */}
                         <td className="px-4 py-3">
                           <div className="flex flex-col">
@@ -545,8 +714,7 @@ const EmployeeInbox = () => {
                             <span className="text-xs text-gray-600 truncate block max-w-[80px]" title={callback.assigned_email}>
                               {callback.assigned_email.split('@')[0]}
                             </span>
-                          ) : user?.role === 'superadmin' && managers.length > 0 ? (
-                            // Superadmin видит список всех менеджеров
+                          ) : managers.length > 0 ? (
                             <div className="relative" onClick={(e) => e.stopPropagation()}>
                               <button
                                 onClick={() => setAssigningId(assigningId === callback.id ? null : callback.id)}
@@ -570,18 +738,6 @@ const EmployeeInbox = () => {
                                 </div>
                               )}
                             </div>
-                          ) : user?.role === 'employee' ? (
-                            // Обычный менеджер видит только кнопку "Взять себе"
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleAssignToManager(callback.id, user.id, e);
-                              }}
-                              className="text-xs text-green-600 hover:text-green-700 flex items-center gap-1 font-medium"
-                            >
-                              <UserPlus className="w-3 h-3" />
-                              Взять
-                            </button>
                           ) : (
                             <span className="text-xs text-gray-400">-</span>
                           )}
@@ -615,6 +771,15 @@ const EmployeeInbox = () => {
                               </button>
                             )}
 
+                            {/* Создать задачу */}
+                            <button
+                              onClick={(e) => openTaskModal(callback, e)}
+                              className="p-1.5 text-gray-400 hover:text-violet-600 hover:bg-violet-50 rounded transition-colors"
+                              title="Создать задачу"
+                            >
+                              <CheckSquare className="w-4 h-4" />
+                            </button>
+
                             {/* Открыть клиента */}
                             {callback.client_id && (
                               <button
@@ -628,6 +793,15 @@ const EmployeeInbox = () => {
                                 <ArrowUpRight className="w-4 h-4" />
                               </button>
                             )}
+
+                            {/* Удалить */}
+                            <button
+                              onClick={(e) => handleDeleteSingle(callback.id, e)}
+                              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                              title="Удалить"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
 
                             {/* Раскрыть */}
                             <button
@@ -646,7 +820,7 @@ const EmployeeInbox = () => {
                       {/* Expanded row */}
                       {isExpanded && (
                         <tr className="bg-yellow-50/50">
-                          <td colSpan={8} className="px-4 py-4">
+                          <td colSpan={9} className="px-4 py-4">
                             <div className="grid md:grid-cols-3 gap-4">
                               {/* Контакты */}
                               <div className="space-y-2">
@@ -734,7 +908,14 @@ const EmployeeInbox = () => {
                                   <ArrowUpRight className="w-4 h-4" />
                                 </button>
                               )}
-                              <span className="text-xs text-gray-400 ml-auto">
+                              <button
+                                onClick={(e) => handleDeleteSingle(callback.id, e)}
+                                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 bg-white border border-red-200 hover:bg-red-50 rounded-lg transition-colors ml-auto"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                                Удалить заявку
+                              </button>
+                              <span className="text-xs text-gray-400">
                                 Заявка #{callback.id} • {new Date(callback.created_at).toLocaleString('ru-RU')}
                               </span>
                             </div>
@@ -802,6 +983,46 @@ const EmployeeInbox = () => {
           </div>
         </div>
       )}
+
+      {/* Delete confirmation modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+            <div className="p-6">
+              <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full">
+                <Trash2 className="w-6 h-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 text-center mb-2">
+                Удалить заявки?
+              </h3>
+              <p className="text-sm text-gray-500 text-center">
+                Вы уверены, что хотите удалить {selectedIds.length} {selectedIds.length === 1 ? 'заявку' : selectedIds.length < 5 ? 'заявки' : 'заявок'}? 
+                Это действие нельзя отменить.
+              </p>
+            </div>
+            <div className="flex items-center justify-end gap-2 p-4 border-t border-gray-200">
+              <button
+                onClick={() => setDeleteConfirm(false)}
+                className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={handleBulkDelete}
+                disabled={deleting}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                {deleting ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
+                Удалить
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -856,6 +1077,27 @@ const StatusDropdown = ({ status, onChange }) => {
             ))}
           </div>
         </>
+      )}
+
+      {/* Task Modal */}
+      {showTaskModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h2 className="text-lg font-semibold">Создать задачу</h2>
+              <button onClick={() => setShowTaskModal(false)} className="p-1 hover:bg-gray-100 rounded"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Название *</label><input type="text" value={taskData.title} onChange={(e) => setTaskData({...taskData, title: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Описание</label><textarea value={taskData.description} onChange={(e) => setTaskData({...taskData, description: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg" rows={2} /></div>
+              <div className="grid grid-cols-2 gap-4"><div><label className="block text-sm font-medium text-gray-700 mb-1">Приоритет</label><select value={taskData.priority} onChange={(e) => setTaskData({...taskData, priority: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg"><option value="low">Низкий</option><option value="normal">Обычный</option><option value="high">Высокий</option><option value="urgent">Срочный</option></select></div><div><label className="block text-sm font-medium text-gray-700 mb-1">Срок</label><input type="datetime-local" value={taskData.due_date} onChange={(e) => setTaskData({...taskData, due_date: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg" /></div></div>
+            </div>
+            <div className="flex gap-3 p-4 border-t bg-gray-50 rounded-b-2xl">
+              <button onClick={() => setShowTaskModal(false)} className="flex-1 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">Отмена</button>
+              <button onClick={createTask} disabled={creatingTask} className="flex-1 px-4 py-2 bg-violet-500 hover:bg-violet-600 text-white rounded-lg disabled:opacity-50">{creatingTask ? "..." : "Создать"}</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -16,7 +16,9 @@ import {
   Clock,
   AlertTriangle,
   Zap,
-  Timer
+  Timer,
+  Calendar,
+  X
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -26,6 +28,9 @@ const SuperadminDashboard = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('week');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [customDateFrom, setCustomDateFrom] = useState('');
+  const [customDateTo, setCustomDateTo] = useState('');
 
   useEffect(() => {
     fetchStats();
@@ -34,7 +39,11 @@ const SuperadminDashboard = () => {
   const fetchStats = async () => {
     setLoading(true);
     try {
-      const response = await authFetch(`${API_URL}/api/superadmin/stats?period=${period}`);
+      let url = `${API_URL}/api/superadmin/stats?period=${period}`;
+      if (period === 'custom' && customDateFrom && customDateTo) {
+        url += `&date_from=${customDateFrom}&date_to=${customDateTo}`;
+      }
+      const response = await authFetch(url);
       if (response.ok) {
         const data = await response.json();
         setStats(data);
@@ -43,6 +52,14 @@ const SuperadminDashboard = () => {
       console.error('Failed to fetch stats:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleApplyCustomPeriod = () => {
+    if (customDateFrom && customDateTo) {
+      setPeriod('custom');
+      setShowDatePicker(false);
+      fetchStats();
     }
   };
 
@@ -67,17 +84,17 @@ const SuperadminDashboard = () => {
       check_page: 'Проверка товара',
       quote_page: 'Запрос КП',
       contact_form: 'Контактная форма',
-      partner_request: 'Партнёрство',
-      representative_request: 'Представительство',
-      callback: 'Обратный звонок',
-      website: 'Сайт',
-      manual: 'Вручную',
       unknown: 'Другое'
     };
     return labels[source] || source || 'Другое';
   };
 
-  // Расчет процента изменения
+  const getManagerName = (manager) => {
+    if (manager.name) return manager.name;
+    const emailPart = manager.email?.split('@')[0] || '';
+    return emailPart.charAt(0).toUpperCase() + emailPart.slice(1);
+  };
+
   const calcChange = (current, previous) => {
     if (!previous || previous === 0) {
       if (current > 0) return { value: 100, direction: 'up' };
@@ -90,7 +107,6 @@ const SuperadminDashboard = () => {
     };
   };
 
-  // Компонент индикатора изменения
   const ChangeIndicator = ({ current, previous, goodDirection = 'up' }) => {
     const change = calcChange(current, previous);
     if (change.direction === 'neutral') return null;
@@ -122,16 +138,17 @@ const SuperadminDashboard = () => {
   const periodLabels = {
     day: 'за день',
     week: 'за неделю',
-    month: 'за месяц'
+    month: 'за месяц',
+    custom: customDateFrom && customDateTo ? `${customDateFrom} - ${customDateTo}` : 'за период'
   };
 
   const prevPeriodLabels = {
     day: 'vs вчера',
     week: 'vs пред. неделя',
-    month: 'vs пред. месяц'
+    month: 'vs пред. месяц',
+    custom: 'vs пред. период'
   };
 
-  // Расчет конверсий по этапам воронки
   const funnelData = [
     {
       label: 'Заявки',
@@ -165,7 +182,6 @@ const SuperadminDashboard = () => {
     }
   ];
 
-  // Общая конверсия
   const totalConversion = stats?.funnel?.callbacks > 0
     ? ((stats.funnel.contracts / stats.funnel.callbacks) * 100).toFixed(1)
     : 0;
@@ -180,20 +196,79 @@ const SuperadminDashboard = () => {
         </div>
 
         {/* Period Selector */}
-        <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
-          {['day', 'week', 'month'].map((p) => (
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+            {['day', 'week', 'month'].map((p) => (
+              <button
+                key={p}
+                onClick={() => setPeriod(p)}
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+                  period === p
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                {p === 'day' ? 'День' : p === 'week' ? 'Неделя' : 'Месяц'}
+              </button>
+            ))}
+          </div>
+          
+          {/* Custom period button */}
+          <div className="relative">
             <button
-              key={p}
-              onClick={() => setPeriod(p)}
-              className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-                period === p
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+              onClick={() => setShowDatePicker(!showDatePicker)}
+              className={`p-2.5 rounded-lg transition-all ${
+                period === 'custom'
+                  ? 'bg-yellow-500 text-gray-900'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
+              title="Выбрать период"
             >
-              {p === 'day' ? 'День' : p === 'week' ? 'Неделя' : 'Месяц'}
+              <Calendar className="w-5 h-5" />
             </button>
-          ))}
+            
+            {/* Date picker dropdown */}
+            {showDatePicker && (
+              <div className="absolute right-0 top-full mt-2 bg-white border border-gray-200 rounded-xl shadow-xl p-4 z-50 w-72">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-medium text-gray-900">Выбрать период</h4>
+                  <button
+                    onClick={() => setShowDatePicker(false)}
+                    className="p-1 text-gray-400 hover:text-gray-600 rounded"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">От</label>
+                    <input
+                      type="date"
+                      value={customDateFrom}
+                      onChange={(e) => setCustomDateFrom(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-yellow-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">До</label>
+                    <input
+                      type="date"
+                      value={customDateTo}
+                      onChange={(e) => setCustomDateTo(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-yellow-500"
+                    />
+                  </div>
+                  <button
+                    onClick={handleApplyCustomPeriod}
+                    disabled={!customDateFrom || !customDateTo}
+                    className="w-full px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Применить
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -369,7 +444,7 @@ const SuperadminDashboard = () => {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* Воронка продаж с конверсией по этапам */}
+        {/* Воронка продаж */}
         <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
@@ -434,7 +509,6 @@ const SuperadminDashboard = () => {
           {stats?.managers?.length > 0 ? (
             <div className="space-y-3">
               {stats.managers.slice(0, 5).map((manager, idx) => {
-                // Расчет конверсии менеджера (клиенты -> договоры)
                 const managerConversion = manager.clients_count > 0
                   ? ((manager.contracts_count / manager.clients_count) * 100).toFixed(0)
                   : 0;
@@ -451,7 +525,7 @@ const SuperadminDashboard = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-sm text-gray-900 truncate font-medium">
-                        {manager.email.split('@')[0]}
+                        {getManagerName(manager)}
                       </div>
                       <div className="flex items-center gap-3 text-xs mt-0.5">
                         <span className="text-gray-500">{manager.clients_count} кл.</span>
@@ -516,31 +590,33 @@ const SuperadminDashboard = () => {
         </div>
       </div>
 
-      {/* Total Stats Footer */}
-      <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl p-6 text-white">
+      {/* Total Stats Footer - Светлая версия */}
+      <div className="bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 rounded-xl p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <DollarSign className="w-5 h-5 text-yellow-400" />
-            <h3 className="font-medium">Итоговые показатели</h3>
+            <div className="p-2 bg-yellow-100 rounded-lg">
+              <DollarSign className="w-5 h-5 text-yellow-600" />
+            </div>
+            <h3 className="font-medium text-gray-900">Итоговые показатели</h3>
           </div>
-          <span className="text-xs text-gray-400">за все время</span>
+          <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded">за все время</span>
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-          <div>
-            <div className="text-3xl font-bold">{stats?.callbacks?.total || 0}</div>
-            <div className="text-gray-400 text-sm mt-1">Всего заявок</div>
+          <div className="bg-white/60 rounded-xl p-4">
+            <div className="text-3xl font-bold text-gray-900">{stats?.callbacks?.total || 0}</div>
+            <div className="text-gray-500 text-sm mt-1">Всего заявок</div>
           </div>
-          <div>
-            <div className="text-3xl font-bold">{stats?.clients?.total || 0}</div>
-            <div className="text-gray-400 text-sm mt-1">Всего клиентов</div>
+          <div className="bg-white/60 rounded-xl p-4">
+            <div className="text-3xl font-bold text-gray-900">{stats?.clients?.total || 0}</div>
+            <div className="text-gray-500 text-sm mt-1">Всего клиентов</div>
           </div>
-          <div>
-            <div className="text-3xl font-bold">{formatMoneyFull(stats?.quotes?.total_amount)}</div>
-            <div className="text-gray-400 text-sm mt-1">Сумма всех КП</div>
+          <div className="bg-white/60 rounded-xl p-4">
+            <div className="text-3xl font-bold text-blue-600">{formatMoneyFull(stats?.quotes?.total_amount)}</div>
+            <div className="text-gray-500 text-sm mt-1">Сумма всех КП</div>
           </div>
-          <div>
-            <div className="text-3xl font-bold text-yellow-400">{formatMoneyFull(stats?.contracts?.total_amount)}</div>
-            <div className="text-gray-400 text-sm mt-1">Сумма договоров</div>
+          <div className="bg-white/60 rounded-xl p-4">
+            <div className="text-3xl font-bold text-emerald-600">{formatMoneyFull(stats?.contracts?.total_amount)}</div>
+            <div className="text-gray-500 text-sm mt-1">Сумма договоров</div>
           </div>
         </div>
       </div>

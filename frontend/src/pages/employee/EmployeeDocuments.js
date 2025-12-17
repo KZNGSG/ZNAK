@@ -17,7 +17,10 @@ import {
   AlertCircle,
   ArrowUpDown,
   Download,
-  Loader2
+  Loader2,
+  Trash2,
+  CheckSquare,
+  Square
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -58,15 +61,23 @@ const EmployeeDocuments = () => {
   const [sortField, setSortField] = useState('created_at');
   const [sortDirection, setSortDirection] = useState('desc');
   const [downloadingId, setDownloadingId] = useState(null);
+  
+  // Bulk delete state
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
 
   useEffect(() => {
     fetchAllDocuments();
   }, []);
 
+  useEffect(() => {
+    setSelectedIds([]);
+  }, [activeTab, statusFilter]);
+
   const fetchAllDocuments = async () => {
     setLoading(true);
     try {
-      // Fetch all documents in parallel
       const [quotesRes, contractsRes] = await Promise.all([
         authFetch(`${API_URL}/api/employee/quotes`),
         authFetch(`${API_URL}/api/employee/contracts`)
@@ -78,7 +89,6 @@ const EmployeeDocuments = () => {
       const quotesData = quotesJson.quotes || [];
       const contractsData = contractsJson.contracts || [];
 
-      // Extract invoices from contracts or fetch separately if endpoint exists
       const invoices = contractsData
         .filter(c => c.invoice_number)
         .map(c => ({
@@ -103,6 +113,76 @@ const EmployeeDocuments = () => {
       toast.error('Ошибка загрузки документов');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Bulk delete functions
+  const toggleSelectAll = () => {
+    const docs = getFilteredDocuments();
+    if (selectedIds.length === docs.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(docs.map(d => d.id));
+    }
+  };
+
+  const toggleSelectOne = (id, e) => {
+    e?.stopPropagation();
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    
+    setDeleting(true);
+    try {
+      const endpoint = activeTab === 'quotes' ? 'quotes' : activeTab === 'contracts' ? 'contracts' : 'invoices';
+      const response = await authFetch(`${API_URL}/api/employee/${endpoint}/bulk-delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: selectedIds })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const label = activeTab === 'quotes' ? 'КП' : activeTab === 'contracts' ? 'договоров' : 'счетов';
+        toast.success(`Удалено ${label}: ${data.deleted_count}`);
+        setSelectedIds([]);
+        setDeleteConfirm(false);
+        fetchAllDocuments();
+      } else {
+        toast.error('Ошибка удаления');
+      }
+    } catch (error) {
+      console.error('Failed to delete documents:', error);
+      toast.error('Ошибка удаления');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleDeleteSingle = async (doc, e) => {
+    e?.stopPropagation();
+    const label = activeTab === 'quotes' ? 'это КП' : activeTab === 'contracts' ? 'этот договор' : 'этот счёт';
+    if (!window.confirm(`Удалить ${label}?`)) return;
+    
+    const endpoint = activeTab === 'quotes' ? 'quotes' : activeTab === 'contracts' ? 'contracts' : 'invoices';
+    try {
+      const response = await authFetch(`${API_URL}/api/employee/${endpoint}/${doc.id}`, {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        toast.success('Удалено');
+        fetchAllDocuments();
+      } else {
+        toast.error('Ошибка удаления');
+      }
+    } catch (error) {
+      console.error('Failed to delete document:', error);
+      toast.error('Ошибка удаления');
     }
   };
 
@@ -334,6 +414,33 @@ const EmployeeDocuments = () => {
         </div>
       </div>
 
+      {/* Bulk delete bar */}
+      {selectedIds.length > 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <CheckSquare className="w-5 h-5 text-red-600" />
+            <span className="text-sm font-medium text-red-800">
+              Выбрано: {selectedIds.length}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSelectedIds([])}
+              className="px-3 py-1.5 text-sm text-gray-600 hover:bg-red-100 rounded-lg transition-colors"
+            >
+              Отменить
+            </button>
+            <button
+              onClick={() => setDeleteConfirm(true)}
+              className="px-4 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors flex items-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              Удалить
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
@@ -458,6 +565,18 @@ const EmployeeDocuments = () => {
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
+                  <th className="px-4 py-3 w-12">
+                    <button
+                      onClick={toggleSelectAll}
+                      className="p-1 hover:bg-gray-200 rounded transition-colors"
+                    >
+                      {selectedIds.length === filteredDocs.length && filteredDocs.length > 0 ? (
+                        <CheckSquare className="w-5 h-5 text-yellow-600" />
+                      ) : (
+                        <Square className="w-5 h-5 text-gray-400" />
+                      )}
+                    </button>
+                  </th>
                   <th
                     className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSort(activeTab === 'quotes' ? 'quote_number' : activeTab === 'contracts' ? 'contract_number' : 'invoice_number')}
@@ -506,9 +625,22 @@ const EmployeeDocuments = () => {
                   const statusConfig = getStatusConfig(activeTab, doc.status);
                   const StatusIcon = statusConfig.icon;
                   const Icon = activeTab === 'quotes' ? FileText : activeTab === 'contracts' ? FileCheck : Receipt;
+                  const isSelected = selectedIds.includes(doc.id);
 
                   return (
-                    <tr key={doc.id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={doc.id} className={`hover:bg-gray-50 transition-colors ${isSelected ? 'bg-yellow-100/50' : ''}`}>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={(e) => toggleSelectOne(doc.id, e)}
+                          className="p-1 hover:bg-gray-200 rounded transition-colors"
+                        >
+                          {isSelected ? (
+                            <CheckSquare className="w-5 h-5 text-yellow-600" />
+                          ) : (
+                            <Square className="w-5 h-5 text-gray-400" />
+                          )}
+                        </button>
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <Icon className="w-4 h-4 text-gray-400" />
@@ -576,6 +708,13 @@ const EmployeeDocuments = () => {
                               )}
                             </button>
                           )}
+                          <button
+                            onClick={(e) => handleDeleteSingle(doc, e)}
+                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Удалить"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                           {doc.client_id && (
                             <Link
                               to={`/employee/clients/${doc.client_id}`}
@@ -605,6 +744,45 @@ const EmployeeDocuments = () => {
         )}
       </div>
 
+      {/* Delete confirmation modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+            <div className="p-6">
+              <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full">
+                <Trash2 className="w-6 h-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 text-center mb-2">
+                Удалить документы?
+              </h3>
+              <p className="text-sm text-gray-500 text-center">
+                Вы уверены, что хотите удалить {selectedIds.length} {activeTab === 'quotes' ? 'КП' : activeTab === 'contracts' ? 'договоров' : 'счетов'}? 
+                Это действие нельзя отменить.
+              </p>
+            </div>
+            <div className="flex items-center justify-end gap-2 p-4 border-t border-gray-200">
+              <button
+                onClick={() => setDeleteConfirm(false)}
+                className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={handleBulkDelete}
+                disabled={deleting}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                {deleting ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
+                Удалить
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

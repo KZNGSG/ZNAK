@@ -28,7 +28,8 @@ import {
   Trash2,
   AlertTriangle,
   Download,
-  User
+  User,
+  CheckSquare
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -50,10 +51,47 @@ const EmployeeClientCard = () => {
   const [deleting, setDeleting] = useState(false);
   const [loadingDadata, setLoadingDadata] = useState(false);
   const [showContractModal, setShowContractModal] = useState(false);
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [taskData, setTaskData] = useState({ title: "", description: "", priority: "normal", due_date: "" });
+  const [creatingTask, setCreatingTask] = useState(false);
 
+  const [clientTasks, setClientTasks] = useState([]);
   useEffect(() => {
     fetchClient();
+    fetchClientTasks();
   }, [id]);
+
+
+  const createTask = async () => {
+    if (!taskData.title) {
+      toast.error("Укажите название задачи");
+      return;
+    }
+    setCreatingTask(true);
+    try {
+      const response = await authFetch(API_URL + "/api/employee/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...taskData,
+          client_id: parseInt(id),
+          assigned_to: null // будет назначено текущему пользователю на бэкенде
+        })
+      });
+      if (response.ok) {
+        toast.success("Задача создана");
+        setShowTaskModal(false);
+        setTaskData({ title: "", description: "", priority: "normal", due_date: "" });
+      } else {
+        const err = await response.json();
+        toast.error(err.detail || "Ошибка создания");
+      }
+    } catch (error) {
+      toast.error("Ошибка создания задачи");
+    } finally {
+      setCreatingTask(false);
+    }
+  };
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -75,6 +113,19 @@ const EmployeeClientCard = () => {
     } finally {
       setDeleting(false);
       setShowDeleteModal(false);
+    }
+  };
+
+
+  const fetchClientTasks = async () => {
+    try {
+      const response = await authFetch(API_URL + "/api/employee/tasks?client_id=" + id);
+      if (response.ok) {
+        const data = await response.json();
+        setClientTasks(data.tasks.filter(t => t.client_id === parseInt(id)));
+      }
+    } catch (error) {
+      console.error("Error fetching tasks:", error);
     }
   };
 
@@ -153,6 +204,7 @@ const EmployeeClientCard = () => {
         toast.success('Данные сохранены');
         setEditing(false);
         fetchClient();
+    fetchClientTasks();
       } else {
         toast.error('Ошибка сохранения');
       }
@@ -173,6 +225,7 @@ const EmployeeClientCard = () => {
       if (response.ok) {
         toast.success('Статус изменён');
         fetchClient();
+    fetchClientTasks();
       }
     } catch (error) {
       console.error('Failed to update status:', error);
@@ -198,6 +251,7 @@ const EmployeeClientCard = () => {
         setNewInteraction({ type: '', subject: '', description: '' });
         setShowInteractionForm(false);
         fetchClient();
+    fetchClientTasks();
       }
     } catch (error) {
       console.error('Failed to add interaction:', error);
@@ -216,6 +270,7 @@ const EmployeeClientCard = () => {
         const data = await response.json();
         toast.success(`Договор ${data.contract_number} создан`);
         fetchClient();
+    fetchClientTasks();
       } else {
         try {
           const error = await response.json();
@@ -246,6 +301,7 @@ const EmployeeClientCard = () => {
         const data = await response.json();
         toast.success(`Договор ${data.contract_number} создан`);
         fetchClient();
+    fetchClientTasks();
       } else {
         try {
           const error = await response.json();
@@ -847,8 +903,44 @@ const EmployeeClientCard = () => {
                   Написать
                 </a>
               )}
+              <button
+                onClick={() => setShowTaskModal(true)}
+                className="flex items-center gap-3 w-full px-4 py-3 bg-violet-100 hover:bg-violet-200 border border-violet-200 text-violet-700 rounded-xl transition-colors text-sm font-medium"
+              >
+                <CheckSquare className="w-5 h-5" />
+                Создать задачу
+              </button>
             </div>
           </div>
+
+          {/* Client Tasks */}
+          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <CheckSquare className="w-4 h-4 text-violet-500" />
+                <h3 className="text-sm font-medium text-gray-600">Задачи по клиенту</h3>
+              </div>
+              <span className="text-xs text-gray-400">{clientTasks.filter(t => t.status !== "completed").length} активных</span>
+            </div>
+            {clientTasks.length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-2">Нет задач</p>
+            ) : (
+              <div className="space-y-2">
+                {clientTasks.slice(0, 5).map(task => (
+                  <div key={task.id} className={"p-2 rounded-lg border " + (task.status === "completed" ? "bg-gray-50 border-gray-100" : "bg-violet-50 border-violet-100")}>
+                    <div className="flex items-start gap-2">
+                      <div className={"w-2 h-2 rounded-full mt-1.5 " + (task.status === "completed" ? "bg-green-400" : task.priority === "urgent" ? "bg-red-400" : task.priority === "high" ? "bg-orange-400" : "bg-violet-400")} />
+                      <div className="flex-1 min-w-0">
+                        <p className={"text-sm " + (task.status === "completed" ? "text-gray-400 line-through" : "text-gray-700")}>{task.title}</p>
+                        {task.due_date && <p className="text-xs text-gray-400">{new Date(task.due_date).toLocaleString("ru-RU", {day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"})}</p>}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
 
           {/* Quotes */}
           <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
@@ -928,6 +1020,82 @@ const EmployeeClientCard = () => {
 
       {/* Delete Confirmation Modal */}
       {/* Contract Creation Modal */}
+
+      {/* Task Modal */}
+      {showTaskModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h2 className="text-lg font-semibold">Новая задача</h2>
+              <button onClick={() => setShowTaskModal(false)} className="p-1 hover:bg-gray-100 rounded">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Название *</label>
+                <input
+                  type="text"
+                  value={taskData.title}
+                  onChange={(e) => setTaskData({...taskData, title: e.target.value})}
+                  placeholder={"Позвонить " + (client?.contact_name || "клиенту")}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Описание</label>
+                <textarea
+                  value={taskData.description}
+                  onChange={(e) => setTaskData({...taskData, description: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                  rows={2}
+                  placeholder="Подробности..."
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Приоритет</label>
+                  <select
+                    value={taskData.priority}
+                    onChange={(e) => setTaskData({...taskData, priority: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  >
+                    <option value="low">Низкий</option>
+                    <option value="normal">Обычный</option>
+                    <option value="high">Высокий</option>
+                    <option value="urgent">Срочный</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Срок</label>
+                  <input
+                    type="datetime-local"
+                    value={taskData.due_date}
+                    onChange={(e) => setTaskData({...taskData, due_date: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-3 p-4 border-t bg-gray-50 rounded-b-2xl">
+              <button
+                onClick={() => setShowTaskModal(false)}
+                className="flex-1 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={createTask}
+                disabled={creatingTask}
+                className="flex-1 px-4 py-2 bg-violet-500 hover:bg-violet-600 text-white rounded-lg disabled:opacity-50"
+              >
+                {creatingTask ? "Создание..." : "Создать"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showContractModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowContractModal(false)} />

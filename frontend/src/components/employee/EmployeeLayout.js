@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useEmployeeAuth } from '../../context/EmployeeAuthContext';
+import NotificationCenter from '../notifications/NotificationCenter';
+import GlobalSearch from '../search/GlobalSearch';
 import {
   LayoutDashboard,
   Inbox,
@@ -19,7 +21,8 @@ import {
   Settings,
   FolderOpen,
   Handshake,
-  User
+  GraduationCap,
+  CheckSquare
 } from 'lucide-react';
 
 const EmployeeLayout = ({ children }) => {
@@ -70,6 +73,18 @@ const EmployeeLayout = ({ children }) => {
       icon: Handshake,
       label: 'Партнёры',
       description: 'Партнёрская программа'
+    },
+    {
+      path: '/employee/education',
+      icon: GraduationCap,
+      label: 'Обучение',
+      description: 'Курсы для партнёров'
+    },
+    {
+      path: '/employee/tasks',
+      icon: CheckSquare,
+      label: 'Задачи',
+      description: 'Мои задачи'
     },
     // Сотрудники и Настройки только для superadmin
     ...(isSuperAdmin ? [
@@ -145,31 +160,16 @@ const EmployeeLayout = ({ children }) => {
       >
         {/* Header */}
         <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200">
-          {!sidebarCollapsed ? (
-            <Link to="/" className="flex items-center gap-2 group">
-              <div className="flex items-center gap-0.5 p-2 rounded-lg bg-gradient-to-br from-yellow-100 to-yellow-200 group-hover:scale-105 transition-transform shadow-sm">
-                <div className="grid grid-cols-2 gap-0.5">
-                  <div className="w-2 h-2 bg-yellow-500 rounded-sm"></div>
-                  <div className="w-2 h-2 bg-gray-800 rounded-sm"></div>
-                  <div className="w-2 h-2 bg-gray-800 rounded-sm"></div>
-                  <div className="w-2 h-2 bg-yellow-500 rounded-sm"></div>
-                </div>
+          {!sidebarCollapsed && (
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-yellow-400 to-yellow-500 flex items-center justify-center">
+                <span className="text-gray-900 font-bold text-sm">M</span>
               </div>
-              <span className="text-base font-bold text-gray-900">
-                Про<span className="text-yellow-500">.</span>Маркируй
-              </span>
-            </Link>
-          ) : (
-            <Link to="/" className="flex items-center justify-center group">
-              <div className="flex items-center gap-0.5 p-2 rounded-lg bg-gradient-to-br from-yellow-100 to-yellow-200 group-hover:scale-105 transition-transform shadow-sm">
-                <div className="grid grid-cols-2 gap-0.5">
-                  <div className="w-2 h-2 bg-yellow-500 rounded-sm"></div>
-                  <div className="w-2 h-2 bg-gray-800 rounded-sm"></div>
-                  <div className="w-2 h-2 bg-gray-800 rounded-sm"></div>
-                  <div className="w-2 h-2 bg-yellow-500 rounded-sm"></div>
-                </div>
+              <div>
+                <div className="text-sm font-semibold text-gray-900">Менеджер</div>
+                <div className="text-[10px] text-gray-400 uppercase tracking-wider">Pro.Markiruj</div>
               </div>
-            </Link>
+            </div>
           )}
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -239,31 +239,20 @@ const EmployeeLayout = ({ children }) => {
               <Menu className="w-5 h-5" />
             </button>
 
-            {/* Search */}
-            <div className="hidden sm:flex items-center gap-2 bg-gray-100 border border-gray-200 rounded-lg px-3 py-2 w-64 lg:w-80">
-              <Search className="w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Поиск клиентов, заявок..."
-                className="bg-transparent border-none outline-none text-sm text-gray-900 placeholder-gray-400 w-full"
-              />
-              <kbd className="hidden lg:inline-flex px-1.5 py-0.5 text-[10px] text-gray-400 bg-gray-200 rounded">
-                /
-              </kbd>
+            {/* Global Search */}
+            <div className="hidden sm:block">
+              <GlobalSearch />
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             {/* Notifications */}
-            <button className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-yellow-500 rounded-full"></span>
-            </button>
+            <NotificationCenter />
           </div>
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto bg-slate-50">
           <div className="p-4 lg:p-6">
             {children}
           </div>

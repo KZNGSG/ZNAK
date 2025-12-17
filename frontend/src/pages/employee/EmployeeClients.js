@@ -17,8 +17,13 @@ import {
   FileText,
   FileCheck,
   Plus,
-  AlertCircle
+  AlertCircle,
+  Trash2,
+  CheckSquare,
+  Square,
+  MapPin
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -30,9 +35,18 @@ const EmployeeClients = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '');
+  
+  // Bulk delete state
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
 
   useEffect(() => {
     fetchClients();
+  }, [statusFilter]);
+
+  useEffect(() => {
+    setSelectedIds([]);
   }, [statusFilter]);
 
   const fetchClients = async () => {
@@ -71,6 +85,71 @@ const EmployeeClients = () => {
       console.error('Failed to search clients:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Bulk delete functions
+  const toggleSelectAll = () => {
+    if (selectedIds.length === clients.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(clients.map(c => c.id));
+    }
+  };
+
+  const toggleSelectOne = (id, e) => {
+    e?.stopPropagation();
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    
+    setDeleting(true);
+    try {
+      const response = await authFetch(`${API_URL}/api/employee/clients/bulk-delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: selectedIds })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(`Удалено клиентов: ${data.deleted_count}`);
+        setSelectedIds([]);
+        setDeleteConfirm(false);
+        fetchClients();
+      } else {
+        toast.error('Ошибка удаления');
+      }
+    } catch (error) {
+      console.error('Failed to delete clients:', error);
+      toast.error('Ошибка удаления');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleDeleteSingle = async (id, e) => {
+    e?.stopPropagation();
+    if (!window.confirm('Удалить этого клиента?')) return;
+    
+    try {
+      const response = await authFetch(`${API_URL}/api/employee/clients/${id}`, {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        toast.success('Клиент удалён');
+        fetchClients();
+      } else {
+        toast.error('Ошибка удаления');
+      }
+    } catch (error) {
+      console.error('Failed to delete client:', error);
+      toast.error('Ошибка удаления');
     }
   };
 
@@ -142,6 +221,33 @@ const EmployeeClients = () => {
           Новый клиент
         </Link>
       </div>
+
+      {/* Bulk delete bar */}
+      {selectedIds.length > 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <CheckSquare className="w-5 h-5 text-red-600" />
+            <span className="text-sm font-medium text-red-800">
+              Выбрано: {selectedIds.length}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSelectedIds([])}
+              className="px-3 py-1.5 text-sm text-gray-600 hover:bg-red-100 rounded-lg transition-colors"
+            >
+              Отменить
+            </button>
+            <button
+              onClick={() => setDeleteConfirm(true)}
+              className="px-4 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors flex items-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              Удалить
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Filters & Search */}
       <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
@@ -233,11 +339,29 @@ const EmployeeClients = () => {
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
+                  <th className="px-4 py-3 w-12">
+                    <button
+                      onClick={toggleSelectAll}
+                      className="p-1 hover:bg-gray-200 rounded transition-colors"
+                    >
+                      {selectedIds.length === clients.length && clients.length > 0 ? (
+                        <CheckSquare className="w-5 h-5 text-yellow-600" />
+                      ) : (
+                        <Square className="w-5 h-5 text-gray-400" />
+                      )}
+                    </button>
+                  </th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Клиент
                   </th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Контакты
+                  </th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider w-28">
+                    Город
+                  </th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                    Задачи
                   </th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                     Статус
@@ -251,30 +375,42 @@ const EmployeeClients = () => {
                   <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                     Менеджер
                   </th>
-                  <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider w-28">
+                  <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
                     Действия
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {clients.map((client) => {
-                  const hasNoQuotes = !client.quotes_count;
-                  const hasNoContracts = client.quotes_count > 0 && !client.contracts_count;
+                  const hasNoContracts = client.status === 'lead' && client.quotes_count > 0 && !client.contracts_count;
+                  const isSelected = selectedIds.includes(client.id);
 
                   return (
                     <tr
                       key={client.id}
-                      className={`hover:bg-gray-50 transition-colors cursor-pointer ${
-                        hasNoQuotes ? 'bg-orange-50/30' : ''
-                      }`}
                       onClick={() => navigate(`/employee/clients/${client.id}`)}
+                      className={`hover:bg-gray-50 transition-colors cursor-pointer ${isSelected ? 'bg-yellow-100/50' : ''}`}
                     >
+                      {/* Checkbox */}
+                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={(e) => toggleSelectOne(client.id, e)}
+                          className="p-1 hover:bg-gray-200 rounded transition-colors"
+                        >
+                          {isSelected ? (
+                            <CheckSquare className="w-5 h-5 text-yellow-600" />
+                          ) : (
+                            <Square className="w-5 h-5 text-gray-400" />
+                          )}
+                        </button>
+                      </td>
+
                       {/* Клиент */}
                       <td className="px-4 py-3">
                         <div>
-                          <div className="font-medium text-gray-900">{client.contact_name}</div>
+                          <div className="text-sm font-medium text-gray-900">{client.contact_name}</div>
                           {client.company_name && (
-                            <div className="flex items-center gap-1 mt-0.5 text-xs text-gray-500">
+                            <div className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
                               <Building2 className="w-3 h-3" />
                               {client.company_name}
                             </div>
@@ -303,6 +439,27 @@ const EmployeeClients = () => {
                         </div>
                       </td>
 
+
+                      {/* Город */}
+                      <td className="px-4 py-3">
+                        {(client.city || client.address) ? (
+                          <span className="text-sm text-gray-600">{client.city || client.address}</span>
+                        ) : (
+                          <span className="text-xs text-gray-300">—</span>
+                        )}
+                      </td>
+
+                      {/* Задачи */}
+                      <td className="px-4 py-3">
+                        {client.tasks_count > 0 ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-violet-100 text-violet-700 text-xs font-medium rounded-full">
+                            <CheckSquare className="w-3 h-3" />
+                            {client.tasks_count}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-gray-300">—</span>
+                        )}
+                      </td>
                       {/* Статус */}
                       <td className="px-4 py-3">
                         <StatusBadge status={client.status} />
@@ -378,6 +535,13 @@ const EmployeeClients = () => {
                           >
                             <ArrowUpRight className="w-4 h-4" />
                           </button>
+                          <button
+                            onClick={(e) => handleDeleteSingle(client.id, e)}
+                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                            title="Удалить"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -403,6 +567,46 @@ const EmployeeClients = () => {
           </div>
         )}
       </div>
+
+      {/* Delete confirmation modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+            <div className="p-6">
+              <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full">
+                <Trash2 className="w-6 h-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 text-center mb-2">
+                Удалить клиентов?
+              </h3>
+              <p className="text-sm text-gray-500 text-center">
+                Вы уверены, что хотите удалить {selectedIds.length} {selectedIds.length === 1 ? 'клиента' : selectedIds.length < 5 ? 'клиентов' : 'клиентов'}? 
+                Это действие нельзя отменить.
+              </p>
+            </div>
+            <div className="flex items-center justify-end gap-2 p-4 border-t border-gray-200">
+              <button
+                onClick={() => setDeleteConfirm(false)}
+                className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={handleBulkDelete}
+                disabled={deleting}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                {deleting ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
+                Удалить
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

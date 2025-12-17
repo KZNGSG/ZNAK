@@ -1963,6 +1963,69 @@ class PartnerDB:
 
             return results
 
+    @staticmethod
+    def generate_invite_token() -> str:
+        """Generate invitation token"""
+        return secrets.token_urlsafe(32)
+
+    @staticmethod
+    def set_invitation_sent(partner_id: int) -> Optional[str]:
+        """Mark invitation as sent, return token"""
+        token = PartnerDB.generate_invite_token()
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                UPDATE partners
+                SET invite_token = ?,
+                    invitation_sent_at = CURRENT_TIMESTAMP,
+                    status = 'invited'
+                WHERE id = ?
+            ''', (token, partner_id))
+            if cursor.rowcount > 0:
+                return token
+            return None
+
+    @staticmethod
+    def get_by_invite_token(token: str) -> Optional[Dict]:
+        """Get partner by invitation token"""
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT p.*, u.email as user_email
+                FROM partners p
+                LEFT JOIN users u ON p.user_id = u.id
+                WHERE p.invite_token = ?
+            ''', (token,))
+            row = cursor.fetchone()
+            return dict(row) if row else None
+
+    @staticmethod
+    def accept_invitation(token: str, password: str) -> Optional[Dict]:
+        """Partner accepts invitation - sets password"""
+        partner = PartnerDB.get_by_invite_token(token)
+        if not partner:
+            return None
+
+        if partner['status'] not in ('invited', 'pending'):
+            return None
+
+        UserDB.update_password(partner['user_id'], password)
+
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                UPDATE partners
+                SET status = 'active',
+                    registered_at = CURRENT_TIMESTAMP,
+                    invite_token = NULL
+                WHERE id = ?
+            ''', (partner['id'],))
+            cursor.execute('''
+                UPDATE users SET email_verified = 1 WHERE id = ?
+            ''', (partner['user_id'],))
+
+        return PartnerDB.get_by_id(partner['id'])
+
 
 # Инициализация БД при импорте модуля
 init_database()

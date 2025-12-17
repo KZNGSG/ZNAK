@@ -25,15 +25,14 @@ from document_generator import generate_contract_pdf, generate_quote_pdf, genera
 # Импорт авторизации и БД
 from auth import (
     UserRegister, UserLogin, register_user, login_user,
-    get_current_user, require_auth, require_admin, require_superadmin, require_employee, require_partner
+    get_current_user, require_auth, require_admin, require_superadmin, require_employee
 )
 from database import (
     CompanyDB, QuoteDB, ContractDB, CallbackDB, UserDB,
     ClientDB, InteractionDB, CallbackDBExtended,
     NotificationSettingsDB, CRMSettingsDB, CallbackSLADB,
-    get_next_contract_number, get_db, PartnerDB
+    get_next_contract_number, get_db
 )
-from education_db import EducationDB
 
 # Load environment variables first
 load_dotenv()
@@ -47,7 +46,6 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["X-Contract-Number", "X-Quote-Number", "Content-Disposition"],
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -169,18 +167,6 @@ class ContactRequest(BaseModel):
             raise ValueError('Необходимо согласие на обработку данных')
         return v
 
-# ======================== TRAINING ENROLLMENT ========================
-
-class TrainingEnrollRequest(BaseModel):
-    name: str
-    phone: str
-    email: Optional[EmailStr] = None
-    company: Optional[str] = None
-    comment: Optional[str] = None
-    plan_id: Optional[str] = None  # standard, premium, vip, cashier, accountant, corporate
-    plan_name: Optional[str] = None
-    plan_price: Optional[str] = None
-
 # ======================== COMPANY LOOKUP ========================
 
 class CompanyInfo(BaseModel):
@@ -193,7 +179,6 @@ class CompanyInfo(BaseModel):
     opf: Optional[str] = None  # Организационно-правовая форма
     type: Optional[str] = None  # LEGAL или INDIVIDUAL
     address: Optional[str] = None
-    city: Optional[str] = None
     management_name: Optional[str] = None
     management_post: Optional[str] = None
     status: Optional[str] = None  # ACTIVE, LIQUIDATED, etc.
@@ -417,14 +402,11 @@ CATEGORIES_DATA = [
                 }
             ]},
             {"id": "water", "name": "Упакованная вода", "icon": "droplet", "products": [
-                {"id": "water_220110_1", "name": "Природные минеральные воды газированные", "tnved": "2201 10", "marking_status": "mandatory"},
-                {"id": "water_220110_2", "name": "Природные минеральные воды негазированные", "tnved": "2201 10", "marking_status": "mandatory"},
-                {"id": "water_220110_3", "name": "Природные минеральные воды слабогазированные", "tnved": "2201 10", "marking_status": "mandatory"},
-                {"id": "water_22019000_1", "name": "Вода питьевая газированная", "tnved": "2201 90 000 0", "marking_status": "mandatory"},
-                {"id": "water_22019000_2", "name": "Вода питьевая негазированная", "tnved": "2201 90 000 0", "marking_status": "mandatory"},
-                {"id": "water_22019000_3", "name": "Вода питьевая слабогазированная", "tnved": "2201 90 000 0", "marking_status": "mandatory"},
-                {"id": "water_22019000_4", "name": "Вода питьевая прочая", "tnved": "2201 90 000 0", "marking_status": "mandatory"},
-                {"id": "water_22019000_5", "name": "Вода для детского питания", "tnved": "2201 90 000 0", "marking_status": "mandatory"}
+                {"id": "water_2201", "name": "Воды, включая природные или искусственные минеральные, газированные, б", "tnved": "2201", "marking_status": "mandatory"},
+                {"id": "water_220122", "name": "Природные минеральные воды, газированные;", "tnved": "2201 22", "marking_status": "mandatory"},
+                {"id": "water_22012201", "name": "Природные минеральные воды, газированные;", "tnved": "2201 22 01", "marking_status": "mandatory"},
+                {"id": "water_2201220110", "name": "Природные минеральные воды, газированные;", "tnved": "2201 22 011 0", "marking_status": "mandatory"},
+                {"id": "water_2201220190", "name": "Воды, включая природные или искусственные минеральные, газированные, б", "tnved": "2201 22 019 0", "marking_status": "mandatory"}
             ]},
             {"id": "tobacco", "name": "Табак", "icon": "cigarette", "products": [
                 {"id": "tobacco_2402", "name": "Сигары, сигары с обрезанными концами, сигариллы и сигареты из табака и", "tnved": "2402", "marking_status": "mandatory"},
@@ -491,26 +473,16 @@ CATEGORIES_DATA = [
                 {"id": "oils_1507109001", "name": "в первичных упаковках нетто-объемом 10 л или менее", "tnved": "1507 10 900 1", "marking_status": "mandatory"}
             ]},
             {"id": "pet_food", "name": "Корма для животных", "icon": "paw", "products": [
-                {"id": "pet_food_dry", "name": "Сухой корм", "tnved": "2309", "marking_status": "mandatory"},
-                {"id": "pet_food_dry_animal", "name": "Сухой корм животного происхождения", "tnved": "2309", "marking_status": "mandatory"},
-                {"id": "pet_food_dry_animal_dog", "name": "Сухой корм животного происхождения для собак", "tnved": "2309", "marking_status": "mandatory"},
-                {"id": "pet_food_dry_animal_cat", "name": "Сухой корм животного происхождения для кошек", "tnved": "2309", "marking_status": "mandatory"},
-                {"id": "pet_food_dry_animal_other", "name": "Сухой корм животного происхождения для прочих животных", "tnved": "2309", "marking_status": "mandatory"},
-                {"id": "pet_food_dry_plant", "name": "Сухой корм растительного происхождения", "tnved": "2309", "marking_status": "mandatory"},
-                {"id": "pet_food_dry_other", "name": "Сухой корм прочий", "tnved": "2309", "marking_status": "mandatory"},
-                {"id": "pet_food_dry_other_dog", "name": "Сухой корм прочий для собак", "tnved": "2309", "marking_status": "mandatory"},
-                {"id": "pet_food_dry_other_cat", "name": "Сухой корм прочий для кошек", "tnved": "2309", "marking_status": "mandatory"},
-                {"id": "pet_food_dry_other_other", "name": "Сухой корм прочий для прочих животных", "tnved": "2309", "marking_status": "mandatory"},
-                {"id": "pet_food_wet", "name": "Влажный корм", "tnved": "2309", "marking_status": "mandatory"},
-                {"id": "pet_food_wet_animal", "name": "Влажный корм животного происхождения", "tnved": "2309", "marking_status": "mandatory"},
-                {"id": "pet_food_wet_animal_dog", "name": "Влажный корм животного происхождения для собак", "tnved": "2309", "marking_status": "mandatory"},
-                {"id": "pet_food_wet_animal_cat", "name": "Влажный корм животного происхождения для кошек", "tnved": "2309", "marking_status": "mandatory"},
-                {"id": "pet_food_wet_animal_other", "name": "Влажный корм животного происхождения для прочих животных", "tnved": "2309", "marking_status": "mandatory"},
-                {"id": "pet_food_wet_plant", "name": "Влажный корм растительного происхождения", "tnved": "2309", "marking_status": "mandatory"},
-                {"id": "pet_food_wet_other", "name": "Влажный корм прочий", "tnved": "2309", "marking_status": "mandatory"},
-                {"id": "pet_food_wet_other_dog", "name": "Влажный корм прочий для собак", "tnved": "2309", "marking_status": "mandatory"},
-                {"id": "pet_food_wet_other_cat", "name": "Влажный корм прочий для кошек", "tnved": "2309", "marking_status": "mandatory"},
-                {"id": "pet_food_wet_other_other", "name": "Влажный корм прочий для прочих животных", "tnved": "2309", "marking_status": "mandatory"}
+                {"id": "pet_food_1092", "name": "Сухой корм", "tnved": "1092", "marking_status": "mandatory"},
+                {"id": "pet_food_109210", "name": "Сухой корм", "tnved": "1092 10", "marking_status": "mandatory"},
+                {"id": "pet_food_10921010", "name": "Сухой корм", "tnved": "1092 10 10", "marking_status": "mandatory"},
+                {"id": "pet_food_10921011", "name": "Сухой корм животного происхождения", "tnved": "1092 10 11", "marking_status": "mandatory"},
+                {"id": "pet_food_10921012", "name": "Сухой корм растительного происхождения", "tnved": "1092 10 12", "marking_status": "mandatory"},
+                {"id": "pet_food_10921019", "name": "Сухой корм прочий", "tnved": "1092 10 19", "marking_status": "mandatory"},
+                {"id": "pet_food_10921020", "name": "Влажный корм", "tnved": "1092 10 20", "marking_status": "mandatory"},
+                {"id": "pet_food_10921021", "name": "Влажный корм животного происхождения", "tnved": "1092 10 21", "marking_status": "mandatory"},
+                {"id": "pet_food_10921022", "name": "Влажный корм растительного происхождения", "tnved": "1092 10 22", "marking_status": "mandatory"},
+                {"id": "pet_food_10921029", "name": "Влажный корм прочий", "tnved": "1092 10 29", "marking_status": "mandatory"}
             ]},
             {"id": "canned", "name": "Консервированные продукты", "icon": "archive", "products": [
                 {"id": "canned_1604", "name": "Готовая или консервированная рыба; икра осетровых и ее заменители, изг", "tnved": "1604", "marking_status": "mandatory"},
@@ -523,31 +495,14 @@ CATEGORIES_DATA = [
                 {"id": "canned_1602200121", "name": "Мясная и плодоовощная консервация", "tnved": "1602 20 012 1", "marking_status": "mandatory"}
             ]},
             {"id": "grocery", "name": "Бакалея", "icon": "shopping-basket", "products": [
-                {"id": "snacks_chips_potato", "name": "Чипсы картофельные", "tnved": "1904 10 100 0", "marking_status": "mandatory"},
-                {"id": "snacks_chips_veg", "name": "Чипсы овощные", "tnved": "1904 10 300 0", "marking_status": "mandatory"},
-                {"id": "snacks_chips_other", "name": "Чипсы прочие", "tnved": "1904 10 900 0", "marking_status": "mandatory"},
-                {"id": "snacks_crispbread", "name": "Хлебцы хрустящие", "tnved": "1905 10 000 0", "marking_status": "mandatory"},
-                {"id": "snacks_crackers", "name": "Сухарики", "tnved": "1905 40 100 0", "marking_status": "mandatory"},
-                {"id": "snacks_croutons", "name": "Гренки", "tnved": "1905 40 900 0", "marking_status": "mandatory"},
-                {"id": "snacks_corn_sticks", "name": "Кукурузные палочки", "tnved": "1905 90 550 0", "marking_status": "mandatory"},
-                {"id": "snacks_nachos", "name": "Начос", "tnved": "1905 90 900 0", "marking_status": "mandatory"},
-                {"id": "snacks_popcorn", "name": "Попкорн готовый", "tnved": "2005 20 200 0", "marking_status": "mandatory"},
-                {"id": "snacks_other", "name": "Снековая продукция прочая", "tnved": "2005 20 800 0", "marking_status": "mandatory"},
-                {"id": "spices_onion", "name": "Лук сушеный", "tnved": "0712 20 000 0", "marking_status": "mandatory"},
-                {"id": "spices_veg_dried", "name": "Овощи сушеные прочие", "tnved": "0712 90 900 0", "marking_status": "mandatory"},
-                {"id": "spices_pepper", "name": "Перец (род Piper)", "tnved": "0904", "marking_status": "mandatory"},
-                {"id": "spices_vanilla", "name": "Ваниль", "tnved": "0905", "marking_status": "mandatory"},
-                {"id": "spices_cinnamon", "name": "Корица и цветы коричного дерева", "tnved": "0906", "marking_status": "mandatory"},
-                {"id": "spices_cloves", "name": "Гвоздика", "tnved": "0907", "marking_status": "mandatory"},
-                {"id": "spices_nutmeg", "name": "Мускатный орех, мацис и кардамон", "tnved": "0908", "marking_status": "mandatory"},
-                {"id": "spices_seeds", "name": "Семена аниса, бадьяна, кориандра, тмина", "tnved": "0909", "marking_status": "mandatory"},
-                {"id": "spices_ginger", "name": "Имбирь, шафран, куркума, тимьян, лавровый лист", "tnved": "0910", "marking_status": "mandatory"},
-                {"id": "spices_other", "name": "Пряности пищевые прочие", "tnved": "1211 90 860 8", "marking_status": "mandatory"},
-                {"id": "sauces_main", "name": "Соусы и их компоненты, приправы", "tnved": "2103", "marking_status": "mandatory"},
-                {"id": "sauces_mustard", "name": "Горчица готовая", "tnved": "2103", "marking_status": "mandatory"},
-                {"id": "sauces_soups_dry", "name": "Сухие супы", "tnved": "2104 10 000 0", "marking_status": "mandatory"},
-                {"id": "sauces_broth_dry", "name": "Сухие бульоны", "tnved": "2104 10 000 0", "marking_status": "mandatory"},
-                {"id": "sauces_vinegar", "name": "Уксусы", "tnved": "2209 000", "marking_status": "mandatory"}
+                {"id": "grocery_1904", "name": "Готовые пищевые продукты, полученные путем вздувания или обжаривания з", "tnved": "1904", "marking_status": "mandatory"},
+                {"id": "grocery_190410", "name": "готовые пищевые продукты, полученные путем вздувания или обжаривания з", "tnved": "1904 10", "marking_status": "mandatory"},
+                {"id": "grocery_19041010", "name": "Снековая продукция (чипсы, начос, сухарики, гренки, кукурузные палочки", "tnved": "1904 10 10", "marking_status": "mandatory"},
+                {"id": "grocery_1904101000", "name": "полученные из кукурузы", "tnved": "1904 10 100 0", "marking_status": "mandatory"},
+                {"id": "grocery_0712", "name": "Овощи сушеные, целые, нарезанные кусками, ломтиками, измельченные или ", "tnved": "0712", "marking_status": "mandatory"},
+                {"id": "grocery_071220", "name": "Соусы, специи, приправы, пряности, сухие бульоны, сухие супы и уксусы", "tnved": "0712 20", "marking_status": "mandatory"},
+                {"id": "grocery_07122000", "name": "Соусы, специи, приправы, пряности, сухие бульоны, сухие супы и уксусы", "tnved": "0712 20 00", "marking_status": "mandatory"},
+                {"id": "grocery_0712200000", "name": "лук репчатый", "tnved": "0712 20 000 0", "marking_status": "mandatory"}
             ]},
             {"id": "soft_drinks", "name": "Безалкогольные напитки", "icon": "glass-water", "products": [
                 {"id": "soft_drinks_2202100000", "name": "воды, включая минеральные и газированные, содержащие добавки сахара ил", "tnved": "2202 10 000 0", "marking_status": "mandatory"}
@@ -696,19 +651,7 @@ CATEGORIES_DATA = [
                 {"id": "vet_300290", "name": "прочие:", "tnved": "3002 90", "marking_status": "mandatory"},
                 {"id": "vet_3002903000", "name": "кровь животных, приготовленная для использования в терапевтических, пр", "tnved": "3002 90 300 0", "marking_status": "mandatory"}
             ]},
-            {"id": "pharma_raw", "name": "Фармацевтическое сырьё, лекарственные средства", "icon": "flask", "products": [
-                {"id": "pharma_raw_2932", "name": "Фармсубстанции (с кислородом)", "tnved": "2932", "marking_status": "experiment"},
-                {"id": "pharma_raw_2933", "name": "Фармсубстанции (с азотом)", "tnved": "2933", "marking_status": "experiment"},
-                {"id": "pharma_raw_2934", "name": "Нуклеиновые кислоты", "tnved": "2934", "marking_status": "experiment"},
-                {"id": "pharma_raw_2935", "name": "Сульфонамиды", "tnved": "2935", "marking_status": "experiment"},
-                {"id": "pharma_raw_2936", "name": "Витамины", "tnved": "2936", "marking_status": "experiment"},
-                {"id": "pharma_raw_2937", "name": "Гормоны", "tnved": "2937", "marking_status": "experiment"},
-                {"id": "pharma_raw_2939", "name": "Гликозиды, алкалоиды", "tnved": "2939", "marking_status": "experiment"},
-                {"id": "pharma_raw_2941", "name": "Антибиотики", "tnved": "2941", "marking_status": "experiment"},
-                {"id": "pharma_raw_in_process", "name": "In-process продукты", "tnved": "-", "marking_status": "experiment"},
-                {"id": "pharma_raw_in_bulk", "name": "In-bulk продукты", "tnved": "-", "marking_status": "experiment"},
-                {"id": "pharma_raw_afs", "name": "АФС (активные фармацевтические субстанции)", "tnved": "-", "marking_status": "experiment"}
-            ]},
+            {"id": "pharma_raw", "name": "Фармацевтическое сырьё, лекарственные средства", "icon": "flask", "products": []},
             {"id": "medical_devices", "name": "Медицинские изделия", "icon": "heart-pulse", "products": [
                 {"id": "medical_devices_9021", "name": "Приспособления ортопедические, включая костыли, хирургические ремни и ", "tnved": "9021", "marking_status": "mandatory"},
                 {"id": "medical_devices_902110", "name": "приспособления ортопедические или для лечения переломов:", "tnved": "9021 10", "marking_status": "mandatory"},
@@ -885,12 +828,7 @@ CATEGORIES_DATA = [
         "icon": "sparkles",
         "subcategories": [
             {"id": "perfume", "name": "Духи и туалетная вода", "icon": "spray-can", "products": [
-                {"id": "perfume_330300", "name": "Духи и туалетная вода:", "tnved": "3303 00", "marking_status": "mandatory"},
-                {"id": "perfume_dukhi", "name": "Духи", "tnved": "3303 00", "marking_status": "mandatory"},
-                {"id": "perfume_tualetnaya_voda", "name": "Туалетная вода", "tnved": "3303 00", "marking_status": "mandatory"},
-                {"id": "perfume_odekolon", "name": "Одеколон", "tnved": "3303 00", "marking_status": "mandatory"},
-                {"id": "perfume_parfyumernaya_voda", "name": "Парфюмерная вода", "tnved": "3303 00", "marking_status": "mandatory"},
-                {"id": "perfume_nabory", "name": "Наборы парфюмерной продукции (импорт)", "tnved": "3303 00", "marking_status": "mandatory"}
+                {"id": "perfume_330300", "name": "Духи и туалетная вода:", "tnved": "3303 00", "marking_status": "mandatory"}
             ]},
             {"id": "cosmetics_hygiene", "name": "Косметика, бытовая химия и товары личной гигиены", "icon": "sparkles", "products": [
                 {"id": "cosmetics_hygiene_3304", "name": "Косметические средства или средства для макияжа и средства для ухода з", "tnved": "3304", "marking_status": "mandatory"},
@@ -908,29 +846,7 @@ CATEGORIES_DATA = [
                 {"id": "cosmetics_hygiene_8212", "name": "Бритвы и лезвия для них (включая полосовые заготовки для лезвий):", "tnved": "8212", "marking_status": "mandatory"},
                 {"id": "cosmetics_hygiene_821210", "name": "бритвы:", "tnved": "8212 10", "marking_status": "mandatory"},
                 {"id": "cosmetics_hygiene_82121010", "name": "Бритвы и лезвия для них, включая полосовые заготовки для лезвий", "tnved": "8212 10 10", "marking_status": "mandatory"},
-                {"id": "cosmetics_hygiene_8212101000", "name": "безопасные бритвы с несменяемыми лезвиями", "tnved": "8212 10 100 0", "marking_status": "mandatory"},
-                {"id": "cosmetics_mylo_tualetnoe", "name": "Мыло туалетное", "tnved": "3401", "marking_status": "mandatory"},
-                {"id": "cosmetics_mylo_hozyaystvennoe", "name": "Мыло хозяйственное", "tnved": "3401", "marking_status": "mandatory"},
-                {"id": "cosmetics_moyushchie_pav", "name": "Моющие средства ПАВ", "tnved": "3402 50 000 0", "marking_status": "mandatory"},
-                {"id": "cosmetics_chistka_obuvi", "name": "Средства для чистки обуви", "tnved": "3405 40 00 0", "marking_status": "mandatory"},
-                {"id": "cosmetics_shampuni", "name": "Шампуни", "tnved": "3305", "marking_status": "mandatory"},
-                {"id": "cosmetics_kondicionery_volos", "name": "Кондиционеры для волос", "tnved": "3305", "marking_status": "mandatory"},
-                {"id": "cosmetics_laki_volos", "name": "Лаки для волос", "tnved": "3305", "marking_status": "mandatory"},
-                {"id": "cosmetics_kraski_volos", "name": "Краски для волос", "tnved": "3305", "marking_status": "mandatory"},
-                {"id": "cosmetics_sredstva_britya", "name": "Средства для бритья", "tnved": "3307", "marking_status": "mandatory"},
-                {"id": "cosmetics_dezodoranty", "name": "Дезодоранты", "tnved": "3307", "marking_status": "mandatory"},
-                {"id": "cosmetics_aromatizatory", "name": "Ароматизаторы помещений", "tnved": "3307", "marking_status": "mandatory"},
-                {"id": "cosmetics_kremy_lico", "name": "Кремы для лица", "tnved": "3304", "marking_status": "mandatory"},
-                {"id": "cosmetics_kremy_ruki_telo", "name": "Кремы для рук и тела", "tnved": "3304", "marking_status": "mandatory"},
-                {"id": "cosmetics_dekorativnaya", "name": "Декоративная косметика", "tnved": "3304", "marking_status": "mandatory"},
-                {"id": "cosmetics_laki_nogtey", "name": "Лаки для ногтей", "tnved": "3304", "marking_status": "mandatory"},
-                {"id": "cosmetics_sredstva_zagara", "name": "Средства для загара", "tnved": "3304", "marking_status": "mandatory"},
-                {"id": "cosmetics_zubnaya_pasta", "name": "Зубная паста", "tnved": "3306", "marking_status": "mandatory"},
-                {"id": "cosmetics_opolaskivateli_rta", "name": "Ополаскиватели для рта", "tnved": "3306", "marking_status": "mandatory"},
-                {"id": "cosmetics_britvy_bezopasnye", "name": "Бритвы безопасные", "tnved": "8212 10 100 0", "marking_status": "mandatory"},
-                {"id": "cosmetics_britvy_prochie", "name": "Бритвы прочие", "tnved": "8212 10 900 0", "marking_status": "mandatory"},
-                {"id": "cosmetics_lezviya_britv", "name": "Лезвия для бритв", "tnved": "8212 20 000 0", "marking_status": "mandatory"},
-                {"id": "cosmetics_zagotovki_lezviy", "name": "Заготовки для лезвий", "tnved": "8212 90 000 0", "marking_status": "mandatory"}
+                {"id": "cosmetics_hygiene_8212101000", "name": "безопасные бритвы с несменяемыми лезвиями", "tnved": "8212 10 100 0", "marking_status": "mandatory"}
             ]}
         ]
     },
@@ -1042,8 +958,7 @@ CATEGORIES_DATA = [
                 {"id": "shoes_6402", "name": "Прочая обувь с подошвой и с верхом из резины или пластмассы:", "tnved": "6402", "marking_status": "mandatory"},
                 {"id": "shoes_6403", "name": "Обувь с подошвой из резины, пластмассы, натуральной или композиционной", "tnved": "6403", "marking_status": "mandatory"},
                 {"id": "shoes_6404", "name": "Обувь с подошвой из резины, пластмассы, натуральной или композиционной", "tnved": "6404", "marking_status": "mandatory"},
-                {"id": "shoes_6405", "name": "Обувь прочая:", "tnved": "6405", "marking_status": "mandatory"},
-                {"id": "shoes_sportivnaya", "name": "Обувь спортивная", "tnved": "6402; 6403; 6404", "marking_status": "mandatory"}
+                {"id": "shoes_6405", "name": "Обувь прочая:", "tnved": "6405", "marking_status": "mandatory"}
             ]},
             {"id": "furs", "name": "Шубы", "icon": "shirt", "products": [
                 {"id": "furs_4303", "name": "Предметы одежды, принадлежности к одежде и прочие изделия, из натураль", "tnved": "4303", "marking_status": "mandatory"},
@@ -1064,21 +979,13 @@ CATEGORIES_DATA = [
                 {"id": "toys_9504400000", "name": "карты игральные", "tnved": "9504 40 000 0", "marking_status": "mandatory"},
                 {"id": "toys_950490", "name": "прочие:", "tnved": "9504 90", "marking_status": "mandatory"},
                 {"id": "toys_9504901000", "name": "наборы электрических гоночных автомобилей для соревновательных игр", "tnved": "9504 90 100 0", "marking_status": "mandatory"},
-                {"id": "toys_9504908009", "name": "прочие", "tnved": "9504 90 800 9", "marking_status": "mandatory"},
-                {"id": "toys_kolyaski_kukol", "name": "Коляски для кукол", "tnved": "9503 00", "marking_status": "mandatory"},
-                {"id": "toys_kukly", "name": "Куклы", "tnved": "9503 00", "marking_status": "mandatory"},
-                {"id": "toys_igrushki_prochie", "name": "Игрушки прочие", "tnved": "9503 00", "marking_status": "mandatory"},
-                {"id": "toys_modeli", "name": "Модели в масштабе", "tnved": "9503 00", "marking_status": "mandatory"},
-                {"id": "toys_golovolomki", "name": "Головоломки всех видов", "tnved": "9503 00", "marking_status": "mandatory"}
+                {"id": "toys_9504908009", "name": "прочие", "tnved": "9504 90 800 9", "marking_status": "mandatory"}
             ]},
             {"id": "bicycles", "name": "Велосипеды", "icon": "bike", "products": [
                 {"id": "bicycles_8711", "name": "Мотоциклы (включая мопеды) и велосипеды с установленным вспомогательны", "tnved": "8711", "marking_status": "mandatory"},
                 {"id": "bicycles_871187", "name": "Велосипеды (в том числе с установленным вспомогательным двигателем и т", "tnved": "8711 87", "marking_status": "mandatory"},
                 {"id": "bicycles_87118712", "name": "Велосипеды (в том числе с установленным вспомогательным двигателем и т", "tnved": "8711 87 12", "marking_status": "mandatory"},
-                {"id": "bicycles_8711871200", "name": "Велосипеды (в том числе с установленным вспомогательным двигателем и т", "tnved": "8711 87 120 0", "marking_status": "mandatory"},
-                {"id": "bicycles_871200", "name": "Велосипеды двухколёсные", "tnved": "8712 00", "marking_status": "mandatory"},
-                {"id": "bicycles_871491100", "name": "Рамы велосипедные", "tnved": "8714 91 100", "marking_status": "mandatory"},
-                {"id": "bicycles_950300100", "name": "Велосипеды трёхколёсные, самокаты детские", "tnved": "9503 00 100", "marking_status": "mandatory"}
+                {"id": "bicycles_8711871200", "name": "Велосипеды (в том числе с установленным вспомогательным двигателем и т", "tnved": "8711 87 120 0", "marking_status": "mandatory"}
             ]}
         ]
     },
@@ -1134,12 +1041,7 @@ CATEGORIES_DATA = [
                 {"id": "motor_oils_3820", "name": "Антифризы и жидкости антиобледенительные готовые (например, омыватель ", "tnved": "3820", "marking_status": "mandatory"},
                 {"id": "motor_oils_382000", "name": "Антифризы и жидкости антиобледенительные готовые (например, омыватель ", "tnved": "3820 00", "marking_status": "mandatory"},
                 {"id": "motor_oils_38200000", "name": "Антифризы и жидкости антиобледенительные готовые (например, омыватель ", "tnved": "3820 00 00", "marking_status": "mandatory"},
-                {"id": "motor_oils_3820000000", "name": "Антифризы и жидкости антиобледенительные готовые", "tnved": "3820 00 000 0", "marking_status": "mandatory"},
-                {"id": "motor_oils_kompressornye", "name": "Компрессорные масла", "tnved": "2710 19 820 0", "marking_status": "mandatory"},
-                {"id": "motor_oils_turbinnye", "name": "Турбинные масла", "tnved": "2710 19 820 0", "marking_status": "mandatory"},
-                {"id": "motor_oils_reduktory", "name": "Масла для редукторов", "tnved": "2710 19 880 0", "marking_status": "mandatory"},
-                {"id": "motor_oils_smazki_prochie", "name": "Смазки прочие (эмульсии, антикоррозионные)", "tnved": "3403 99 000 0", "marking_status": "mandatory"},
-                {"id": "motor_oils_omyvateli", "name": "Омыватели стёкол", "tnved": "3820 00 000 0", "marking_status": "mandatory"}
+                {"id": "motor_oils_3820000000", "name": "Антифризы и жидкости антиобледенительные готовые", "tnved": "3820 00 000 0", "marking_status": "mandatory"}
             ]}
         ]
     },
@@ -1159,27 +1061,7 @@ CATEGORIES_DATA = [
                 {"id": "building_materials_382450", "name": "неогнеупорные строительные растворы и бетоны:", "tnved": "3824 50", "marking_status": "mandatory"},
                 {"id": "building_materials_38245090", "name": "Смеси строительные, растворы строительные", "tnved": "3824 50 90", "marking_status": "mandatory"},
                 {"id": "building_materials_3824509000", "name": "прочие", "tnved": "3824 50 900 0", "marking_status": "mandatory"},
-                {"id": "building_materials_3214", "name": "Замазки стекольная и садовая, цементы смоляные, составы для уплотнения", "tnved": "3214", "marking_status": "mandatory"},
-                {"id": "building_materials_gips_stroit", "name": "Гипс строительный", "tnved": "2520", "marking_status": "mandatory"},
-                {"id": "building_materials_gips_tech", "name": "Гипс технический", "tnved": "2520", "marking_status": "mandatory"},
-                {"id": "building_materials_gips_med", "name": "Гипс медицинский", "tnved": "2520", "marking_status": "mandatory"},
-                {"id": "building_materials_gips_form", "name": "Гипс формовочный", "tnved": "2520", "marking_status": "mandatory"},
-                {"id": "building_materials_portland_bez", "name": "Портландцемент без добавок", "tnved": "2523", "marking_status": "mandatory"},
-                {"id": "building_materials_portland_s", "name": "Портландцемент с добавками", "tnved": "2523", "marking_status": "mandatory"},
-                {"id": "building_materials_shlako", "name": "Шлакопортландцемент", "tnved": "2523", "marking_status": "mandatory"},
-                {"id": "building_materials_kompozit", "name": "Цемент композиционный", "tnved": "2523", "marking_status": "mandatory"},
-                {"id": "building_materials_belye", "name": "Портландцементы белые/цветные", "tnved": "2523", "marking_status": "mandatory"},
-                {"id": "building_materials_tampon", "name": "Цемент тампонажный", "tnved": "2523", "marking_status": "mandatory"},
-                {"id": "building_materials_glinozem", "name": "Цементы глинозёмистые", "tnved": "2523", "marking_status": "mandatory"},
-                {"id": "building_materials_cement_proch", "name": "Цементы прочие", "tnved": "2523", "marking_status": "mandatory"},
-                {"id": "building_materials_rastvory_ogn", "name": "Растворы огнеупорные", "tnved": "3816 00 000 0", "marking_status": "mandatory"},
-                {"id": "building_materials_betony_ogn", "name": "Бетоны огнеупорные", "tnved": "3816 00 000 0", "marking_status": "mandatory"},
-                {"id": "building_materials_rastvory_str", "name": "Растворы строительные", "tnved": "3824 50 900 0", "marking_status": "mandatory"},
-                {"id": "building_materials_shpatlyovki", "name": "Шпатлёвки", "tnved": "3214", "marking_status": "mandatory"},
-                {"id": "building_materials_zamazki", "name": "Замазки", "tnved": "3214", "marking_status": "mandatory"},
-                {"id": "building_materials_germetiki", "name": "Герметики", "tnved": "3214", "marking_status": "mandatory"},
-                {"id": "building_materials_mastiki", "name": "Мастики", "tnved": "3214", "marking_status": "mandatory"},
-                {"id": "building_materials_pasty", "name": "Пасты строительные", "tnved": "3214", "marking_status": "mandatory"}
+                {"id": "building_materials_3214", "name": "Замазки стекольная и садовая, цементы смоляные, составы для уплотнения", "tnved": "3214", "marking_status": "mandatory"}
             ]}
         ]
     },
@@ -1188,31 +1070,7 @@ CATEGORIES_DATA = [
         "name": "Электроника и техника",
         "icon": "cpu",
         "subcategories": [
-            {"id": "cameras", "name": "Фотоаппараты и лампы-вспышки", "icon": "camera", "products": [
-                {"id": "cameras_9006", "name": "Фотокамеры (кроме кинематографических)", "tnved": "9006", "marking_status": "mandatory", "mandatory_since": "2020-10-01",
-                    "timeline": {
-                        "title": "Фотоаппараты и лампы-вспышки",
-                        "start_date": "1 октября 2020",
-                        "who": ["Производители", "Импортёры", "Оптовики", "Розница"],
-                        "current_requirements": [
-                            "Регистрация в Честном ЗНАКе",
-                            "Нанесение кодов маркировки",
-                            "Передача данных при продаже на кассе",
-                            "Электронный документооборот (ЭДО)",
-                            "Разрешительный режим на кассах (с 01.11.2024)"
-                        ]
-                    }
-                },
-                {"id": "cameras_900610", "name": "Фотоаппараты для изготовления печатных пластин/цилиндров", "tnved": "9006 10", "marking_status": "mandatory"},
-                {"id": "cameras_900630", "name": "Фотоаппараты специальные для подводной/аэросъёмки", "tnved": "9006 30", "marking_status": "mandatory"},
-                {"id": "cameras_900640", "name": "Фотоаппараты для моментальной печати", "tnved": "9006 40", "marking_status": "mandatory"},
-                {"id": "cameras_900651", "name": "Фотоаппараты прочие с видоискателем (зеркальные)", "tnved": "9006 51", "marking_status": "mandatory"},
-                {"id": "cameras_900652", "name": "Фотоаппараты прочие для плёнки шириной менее 35мм", "tnved": "9006 52", "marking_status": "mandatory"},
-                {"id": "cameras_900653", "name": "Фотоаппараты прочие для плёнки шириной 35мм", "tnved": "9006 53", "marking_status": "mandatory"},
-                {"id": "cameras_900659", "name": "Фотоаппараты прочие", "tnved": "9006 59", "marking_status": "mandatory"},
-                {"id": "cameras_900661", "name": "Лампы-вспышки с газоразрядной трубкой", "tnved": "9006 61", "marking_status": "mandatory"},
-                {"id": "cameras_900669", "name": "Лампы-вспышки прочие", "tnved": "9006 69", "marking_status": "mandatory"}
-            ]}
+            {"id": "cameras", "name": "Фотоаппараты и лампы-вспышки", "icon": "camera", "products": []}
         ]
     },
     {
@@ -1220,451 +1078,23 @@ CATEGORIES_DATA = [
         "name": "Пилотные проекты",
         "icon": "rocket",
         "subcategories": [
-            {
-                "id": "pilot_титановая_металлопродукция",
-                "name": "Титановая металлопродукция (завершен)",
-                "products": [
-                    {"id": "pilot_титановая_металлопродукция_8108_20_000_6", "name": "Слитки из титановых сплавов", "tnved": "8108 20 000 6", "marking_status": "not_required"},
-                    {"id": "pilot_титановая_металлопродукция_8108_20_000_7", "name": "Слябы из титановых сплавов", "tnved": "8108 20 000 7", "marking_status": "not_required"},
-                    {"id": "pilot_титановая_металлопродукция_8108_90_300_8", "name": "Прутки и биллеты из титановых сплавов", "tnved": "8108 90 300 8", "marking_status": "not_required"},
-                    {"id": "pilot_титановая_металлопродукция_8108_90_300_8_1", "name": "Плиты и листы из титановых сплавов", "tnved": "8108 90 300 8", "marking_status": "not_required"},
-                    {"id": "pilot_титановая_металлопродукция_8108_90_300_8_2", "name": "Поковки прямоугольной формы из титановых сплавов", "tnved": "8108 90 300 8", "marking_status": "not_required"},
-                    {"id": "pilot_титановая_металлопродукция_8108_90_500_8", "name": "Плиты и листы из титановых сплавов", "tnved": "8108 90 500 8", "marking_status": "not_required"}
-                ]
-            },
-            {
-                "id": "pilot_оптоволоконная_продукция",
-                "name": "Оптоволоконная продукция",
-                "products": [
-                    {"id": "pilot_оптоволоконная_продукция_9001_10_900_1", "name": "Волокна оптические", "tnved": "9001 10 900 1", "marking_status": "experiment"},
-                    {"id": "pilot_оптоволоконная_продукция_8544_70_000_0", "name": "Кабели волоконно-оптические", "tnved": "8544 70 000 0", "marking_status": "experiment"}
-                ]
-            },
-            {
-                "id": "pilot_отопительные_приборы",
-                "name": "Отопительные приборы",
-                "products": [
-                    {"id": "pilot_отопительные_приборы_7322_11_000_0", "name": "Радиаторы центрального отопления чугунные", "tnved": "7322 11 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_отопительные_приборы_7322_19_000_0", "name": "Радиаторы центрального отопления прочие", "tnved": "7322 19 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_отопительные_приборы_7616_99_100_2", "name": "Радиаторы алюминиевые", "tnved": "7616 99 100 2", "marking_status": "experiment"},
-                    {"id": "pilot_отопительные_приборы_7616_99_100_3", "name": "Радиаторы алюминиевые", "tnved": "7616 99 100 3", "marking_status": "experiment"},
-                    {"id": "pilot_отопительные_приборы_7616_99_900_8", "name": "Радиаторы алюминиевые прочие", "tnved": "7616 99 900 8", "marking_status": "experiment"},
-                    {"id": "pilot_отопительные_приборы_7322_90_000_9", "name": "Конвекторы отопительные", "tnved": "7322 90 000 9", "marking_status": "experiment"},
-                    {"id": "pilot_отопительные_приборы_7419_80_000_0", "name": "Конвекторы отопительные медные", "tnved": "7419 80 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_отопительные_приборы_8403_10_900_0", "name": "Котлы центрального отопления", "tnved": "8403 10 900 0", "marking_status": "experiment"}
-                ]
-            },
-            {
-                "id": "pilot_слабоалкогольная_продукция_до_9",
-                "name": "Слабоалкогольная продукция (до 9%)",
-                "products": [
-                    {"id": "pilot_слабоалкогольная_продукция_до_9_2206_00_590_1", "name": "Алкогольная продукция до 9%", "tnved": "2206 00 590 1", "marking_status": "experiment"},
-                    {"id": "pilot_слабоалкогольная_продукция_до_9_2206_00_390_1", "name": "Алкогольная продукция до 9%", "tnved": "2206 00 390 1", "marking_status": "experiment"},
-                    {"id": "pilot_слабоалкогольная_продукция_до_9_2206_00_890_1", "name": "Алкогольная продукция до 9%", "tnved": "2206 00 890 1", "marking_status": "experiment"},
-                    {"id": "pilot_слабоалкогольная_продукция_до_9_2208_90_690_1", "name": "Алкогольная продукция до 9%", "tnved": "2208 90 690 1", "marking_status": "experiment"},
-                    {"id": "pilot_слабоалкогольная_продукция_до_9_2208_90_780_1", "name": "Алкогольная продукция до 9%", "tnved": "2208 90 780 1", "marking_status": "experiment"},
-                    {"id": "pilot_слабоалкогольная_продукция_до_9_2206_00_390_9", "name": "Алкогольная продукция до 9%", "tnved": "2206 00 390 9", "marking_status": "experiment"},
-                    {"id": "pilot_слабоалкогольная_продукция_до_9_2206_00_590_9", "name": "Алкогольная продукция до 9%", "tnved": "2206 00 590 9", "marking_status": "experiment"},
-                    {"id": "pilot_слабоалкогольная_продукция_до_9_2206_00_890_9", "name": "Алкогольная продукция до 9%", "tnved": "2206 00 890 9", "marking_status": "experiment"},
-                    {"id": "pilot_слабоалкогольная_продукция_до_9_2208_90_690_9", "name": "Алкогольная продукция до 9%", "tnved": "2208 90 690 9", "marking_status": "experiment"},
-                    {"id": "pilot_слабоалкогольная_продукция_до_9_2208_90_780_9", "name": "Алкогольная продукция до 9%", "tnved": "2208 90 780 9", "marking_status": "experiment"}
-                ]
-            },
-            {
-                "id": "pilot_пиротехника_и_пожарная_безопасность",
-                "name": "Пиротехника и пожарная безопасность",
-                "products": [
-                    {"id": "pilot_пиротехника_и_пожарная_безопасность_3604", "name": "Изделия пиротехнические I, II, III классов", "tnved": "3604", "marking_status": "experiment"},
-                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8424_10_000_0", "name": "Огнетушители", "tnved": "8424 10 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_пиротехника_и_пожарная_безопасность_3813_00_000_0", "name": "Составы и заряды для огнетушителей", "tnved": "3813 00 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8526_92_000_8", "name": "Извещатели пожарные", "tnved": "8526 92 000 8", "marking_status": "experiment"},
-                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8531_10", "name": "Извещатели пожарные", "tnved": "8531 10", "marking_status": "experiment"},
-                    {"id": "pilot_пиротехника_и_пожарная_безопасность_9022_29_000_0", "name": "Извещатели пожарные", "tnved": "9022 29 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_пиротехника_и_пожарная_безопасность_9027_10", "name": "Извещатели пожарные", "tnved": "9027 10", "marking_status": "experiment"},
-                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8504_40_300_4", "name": "Источники бесперебойного питания пожарной автоматики", "tnved": "8504 40 300 4", "marking_status": "experiment"},
-                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8504_40_300_8", "name": "Источники бесперебойного питания пожарной автоматики", "tnved": "8504 40 300 8", "marking_status": "experiment"},
-                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8504_40_550_0", "name": "Источники бесперебойного питания пожарной автоматики", "tnved": "8504 40 550 0", "marking_status": "experiment"},
-                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8504_40_830_0", "name": "Источники бесперебойного питания пожарной автоматики", "tnved": "8504 40 830 0", "marking_status": "experiment"},
-                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8504_40_850_0", "name": "Источники бесперебойного питания пожарной автоматики", "tnved": "8504 40 850 0", "marking_status": "experiment"},
-                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8504_40_870_0", "name": "Источники бесперебойного питания пожарной автоматики", "tnved": "8504 40 870 0", "marking_status": "experiment"},
-                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8504_40_910_0", "name": "Источники бесперебойного питания пожарной автоматики", "tnved": "8504 40 910 0", "marking_status": "experiment"},
-                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8517_62_000_9", "name": "Оповещатели пожарные", "tnved": "8517 62 000 9", "marking_status": "experiment"},
-                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8518_21_000_0", "name": "Оповещатели пожарные", "tnved": "8518 21 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8518_22_000_9", "name": "Оповещатели пожарные", "tnved": "8518 22 000 9", "marking_status": "experiment"},
-                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8518_29_300_8", "name": "Оповещатели пожарные", "tnved": "8518 29 300 8", "marking_status": "experiment"},
-                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8518_29_960_0", "name": "Оповещатели пожарные", "tnved": "8518 29 960 0", "marking_status": "experiment"},
-                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8531_20_200_0", "name": "Выносные устройства индикации", "tnved": "8531 20 200 0", "marking_status": "experiment"},
-                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8531_80_950_0", "name": "Выносные устройства индикации", "tnved": "8531 80 950 0", "marking_status": "experiment"},
-                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8537_10", "name": "Приборы приемно-контрольные пожарные", "tnved": "8537 10", "marking_status": "experiment"},
-                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8517_61_000", "name": "Системы передачи извещений о пожаре", "tnved": "8517 61 000", "marking_status": "experiment"},
-                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8517_62_000", "name": "Системы передачи извещений о пожаре", "tnved": "8517 62 000", "marking_status": "experiment"},
-                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8517_69_390_0", "name": "Системы передачи извещений о пожаре", "tnved": "8517 69 390 0", "marking_status": "experiment"},
-                    {"id": "pilot_пиротехника_и_пожарная_безопасность_8517_69_900_0", "name": "Системы передачи извещений о пожаре", "tnved": "8517 69 900 0", "marking_status": "experiment"}
-                ]
-            },
-            {
-                "id": "pilot_компоненты_транспортных_средств",
-                "name": "Компоненты транспортных средств",
-                "products": [
-                    {"id": "pilot_компоненты_транспортных_средств_4823_90_859_7", "name": "Фильтры", "tnved": "4823 90 859 7", "marking_status": "experiment"},
-                    {"id": "pilot_компоненты_транспортных_средств_5911_90_900_0", "name": "Фильтры", "tnved": "5911 90 900 0", "marking_status": "experiment"},
-                    {"id": "pilot_компоненты_транспортных_средств_8421_23_000_0", "name": "Фильтры масляные", "tnved": "8421 23 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_компоненты_транспортных_средств_8421_29_000_9", "name": "Фильтры прочие", "tnved": "8421 29 000 9", "marking_status": "experiment"},
-                    {"id": "pilot_компоненты_транспортных_средств_8421_31_000_0", "name": "Фильтры воздушные", "tnved": "8421 31 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_компоненты_транспортных_средств_8421_32_000_0", "name": "Фильтры воздушные", "tnved": "8421 32 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_компоненты_транспортных_средств_8421_39_200_8", "name": "Фильтры прочие", "tnved": "8421 39 200 8", "marking_status": "experiment"},
-                    {"id": "pilot_компоненты_транспортных_средств_8421_99_000_6", "name": "Фильтры части", "tnved": "8421 99 000 6", "marking_status": "experiment"},
-                    {"id": "pilot_компоненты_транспортных_средств_7007_11_100_1", "name": "Стекло закаленное безопасное", "tnved": "7007 11 100 1", "marking_status": "experiment"},
-                    {"id": "pilot_компоненты_транспортных_средств_7007_11_100_9", "name": "Стекло закаленное безопасное", "tnved": "7007 11 100 9", "marking_status": "experiment"},
-                    {"id": "pilot_компоненты_транспортных_средств_7007_11_900_0", "name": "Стекло закаленное безопасное", "tnved": "7007 11 900 0", "marking_status": "experiment"},
-                    {"id": "pilot_компоненты_транспортных_средств_7007_21_200_1", "name": "Стекло многослойное безопасное", "tnved": "7007 21 200 1", "marking_status": "experiment"},
-                    {"id": "pilot_компоненты_транспортных_средств_7007_21_200_9", "name": "Стекло многослойное безопасное", "tnved": "7007 21 200 9", "marking_status": "experiment"},
-                    {"id": "pilot_компоненты_транспортных_средств_7007_21_800_9", "name": "Стекло многослойное безопасное", "tnved": "7007 21 800 9", "marking_status": "experiment"},
-                    {"id": "pilot_компоненты_транспортных_средств_7007_29_000_0", "name": "Стекло многослойное безопасное", "tnved": "7007 29 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_компоненты_транспортных_средств_8511_10_000_1", "name": "Свечи зажигания", "tnved": "8511 10 000 1", "marking_status": "experiment"},
-                    {"id": "pilot_компоненты_транспортных_средств_8511_10_000_9", "name": "Свечи зажигания", "tnved": "8511 10 000 9", "marking_status": "experiment"},
-                    {"id": "pilot_компоненты_транспортных_средств_8708_22_000_1", "name": "Лобовые стекла", "tnved": "8708 22 000 1", "marking_status": "experiment"},
-                    {"id": "pilot_компоненты_транспортных_средств_8708_22_000_9", "name": "Лобовые стекла", "tnved": "8708 22 000 9", "marking_status": "experiment"},
-                    {"id": "pilot_компоненты_транспортных_средств_8708_30_910_1", "name": "Тормозные диски, колодки", "tnved": "8708 30 910 1", "marking_status": "experiment"},
-                    {"id": "pilot_компоненты_транспортных_средств_8708_30_910_9", "name": "Тормозные диски, колодки", "tnved": "8708 30 910 9", "marking_status": "experiment"},
-                    {"id": "pilot_компоненты_транспортных_средств_8708_30_990_9", "name": "Тормозные диски, колодки", "tnved": "8708 30 990 9", "marking_status": "experiment"},
-                    {"id": "pilot_компоненты_транспортных_средств_8714_10_100_0", "name": "Тормозные диски, колодки мото", "tnved": "8714 10 100 0", "marking_status": "experiment"},
-                    {"id": "pilot_компоненты_транспортных_средств_8708_70_500_1", "name": "Колеса ходовые, диски", "tnved": "8708 70 500 1", "marking_status": "experiment"},
-                    {"id": "pilot_компоненты_транспортных_средств_8708_70_500_9", "name": "Колеса ходовые, диски", "tnved": "8708 70 500 9", "marking_status": "experiment"},
-                    {"id": "pilot_компоненты_транспортных_средств_8708_70_990_1", "name": "Колеса ходовые, диски", "tnved": "8708 70 990 1", "marking_status": "experiment"},
-                    {"id": "pilot_компоненты_транспортных_средств_8708_70_990_9", "name": "Колеса ходовые, диски", "tnved": "8708 70 990 9", "marking_status": "experiment"},
-                    {"id": "pilot_компоненты_транспортных_средств_8714_10_300_0", "name": "Колеса ходовые мото", "tnved": "8714 10 300 0", "marking_status": "experiment"}
-                ]
-            },
-            {
-                "id": "pilot_товары_для_дома_и_интерьера",
-                "name": "Товары для дома и интерьера",
-                "products": [
-                    {"id": "pilot_товары_для_дома_и_интерьера_3924_10_000_0", "name": "Посуда пластиковая столовая", "tnved": "3924 10 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_3924_90_000_9", "name": "Посуда пластиковая прочая", "tnved": "3924 90 000 9", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_4419", "name": "Посуда деревянная", "tnved": "4419", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_4806_10_000_0", "name": "Бумага пергаментная", "tnved": "4806 10 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_4806_20_000_0", "name": "Бумага жиронепроницаемая", "tnved": "4806 20 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_4806_40_100_0", "name": "Бумага пергаментная прочая", "tnved": "4806 40 100 0", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_4818_30_000_0", "name": "Скатерти бумажные", "tnved": "4818 30 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_4823_61_000_0", "name": "Подносы бумажные", "tnved": "4823 61 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_4823_69", "name": "Посуда бумажная прочая", "tnved": "4823 69", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_6911", "name": "Посуда фарфоровая", "tnved": "6911", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_6912_00", "name": "Посуда керамическая", "tnved": "6912 00", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_7013", "name": "Посуда стеклянная", "tnved": "7013", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_7323_91_000_0", "name": "Посуда чугунная эмалированная", "tnved": "7323 91 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_7323_92_000_0", "name": "Посуда чугунная прочая", "tnved": "7323 92 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_7323_93_000_0", "name": "Посуда из нержавеющей стали", "tnved": "7323 93 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_7323_94_000_0", "name": "Посуда стальная эмалированная", "tnved": "7323 94 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_7323_99_000_0", "name": "Посуда стальная прочая", "tnved": "7323 99 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_7326_20_000_2", "name": "Изделия из проволоки", "tnved": "7326 20 000 2", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_7418_10_100_0", "name": "Посуда медная", "tnved": "7418 10 100 0", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_7615_10_100_0", "name": "Посуда алюминиевая", "tnved": "7615 10 100 0", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_7615_10_300_0", "name": "Посуда алюминиевая", "tnved": "7615 10 300 0", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_7615_10_800_9", "name": "Посуда алюминиевая прочая", "tnved": "7615 10 800 9", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_8205_51_009_0", "name": "Инструменты кухонные", "tnved": "8205 51 009 0", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_8211_10_000_0", "name": "Наборы ножей", "tnved": "8211 10 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_8211_91_000", "name": "Ножи столовые", "tnved": "8211 91 000", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_8211_92_000_0", "name": "Ножи кухонные", "tnved": "8211 92 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_8213_00_000_0", "name": "Ножницы", "tnved": "8213 00 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_8215", "name": "Столовые приборы", "tnved": "8215", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_9616_10", "name": "Пульверизаторы", "tnved": "9616 10", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_9617_00_000", "name": "Термосы", "tnved": "9617 00 000", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_6307_10", "name": "Тряпки для уборки", "tnved": "6307 10", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_9603_10_000_0", "name": "Метлы", "tnved": "9603 10 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_9603_90", "name": "Щетки и швабры", "tnved": "9603 90", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_9604_00_000_0", "name": "Сита", "tnved": "9604 00 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_3406_00_000_0", "name": "Свечи", "tnved": "3406 00 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_3926_40_000_0", "name": "Статуэтки пластиковые", "tnved": "3926 40 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_4414", "name": "Рамки деревянные", "tnved": "4414", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_4420_11_000_0", "name": "Статуэтки деревянные", "tnved": "4420 11 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_4420_19_000_0", "name": "Статуэтки деревянные прочие", "tnved": "4420 19 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_4421_10_000_0", "name": "Вешалки деревянные", "tnved": "4421 10 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_4602", "name": "Изделия плетеные", "tnved": "4602", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_6702", "name": "Искусственные цветы", "tnved": "6702", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_6810_99_000_0", "name": "Изделия из цемента", "tnved": "6810 99 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_6913", "name": "Статуэтки керамические", "tnved": "6913", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_7009_91_000_0", "name": "Зеркала без рамы", "tnved": "7009 91 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_7009_92_000_0", "name": "Зеркала в раме", "tnved": "7009 92 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_8306_21_000_0", "name": "Статуэтки металлические", "tnved": "8306 21 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_8306_29_000", "name": "Статуэтки металлические прочие", "tnved": "8306 29 000", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_8306_30_000_0", "name": "Рамки для фото металлические", "tnved": "8306 30 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_9105_19_000_0", "name": "Часы настенные", "tnved": "9105 19 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_9105_29_000_0", "name": "Часы настенные прочие", "tnved": "9105 29 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_9105_96_000_0", "name": "Часы настенные прочие", "tnved": "9105 96 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_товары_для_дома_и_интерьера_9405_50_000_0", "name": "Подсвечники", "tnved": "9405 50 000 0", "marking_status": "experiment"}
-                ]
-            },
-            {
-                "id": "pilot_бакалейная_продукция",
-                "name": "Бакалейная продукция",
-                "products": [
-                    {"id": "pilot_бакалейная_продукция_0713_10_900_9", "name": "Горох прочий", "tnved": "0713 10 900 9", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_0713_20_000_0", "name": "Нут сушеный", "tnved": "0713 20 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_0713_31_000_0", "name": "Фасоль VINGA MUNGO", "tnved": "0713 31 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_0713_32_000_0", "name": "Фасоль мелкая красная (адзуки)", "tnved": "0713 32 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_0713_33_900_0", "name": "Фасоль обыкновенная", "tnved": "0713 33 900 0", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_0713_34_000_9", "name": "Земляной орех бамбарский", "tnved": "0713 34 000 9", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_0713_35_000_9", "name": "Коровий горох", "tnved": "0713 35 000 9", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_0713_39_000_9", "name": "Фасоль прочая", "tnved": "0713 39 000 9", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_0713_40_000_0", "name": "Чечевица", "tnved": "0713 40 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_0713_60_000_9", "name": "Голубиный горох", "tnved": "0713 60 000 9", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_0713_90_000_9", "name": "Прочие бобовые", "tnved": "0713 90 000 9", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_1006", "name": "Рис (кроме 1006 10)", "tnved": "1006", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_1007_90_000_0", "name": "Сорго зерновое", "tnved": "1007 90 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_1008_10_000_0", "name": "Гречиха", "tnved": "1008 10 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_1008_29_000_0", "name": "Просо и прочие злаки", "tnved": "1008 29 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_1008_50_000_0", "name": "Киноа", "tnved": "1008 50 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_1008_90_000_0", "name": "Прочие злаки", "tnved": "1008 90 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_1101_00", "name": "Мука пшеничная", "tnved": "1101 00", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_1102", "name": "Мука из зерна злаков", "tnved": "1102", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_1103", "name": "Крупа из зерна злаков", "tnved": "1103", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_1104", "name": "Зерно злаков обработанное", "tnved": "1104", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_1105", "name": "Мука картофельная, хлопья", "tnved": "1105", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_1106", "name": "Мука из бобовых", "tnved": "1106", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_1208", "name": "Мука из масличных культур", "tnved": "1208", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_1212", "name": "Продукты растительного происхождения", "tnved": "1212", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_1901_10_000_0", "name": "Готовые продукты для детей", "tnved": "1901 10 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_1901_20_000_0", "name": "Смеси для теста", "tnved": "1901 20 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_1902", "name": "Макаронные изделия", "tnved": "1902", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_1904_10", "name": "Готовые продукты из злаков вздутые", "tnved": "1904 10", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_1904_20", "name": "Мюсли, хлопья", "tnved": "1904 20", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_1904_30_000_0", "name": "Булгур", "tnved": "1904 30 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_1904_90", "name": "Злаки готовые прочие", "tnved": "1904 90", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_1905_90", "name": "Смеси для хлебобулочных изделий", "tnved": "1905 90", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_2004_90_500_0", "name": "Горох и фасоль в стручках", "tnved": "2004 90 500 0", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_2005_20_100_0", "name": "Картофель быстрого приготовления", "tnved": "2005 20 100 0", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_2005_40_000_0", "name": "Горох консервированный", "tnved": "2005 40 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_2005_51_000_0", "name": "Фасоль лущеная консервированная", "tnved": "2005 51 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_2005_59_000_0", "name": "Фасоль прочая консервированная", "tnved": "2005 59 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_0409_00_000_0", "name": "Мёд натуральный", "tnved": "0409 00 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_1212_99_950_9", "name": "Продукты растительные пищевые", "tnved": "1212 99 950 9", "marking_status": "experiment"},
-                    {"id": "pilot_бакалейная_продукция_1702", "name": "Искусственный мёд, сахара прочие", "tnved": "1702", "marking_status": "experiment"}
-                ]
-            },
-            {
-                "id": "pilot_полуфабрикаты_и_замороженная_продукция",
-                "name": "Полуфабрикаты и замороженная продукция",
-                "products": [
-                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_0201", "name": "Мясо крупного рогатого скота, свежее или охлажденное", "tnved": "0201", "marking_status": "experiment"},
-                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_0202", "name": "Мясо крупного рогатого скота, замороженное", "tnved": "0202", "marking_status": "experiment"},
-                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_0203", "name": "Свинина свежая, охлажденная или замороженная", "tnved": "0203", "marking_status": "experiment"},
-                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_0204", "name": "Баранина или козлятина", "tnved": "0204", "marking_status": "experiment"},
-                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_0205_00", "name": "Мясо лошадей, ослов, мулов", "tnved": "0205 00", "marking_status": "experiment"},
-                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_0206", "name": "Пищевые субпродукты", "tnved": "0206", "marking_status": "experiment"},
-                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_0207", "name": "Мясо и субпродукты домашней птицы", "tnved": "0207", "marking_status": "experiment"},
-                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_0208", "name": "Прочее мясо и субпродукты", "tnved": "0208", "marking_status": "experiment"},
-                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_0209", "name": "Свиной жир и жир птицы", "tnved": "0209", "marking_status": "experiment"},
-                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_0304", "name": "Филе рыбное и прочее мясо рыбы", "tnved": "0304", "marking_status": "experiment"},
-                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_0306", "name": "Ракообразные", "tnved": "0306", "marking_status": "experiment"},
-                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_0307", "name": "Моллюски", "tnved": "0307", "marking_status": "experiment"},
-                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_0710", "name": "Овощи замороженные", "tnved": "0710", "marking_status": "experiment"},
-                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_0811", "name": "Фрукты и орехи замороженные", "tnved": "0811", "marking_status": "experiment"},
-                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_1501_10_900_0", "name": "Жир свиной топленый", "tnved": "1501 10 900 0", "marking_status": "experiment"},
-                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_1501_20_900_0", "name": "Жир свиной прочий", "tnved": "1501 20 900 0", "marking_status": "experiment"},
-                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_1501_90_000_0", "name": "Жир домашней птицы", "tnved": "1501 90 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_1601_00", "name": "Колбасы и аналогичные продукты из мяса", "tnved": "1601 00", "marking_status": "experiment"},
-                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_1602", "name": "Готовые или консервированные продукты из мяса", "tnved": "1602", "marking_status": "experiment"},
-                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_1604", "name": "Готовая или консервированная рыба", "tnved": "1604", "marking_status": "experiment"},
-                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_1901_20_000_0", "name": "Смеси для приготовления", "tnved": "1901 20 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_1902", "name": "Макаронные изделия замороженные", "tnved": "1902", "marking_status": "experiment"},
-                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_1904_90_100_0", "name": "Злаки готовые", "tnved": "1904 90 100 0", "marking_status": "experiment"},
-                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_1905_90", "name": "Хлебобулочные изделия замороженные", "tnved": "1905 90", "marking_status": "experiment"},
-                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_2003", "name": "Грибы готовые или консервированные", "tnved": "2003", "marking_status": "experiment"},
-                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_2004", "name": "Овощи готовые замороженные", "tnved": "2004", "marking_status": "experiment"},
-                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_2005", "name": "Овощи готовые незамороженные", "tnved": "2005", "marking_status": "experiment"},
-                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_2104", "name": "Супы, бульоны готовые", "tnved": "2104", "marking_status": "experiment"},
-                    {"id": "pilot_полуфабрикаты_и_замороженная_продукция_2106", "name": "Пищевые продукты прочие (кроме исключений)", "tnved": "2106", "marking_status": "experiment"}
-                ]
-            },
-            {
-                "id": "pilot_радиоэлектроника_i_этап",
-                "name": "Радиоэлектроника (I этап) (завершен)",
-                "products": [
-                    {"id": "pilot_радиоэлектроника_i_этап_8504_40_830_0", "name": "Выпрямители прочие", "tnved": "8504 40 830 0", "marking_status": "not_required"},
-                    {"id": "pilot_радиоэлектроника_i_этап_8504_40_910_0", "name": "Преобразователи статические прочие", "tnved": "8504 40 910 0", "marking_status": "not_required"},
-                    {"id": "pilot_радиоэлектроника_i_этап_8536_49_000_0", "name": "Реле на напряжение не более 1000 В", "tnved": "8536 49 000 0", "marking_status": "not_required"},
-                    {"id": "pilot_радиоэлектроника_i_этап_8536_69_900_8", "name": "Штепсели и розетки", "tnved": "8536 69 900 8", "marking_status": "not_required"},
-                    {"id": "pilot_радиоэлектроника_i_этап_8536_90_100_0", "name": "Соединители для проводов и кабелей", "tnved": "8536 90 100 0", "marking_status": "not_required"},
-                    {"id": "pilot_радиоэлектроника_i_этап_8536_90_850_0", "name": "Аппаратура электрическая прочая", "tnved": "8536 90 850 0", "marking_status": "not_required"},
-                    {"id": "pilot_радиоэлектроника_i_этап_8537_10_980_0", "name": "Пульты, панели, распределительные щиты", "tnved": "8537 10 980 0", "marking_status": "not_required"},
-                    {"id": "pilot_радиоэлектроника_i_этап_8539", "name": "Лампы накаливания и газоразрядные", "tnved": "8539", "marking_status": "not_required"},
-                    {"id": "pilot_радиоэлектроника_i_этап_8541_41_000", "name": "Светодиоды (LED)", "tnved": "8541 41 000", "marking_status": "not_required"},
-                    {"id": "pilot_радиоэлектроника_i_этап_8541_42_000_0", "name": "Фотогальванические элементы", "tnved": "8541 42 000 0", "marking_status": "not_required"},
-                    {"id": "pilot_радиоэлектроника_i_этап_8541_43_000_0", "name": "Фоточувствительные приборы", "tnved": "8541 43 000 0", "marking_status": "not_required"},
-                    {"id": "pilot_радиоэлектроника_i_этап_8541_49_000_0", "name": "Приборы полупроводниковые прочие", "tnved": "8541 49 000 0", "marking_status": "not_required"},
-                    {"id": "pilot_радиоэлектроника_i_этап_8512_20_000", "name": "Приборы освещения для транспорта", "tnved": "8512 20 000", "marking_status": "not_required"},
-                    {"id": "pilot_радиоэлектроника_i_этап_8513_10_000_0", "name": "Фонари портативные", "tnved": "8513 10 000 0", "marking_status": "not_required"},
-                    {"id": "pilot_радиоэлектроника_i_этап_9405_11_00", "name": "Люстры и светильники потолочные", "tnved": "9405 11 00", "marking_status": "not_required"},
-                    {"id": "pilot_радиоэлектроника_i_этап_9405_19_00", "name": "Светильники прочие", "tnved": "9405 19 00", "marking_status": "not_required"},
-                    {"id": "pilot_радиоэлектроника_i_этап_9405_21_00", "name": "Лампы настольные LED", "tnved": "9405 21 00", "marking_status": "not_required"},
-                    {"id": "pilot_радиоэлектроника_i_этап_9405_29_00", "name": "Лампы настольные прочие", "tnved": "9405 29 00", "marking_status": "not_required"},
-                    {"id": "pilot_радиоэлектроника_i_этап_9405_31_000_0", "name": "Гирлянды световые LED", "tnved": "9405 31 000 0", "marking_status": "not_required"},
-                    {"id": "pilot_радиоэлектроника_i_этап_9405_39_000_0", "name": "Гирлянды световые прочие", "tnved": "9405 39 000 0", "marking_status": "not_required"},
-                    {"id": "pilot_радиоэлектроника_i_этап_9405_41_00", "name": "Фотогальванические светильники", "tnved": "9405 41 00", "marking_status": "not_required"},
-                    {"id": "pilot_радиоэлектроника_i_этап_9405_42_00", "name": "Светильники LED прочие", "tnved": "9405 42 00", "marking_status": "not_required"},
-                    {"id": "pilot_радиоэлектроника_i_этап_9405_49_00", "name": "Светильники прочие", "tnved": "9405 49 00", "marking_status": "not_required"},
-                    {"id": "pilot_радиоэлектроника_i_этап_9405_92_000_8", "name": "Части светильников пластиковые", "tnved": "9405 92 000 8", "marking_status": "not_required"},
-                    {"id": "pilot_радиоэлектроника_i_этап_9405_99_000_8", "name": "Части светильников прочие", "tnved": "9405 99 000 8", "marking_status": "not_required"}
-                ]
-            },
-            {
-                "id": "pilot_радиоэлектроника_ii_этап",
-                "name": "Радиоэлектроника (II этап) (завершен)",
-                "products": [
-                    {"id": "pilot_радиоэлектроника_ii_этап_8471_30_000_0", "name": "Ноутбуки портативные до 10 кг", "tnved": "8471 30 000 0", "marking_status": "not_required"},
-                    {"id": "pilot_радиоэлектроника_ii_этап_8517_11_000_0", "name": "Телефоны проводные с беспроводной трубкой", "tnved": "8517 11 000 0", "marking_status": "not_required"},
-                    {"id": "pilot_радиоэлектроника_ii_этап_8517_13_000_0", "name": "Смартфоны", "tnved": "8517 13 000 0", "marking_status": "not_required"},
-                    {"id": "pilot_радиоэлектроника_ii_этап_8517_14_000_0", "name": "Телефоны для сотовых сетей прочие", "tnved": "8517 14 000 0", "marking_status": "not_required"},
-                    {"id": "pilot_радиоэлектроника_ii_этап_8517_18_000_0", "name": "Телефонные аппараты прочие", "tnved": "8517 18 000 0", "marking_status": "not_required"}
-                ]
-            },
-            {
-                "id": "pilot_радиоэлектроника_iii_этап",
-                "name": "Радиоэлектроника (III этап) (завершен)",
-                "products": [
-                    {"id": "pilot_радиоэлектроника_iii_этап_8534_00_110_0", "name": "Печатные схемы многослойные", "tnved": "8534 00 110 0", "marking_status": "not_required"},
-                    {"id": "pilot_радиоэлектроника_iii_этап_8534_00_190_0", "name": "Печатные схемы прочие", "tnved": "8534 00 190 0", "marking_status": "not_required"},
-                    {"id": "pilot_радиоэлектроника_iii_этап_8534_00_900_0", "name": "Печатные схемы с пассивными элементами", "tnved": "8534 00 900 0", "marking_status": "not_required"}
-                ]
-            },
-            {
-                "id": "pilot_радиоэлектроника_iv_этап",
-                "name": "Радиоэлектроника (IV этап)",
-                "products": [
-                    {"id": "pilot_радиоэлектроника_iv_этап_8543_40_000_0", "name": "Электронные сигареты многоразовые", "tnved": "8543 40 000 0", "marking_status": "experiment"}
-                ]
-            },
-            {
-                "id": "pilot_печатная_продукция",
-                "name": "Печатная продукция (завершен)",
-                "products": [
-                    {"id": "pilot_печатная_продукция_4901_99_000_0", "name": "Учебники печатные общеобразовательные", "tnved": "4901 99 000 0", "marking_status": "not_required"}
-                ]
-            },
-            {
-                "id": "pilot_кабельная_продукция",
-                "name": "Кабельная продукция",
-                "products": [
-                    {"id": "pilot_кабельная_продукция_8544_49_990_0", "name": "Кабели и провода на напряжение 1000 В", "tnved": "8544 49 990 0", "marking_status": "experiment"},
-                    {"id": "pilot_кабельная_продукция_8544_49_910_8", "name": "Кабели с изолированными проводниками >0,51 мм", "tnved": "8544 49 910 8", "marking_status": "experiment"}
-                ]
-            },
-            {
-                "id": "pilot_медицинские_изделия_2.0",
-                "name": "Медицинские изделия 2.0",
-                "products": [
-                    {"id": "pilot_медицинские_изделия_2.0_4014_10_000_0", "name": "Презервативы", "tnved": "4014 10 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_медицинские_изделия_2.0_9018_31", "name": "Шприцы", "tnved": "9018 31", "marking_status": "experiment"},
-                    {"id": "pilot_медицинские_изделия_2.0_9018_90_500", "name": "Инфузионные системы", "tnved": "9018 90 500", "marking_status": "experiment"},
-                    {"id": "pilot_медицинские_изделия_2.0_3005_10_000_0", "name": "Салфетки медицинские", "tnved": "3005 10 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_медицинские_изделия_2.0_3005_90_310_0", "name": "Салфетки медицинские", "tnved": "3005 90 310 0", "marking_status": "experiment"},
-                    {"id": "pilot_медицинские_изделия_2.0_3005_90_500_0", "name": "Салфетки медицинские", "tnved": "3005 90 500 0", "marking_status": "experiment"},
-                    {"id": "pilot_медицинские_изделия_2.0_3005_90_990_0", "name": "Салфетки медицинские прочие", "tnved": "3005 90 990 0", "marking_status": "experiment"},
-                    {"id": "pilot_медицинские_изделия_2.0_4803_00_900_0", "name": "Салфетки бумажные медицинские", "tnved": "4803 00 900 0", "marking_status": "experiment"},
-                    {"id": "pilot_медицинские_изделия_2.0_4818_20", "name": "Салфетки носовые медицинские", "tnved": "4818 20", "marking_status": "experiment"},
-                    {"id": "pilot_медицинские_изделия_2.0_4818_30_000_0", "name": "Скатерти медицинские", "tnved": "4818 30 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_медицинские_изделия_2.0_4818_90", "name": "Изделия бумажные медицинские", "tnved": "4818 90", "marking_status": "experiment"},
-                    {"id": "pilot_медицинские_изделия_2.0_5603", "name": "Нетканые материалы медицинские", "tnved": "5603", "marking_status": "experiment"},
-                    {"id": "pilot_медицинские_изделия_2.0_6307_90_920_0", "name": "Изделия текстильные медицинские", "tnved": "6307 90 920 0", "marking_status": "experiment"},
-                    {"id": "pilot_медицинские_изделия_2.0_6307_90_980_0", "name": "Изделия текстильные медицинские прочие", "tnved": "6307 90 980 0", "marking_status": "experiment"},
-                    {"id": "pilot_медицинские_изделия_2.0_3307_90_000_8", "name": "Салфетки косметические медицинские", "tnved": "3307 90 000 8", "marking_status": "experiment"},
-                    {"id": "pilot_медицинские_изделия_2.0_3926_90_970_9", "name": "Пробирки пластиковые", "tnved": "3926 90 970 9", "marking_status": "experiment"},
-                    {"id": "pilot_медицинские_изделия_2.0_7010_10_000_0", "name": "Пробирки стеклянные (ампулы)", "tnved": "7010 10 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_медицинские_изделия_2.0_7017", "name": "Пробирки лабораторные стеклянные", "tnved": "7017", "marking_status": "experiment"},
-                    {"id": "pilot_медицинские_изделия_2.0_9019_10", "name": "Аппаратура для озоновой/кислородной терапии", "tnved": "9019 10", "marking_status": "experiment"},
-                    {"id": "pilot_медицинские_изделия_2.0_9019_20_000_0", "name": "Аппаратура терапевтическая дыхательная", "tnved": "9019 20 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_медицинские_изделия_2.0_9018_90_840_9", "name": "Инкубаторы для новорожденных", "tnved": "9018 90 840 9", "marking_status": "experiment"},
-                    {"id": "pilot_медицинские_изделия_2.0_3006_10_900_0", "name": "Филлеры для пластической хирургии", "tnved": "3006 10 900 0", "marking_status": "experiment"},
-                    {"id": "pilot_медицинские_изделия_2.0_9021_90_900_9", "name": "Имплантаты косметические (нити)", "tnved": "9021 90 900 9", "marking_status": "experiment"},
-                    {"id": "pilot_медицинские_изделия_2.0_3926_20_000_0", "name": "Маски медицинские пластиковые", "tnved": "3926 20 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_медицинские_изделия_2.0_4818_90_100_0", "name": "Маски медицинские бумажные", "tnved": "4818 90 100 0", "marking_status": "experiment"},
-                    {"id": "pilot_медицинские_изделия_2.0_9020_00_000_0", "name": "Маски медицинские дыхательные", "tnved": "9020 00 000 0", "marking_status": "experiment"}
-                ]
-            },
-            {
-                "id": "pilot_полимерные_трубы",
-                "name": "Полимерные трубы",
-                "products": [
-                    {"id": "pilot_полимерные_трубы_3917_21_100_0", "name": "Трубы бесшовные из полимеров этилена", "tnved": "3917 21 100 0", "marking_status": "experiment"},
-                    {"id": "pilot_полимерные_трубы_3917_22", "name": "Трубы из полимеров пропилена (кроме 3917 22 900 1)", "tnved": "3917 22", "marking_status": "experiment"},
-                    {"id": "pilot_полимерные_трубы_3917_23", "name": "Трубы из полимеров винилхлорида", "tnved": "3917 23", "marking_status": "experiment"},
-                    {"id": "pilot_полимерные_трубы_3917_29_000_9", "name": "Трубы из прочих пластмасс", "tnved": "3917 29 000 9", "marking_status": "experiment"},
-                    {"id": "pilot_полимерные_трубы_3917_31_000_8", "name": "Трубы гибкие, давление ≥27,6 МПа", "tnved": "3917 31 000 8", "marking_status": "experiment"},
-                    {"id": "pilot_полимерные_трубы_3917_32_000", "name": "Трубы не армированные без фитингов", "tnved": "3917 32 000", "marking_status": "experiment"},
-                    {"id": "pilot_полимерные_трубы_3917_33_000_9", "name": "Трубы не армированные с фитингами", "tnved": "3917 33 000 9", "marking_status": "experiment"},
-                    {"id": "pilot_полимерные_трубы_3917_40_000_9", "name": "Фитинги из пластмасс", "tnved": "3917 40 000 9", "marking_status": "experiment"},
-                    {"id": "pilot_полимерные_трубы_3901_20_900_9", "name": "Композиции полиэтилена для труб", "tnved": "3901 20 900 9", "marking_status": "experiment"},
-                    {"id": "pilot_полимерные_трубы_3902_10_000_0", "name": "Композиции полипропилена для труб", "tnved": "3902 10 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_полимерные_трубы_3904_10_000_9", "name": "Композиции поливинилхлорида для труб", "tnved": "3904 10 000 9", "marking_status": "experiment"}
-                ]
-            },
-            {
-                "id": "pilot_средства_гигиены",
-                "name": "Средства гигиены",
-                "products": [
-                    {"id": "pilot_средства_гигиены_9603_21_000_0", "name": "Щетки зубные", "tnved": "9603 21 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_средства_гигиены_9603_29_300_0", "name": "Щетки для волос", "tnved": "9603 29 300 0", "marking_status": "experiment"},
-                    {"id": "pilot_средства_гигиены_9603_29_800_0", "name": "Помазки, щеточки для ногтей/ресниц", "tnved": "9603 29 800 0", "marking_status": "experiment"},
-                    {"id": "pilot_средства_гигиены_5601_21_100_0", "name": "Вата из хлопковых волокон", "tnved": "5601 21 100 0", "marking_status": "experiment"},
-                    {"id": "pilot_средства_гигиены_5601_21_900_0", "name": "Вата из хлопковых волокон прочая", "tnved": "5601 21 900 0", "marking_status": "experiment"},
-                    {"id": "pilot_средства_гигиены_8214_20_000_0", "name": "Наборы маникюрные/педикюрные", "tnved": "8214 20 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_средства_гигиены_4818_10_100_0", "name": "Бумага туалетная", "tnved": "4818 10 100 0", "marking_status": "experiment"},
-                    {"id": "pilot_средства_гигиены_4818_10_900_0", "name": "Бумага туалетная прочая", "tnved": "4818 10 900 0", "marking_status": "experiment"},
-                    {"id": "pilot_средства_гигиены_4818_20_100_0", "name": "Платки носовые, косметические салфетки", "tnved": "4818 20 100 0", "marking_status": "experiment"},
-                    {"id": "pilot_средства_гигиены_4818_20_910_0", "name": "Полотенца для рук", "tnved": "4818 20 910 0", "marking_status": "experiment"},
-                    {"id": "pilot_средства_гигиены_4818_20_990_0", "name": "Полотенца для рук прочие", "tnved": "4818 20 990 0", "marking_status": "experiment"},
-                    {"id": "pilot_средства_гигиены_9615_11_000_0", "name": "Расчески из резины/пластмасс", "tnved": "9615 11 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_средства_гигиены_9615_19_000_0", "name": "Расчески прочие", "tnved": "9615 19 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_средства_гигиены_9619_00", "name": "Прокладки, тампоны, подгузники", "tnved": "9619 00", "marking_status": "experiment"},
-                    {"id": "pilot_средства_гигиены_9019_10_900_9", "name": "Аппараты массажные", "tnved": "9019 10 900 9", "marking_status": "experiment"},
-                    {"id": "pilot_средства_гигиены_2513_10_000_0", "name": "Пемза", "tnved": "2513 10 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_средства_гигиены_8203_20_000_1", "name": "Пинцеты", "tnved": "8203 20 000 1", "marking_status": "experiment"},
-                    {"id": "pilot_средства_гигиены_3306_20_000_0", "name": "Нити зубные (зубной шелк)", "tnved": "3306 20 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_средства_гигиены_3924_90_000_1", "name": "Губки и мочалки пластиковые", "tnved": "3924 90 000 1", "marking_status": "experiment"},
-                    {"id": "pilot_средства_гигиены_7323_10_000_0", "name": "Губки и мочалки металлические", "tnved": "7323 10 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_средства_гигиены_7418_10_900_0", "name": "Губки медные", "tnved": "7418 10 900 0", "marking_status": "experiment"},
-                    {"id": "pilot_средства_гигиены_7615_10_800_1", "name": "Губки алюминиевые", "tnved": "7615 10 800 1", "marking_status": "experiment"}
-                ]
-            },
-            {
-                "id": "pilot_удобрения",
-                "name": "Удобрения",
-                "products": [
-                    {"id": "pilot_удобрения_3105", "name": "Удобрения минеральные (N, P, K)", "tnved": "3105", "marking_status": "experiment"},
-                    {"id": "pilot_удобрения_2834_21_000_0", "name": "Нитраты калия", "tnved": "2834 21 000 0", "marking_status": "experiment"},
-                    {"id": "pilot_удобрения_2834_29_800_0", "name": "Нитраты прочие", "tnved": "2834 29 800 0", "marking_status": "experiment"},
-                    {"id": "pilot_удобрения_2835_24_000_0", "name": "Фосфаты калия", "tnved": "2835 24 000 0", "marking_status": "experiment"}
-                ]
-            },
-            {
-                "id": "pilot_мясные_изделия",
-                "name": "Мясные изделия",
-                "products": [
-                    {"id": "pilot_мясные_изделия_1601_00", "name": "Колбасы и аналогичные продукты", "tnved": "1601 00", "marking_status": "experiment"},
-                    {"id": "pilot_мясные_изделия_1602", "name": "Готовые/консервированные продукты из мяса", "tnved": "1602", "marking_status": "experiment"},
-                    {"id": "pilot_мясные_изделия_0209_00", "name": "Свиной жир и жир птицы", "tnved": "0209 00", "marking_status": "experiment"},
-                    {"id": "pilot_мясные_изделия_0210_11", "name": "Свиные окорока, лопатки необваленные", "tnved": "0210 11", "marking_status": "experiment"},
-                    {"id": "pilot_мясные_изделия_0210_12", "name": "Свиные грудинки", "tnved": "0210 12", "marking_status": "experiment"},
-                    {"id": "pilot_мясные_изделия_0210_19", "name": "Прочие части туш свиней", "tnved": "0210 19", "marking_status": "experiment"},
-                    {"id": "pilot_мясные_изделия_0210_20", "name": "Мясо КРС соленое/сушеное/копченое", "tnved": "0210 20", "marking_status": "experiment"},
-                    {"id": "pilot_мясные_изделия_0210_99_100_0", "name": "Мясо лошадей соленое/сушеное", "tnved": "0210 99 100 0", "marking_status": "experiment"},
-                    {"id": "pilot_мясные_изделия_0210_99_210_0", "name": "Баранина/козлятина необваленная", "tnved": "0210 99 210 0", "marking_status": "experiment"},
-                    {"id": "pilot_мясные_изделия_0210_99_290_0", "name": "Баранина/козлятина обваленная", "tnved": "0210 99 290 0", "marking_status": "experiment"},
-                    {"id": "pilot_мясные_изделия_0210_99_310_0", "name": "Мясо северных оленей", "tnved": "0210 99 310 0", "marking_status": "experiment"},
-                    {"id": "pilot_мясные_изделия_0210_99_390_0", "name": "Прочее мясо", "tnved": "0210 99 390 0", "marking_status": "experiment"},
-                    {"id": "pilot_мясные_изделия_0210_99_410_0", "name": "Печень", "tnved": "0210 99 410 0", "marking_status": "experiment"},
-                    {"id": "pilot_мясные_изделия_0210_99_490_0", "name": "Субпродукты свиные прочие", "tnved": "0210 99 490 0", "marking_status": "experiment"},
-                    {"id": "pilot_мясные_изделия_0210_99_510_0", "name": "Диафрагма КРС", "tnved": "0210 99 510 0", "marking_status": "experiment"},
-                    {"id": "pilot_мясные_изделия_0210_99_590_0", "name": "Субпродукты КРС прочие", "tnved": "0210 99 590 0", "marking_status": "experiment"},
-                    {"id": "pilot_мясные_изделия_0210_99_710_0", "name": "Жирная печень гусей/уток соленая", "tnved": "0210 99 710 0", "marking_status": "experiment"},
-                    {"id": "pilot_мясные_изделия_0210_99_790_0", "name": "Жирная печень гусей/уток прочая", "tnved": "0210 99 790 0", "marking_status": "experiment"},
-                    {"id": "pilot_мясные_изделия_0210_99_850_0", "name": "Жирная печень прочая", "tnved": "0210 99 850 0", "marking_status": "experiment"},
-                    {"id": "pilot_мясные_изделия_1501_10_900_0", "name": "Лярд прочий", "tnved": "1501 10 900 0", "marking_status": "experiment"},
-                    {"id": "pilot_мясные_изделия_1501_20_900_0", "name": "Жир свиной прочий", "tnved": "1501 20 900 0", "marking_status": "experiment"},
-                    {"id": "pilot_мясные_изделия_1501_90_000_0", "name": "Жир свиной и жир птицы прочий", "tnved": "1501 90 000 0", "marking_status": "experiment"}
-                ]
-            }
+            {"id": "titanium", "name": "Титановая металлопродукция (завершён)", "icon": "box", "products": []},
+            {"id": "radio_electronics", "name": "Радиоэлектроника", "icon": "radio", "products": []},
+            {"id": "fiber_optic", "name": "Оптоволокно", "icon": "cable", "products": []},
+            {"id": "print_products", "name": "Печатная продукция (завершен)", "icon": "book", "products": []},
+            {"id": "heating", "name": "Отопительные приборы", "icon": "thermometer", "products": []},
+            {"id": "cables", "name": "Кабельная продукция", "icon": "cable", "products": []},
+            {"id": "low_alcohol", "name": "Слабый алкоголь", "icon": "wine", "products": []},
+            {"id": "medical_2", "name": "Медицинские изделия 2.0", "icon": "stethoscope", "products": []},
+            {"id": "pyrotechnics", "name": "Пиротехника", "icon": "sparkles", "products": []},
+            {"id": "polymer_pipes", "name": "Полимерные трубы", "icon": "cylinder", "products": []},
+            {"id": "auto_parts", "name": "Автозапчасти", "icon": "wrench", "products": []},
+            {"id": "hygiene", "name": "Средства гигиены", "icon": "sparkles", "products": []},
+            {"id": "home_interior", "name": "Товары для дома и интерьера", "icon": "home", "products": []},
+            {"id": "fertilizers", "name": "Удобрения", "icon": "leaf", "products": []},
+            {"id": "pasta_cereals", "name": "Макароны, крупы, мёд", "icon": "wheat", "products": []},
+            {"id": "meat_products", "name": "Мясные изделия", "icon": "beef", "products": []},
+            {"id": "frozen_food", "name": "Полуфабрикаты и замороженная продукция", "icon": "snowflake", "products": []}
         ]
     }
 ]
@@ -2068,75 +1498,15 @@ SERVICES_PRICELIST = [
         "max_qty": 999999,
         "order": 11
     },
-    # 12. Обучение - почасовая оплата
+    # 12. Обучение/сервис - 1900 + 35% = 2565
     {
-        "id": "training_hourly",
-        "name": "Обучение (почасовое)",
+        "id": "training",
+        "name": "Обучение/сервис",
         "description": "Обучение персонала работе с системой маркировки (почасовая оплата)",
-        "price": 10000,
+        "price": 2565,
         "unit": "час",
         "category": "training",
         "order": 12
-    },
-    # 13. Обучение - тариф Стандарт
-    {
-        "id": "training_standard",
-        "name": "Курс «Стандарт»",
-        "description": "Полный курс обучения маркировке: 32 часа онлайн-занятий, все 8 модулей, материалы и сертификат",
-        "price": 50000,
-        "unit": "курс",
-        "category": "training",
-        "order": 13
-    },
-    # 14. Обучение - тариф Премиум
-    {
-        "id": "training_premium",
-        "name": "Курс «Премиум»",
-        "description": "Курс + практика на вашей компании: настройка 1С, практика в вашем ЛК, поддержка 30 дней",
-        "price": 80000,
-        "unit": "курс",
-        "category": "training",
-        "order": 14
-    },
-    # 15. Обучение - тариф VIP
-    {
-        "id": "training_vip",
-        "name": "Курс «VIP»",
-        "description": "Полное сопровождение: индивидуальный график, личный чат с экспертом 24/7, поддержка 90 дней",
-        "price": 150000,
-        "unit": "курс",
-        "category": "training",
-        "order": 15
-    },
-    # 16. Мини-курс для кассиров
-    {
-        "id": "training_cashier",
-        "name": "Мини-курс для кассиров",
-        "description": "4 часа практики работы с маркированными товарами на кассе",
-        "price": 10000,
-        "unit": "курс",
-        "category": "training",
-        "order": 16
-    },
-    # 17. Курс для бухгалтера
-    {
-        "id": "training_accountant",
-        "name": "Курс для бухгалтера",
-        "description": "8 часов практики: документооборот, отчётность, интеграция с 1С",
-        "price": 20000,
-        "unit": "курс",
-        "category": "training",
-        "order": 17
-    },
-    # 18. Корпоративное обучение
-    {
-        "id": "training_corporate",
-        "name": "Корпоративное обучение",
-        "description": "Обучение группы до 10 человек с адаптацией под специфику вашей компании",
-        "price": 120000,
-        "unit": "группа",
-        "category": "training",
-        "order": 18
     },
 ]
 
@@ -2257,17 +1627,6 @@ async def health_check():
 async def get_categories():
     """Get all product categories and subcategories"""
     return {"groups": CATEGORIES_DATA}
-
-@app.get("/api/check/init")
-async def get_check_init():
-    """Unified endpoint for initial page load - returns categories, stats, timeline in one request"""
-    timeline_stats = get_timeline_stats_with_upcoming()
-
-    return {
-        "groups": CATEGORIES_DATA,
-        "tnved_stats": get_tnved_stats_cached(),
-        "timeline_stats": timeline_stats
-    }
 
 @app.post("/api/check/assess", response_model=CheckProductResponse)
 async def assess_product(request: CheckProductRequest):
@@ -2407,130 +1766,6 @@ async def send_contact(request: ContactRequest, background_tasks: BackgroundTask
         "message": "Ваша заявка принята! Мы свяжемся с вами в ближайшее время.",
         "callback_id": callback_id
     }
-
-
-# ======================== TRAINING ENROLLMENT ========================
-
-def format_training_enrollment_email(request: TrainingEnrollRequest, enrollment_id: int) -> str:
-    """Форматирование email для заявки на обучение"""
-    plan_info = ""
-    if request.plan_name:
-        plan_info = f"""
-        <tr>
-            <td style="padding: 8px 16px; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Тариф:</td>
-            <td style="padding: 8px 16px; border-bottom: 1px solid #e5e7eb; font-weight: 500;">{request.plan_name}</td>
-        </tr>
-        """
-    if request.plan_price:
-        plan_info += f"""
-        <tr>
-            <td style="padding: 8px 16px; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Стоимость:</td>
-            <td style="padding: 8px 16px; border-bottom: 1px solid #e5e7eb; font-weight: 500;">{request.plan_price} ₽</td>
-        </tr>
-        """
-
-    return f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="utf-8">
-    </head>
-    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f3f4f6; padding: 20px;">
-        <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-            <!-- Header -->
-            <div style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); padding: 24px; text-align: center;">
-                <h1 style="margin: 0; color: white; font-size: 24px;">🎓 Заявка на обучение #{enrollment_id}</h1>
-            </div>
-
-            <!-- Content -->
-            <div style="padding: 24px;">
-                <table style="width: 100%; border-collapse: collapse;">
-                    <tr>
-                        <td style="padding: 8px 16px; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Имя:</td>
-                        <td style="padding: 8px 16px; border-bottom: 1px solid #e5e7eb; font-weight: 500;">{request.name}</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 8px 16px; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Телефон:</td>
-                        <td style="padding: 8px 16px; border-bottom: 1px solid #e5e7eb; font-weight: 500;">
-                            <a href="tel:{request.phone}" style="color: #7c3aed;">{request.phone}</a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 8px 16px; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Email:</td>
-                        <td style="padding: 8px 16px; border-bottom: 1px solid #e5e7eb; font-weight: 500;">
-                            <a href="mailto:{request.email or '-'}" style="color: #7c3aed;">{request.email or '-'}</a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 8px 16px; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Компания:</td>
-                        <td style="padding: 8px 16px; border-bottom: 1px solid #e5e7eb; font-weight: 500;">{request.company or '-'}</td>
-                    </tr>
-                    {plan_info}
-                    <tr>
-                        <td style="padding: 8px 16px; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Комментарий:</td>
-                        <td style="padding: 8px 16px; border-bottom: 1px solid #e5e7eb;">{request.comment or '-'}</td>
-                    </tr>
-                </table>
-            </div>
-
-            <!-- Footer -->
-            <div style="background-color: #f9fafb; padding: 16px 24px; text-align: center;">
-                <p style="margin: 0; color: #6b7280; font-size: 14px;">
-                    Заявка создана: {datetime.now().strftime('%d.%m.%Y %H:%M')}
-                </p>
-            </div>
-        </div>
-    </body>
-    </html>
-    """
-
-
-@app.post("/api/training/enroll")
-async def training_enroll(request: TrainingEnrollRequest, background_tasks: BackgroundTasks):
-    """Отправка заявки на обучение"""
-
-    if not request.name or not request.phone:
-        raise HTTPException(status_code=400, detail="Имя и телефон обязательны")
-
-    # Сохраняем заявку в БД как callback
-    plan_info = ""
-    if request.plan_name:
-        plan_info = f"Тариф: {request.plan_name}"
-    if request.plan_price:
-        plan_info += f" ({request.plan_price} ₽)"
-
-    callback_data = {
-        "user_id": None,
-        "contact_name": request.name,
-        "contact_phone": request.phone,
-        "contact_email": request.email,
-        "company_inn": None,
-        "company_name": request.company,
-        "products": [],
-        "comment": f"🎓 ЗАЯВКА НА ОБУЧЕНИЕ\n{plan_info}\n\n{request.comment or ''}".strip(),
-        "source": "training_enrollment"
-    }
-    enrollment_id = CallbackDB.create(callback_data)
-
-    # Отправляем на все адреса менеджеров
-    contact_emails = os.getenv('CONTACT_TO_EMAIL', 'damirslk@mail.ru,turbin.ar8@gmail.com').split(',')
-    subject = f"🎓 Заявка на обучение #{enrollment_id} от {request.name}"
-    if request.plan_name:
-        subject += f" - {request.plan_name}"
-    body = format_training_enrollment_email(request, enrollment_id)
-
-    # Send email to all managers in background
-    for email in contact_emails:
-        background_tasks.add_task(send_email, email.strip(), subject, body)
-
-    logger.info(f"Training enrollment #{enrollment_id} received from {request.name}, plan: {request.plan_name}")
-
-    return {
-        "status": "success",
-        "message": "Заявка на обучение принята! Мы свяжемся с вами в ближайшее время.",
-        "enrollment_id": enrollment_id
-    }
-
 
 # ======================== DADATA COMPANY LOOKUP ========================
 
@@ -3051,14 +2286,7 @@ async def generate_contract(request: ContractGenerateRequest):
     Возвращает PDF файл для скачивания.
     """
     try:
-        # Получаем номер договора из общего реестра
-        contract_number = get_next_contract_number()
-
         # Подготавливаем данные клиента
-        # ФИО руководителя берём из DaData (management_name) или оставляем пустым для заполнения вручную
-        manager_name = request.company.management_name if request.company.management_name else ""
-        manager_post = request.company.management_post if request.company.management_post else "Генеральный директор"
-
         client_info = {
             "name": request.company.name,
             "name_short": request.company.name_short or request.company.name,
@@ -3066,58 +2294,43 @@ async def generate_contract(request: ContractGenerateRequest):
             "kpp": request.company.kpp or "",
             "ogrn": request.company.ogrn or "",
             "address": request.company.address or "",
-            "management_name": manager_name,
-            "management_post": manager_post,
+            "manager_name": request.company.management_name or request.contact_name,
+            "manager_post": request.company.management_post or "Директор",
             "basis": "Устава" if request.company.type == "LEGAL" else "ОГРНИП",
-            "contact_name": request.contact_name,
-            "contact_phone": request.contact_phone,
-            "contact_email": request.contact_email or ""
         }
 
-        # Подготавливаем услуги с округлением цен
+        # Подготавливаем услуги
         services_list = []
         total_amount = 0
         for s in request.services:
-            # Округляем цену и сумму до целых рублей для крупных сумм,
-            # до 2 знаков для мелких (КИЗы, коды)
-            price = s.price
-            subtotal = price * s.quantity
-
-            # Округляем subtotal до 2 знаков после запятой
-            subtotal = round(subtotal, 2)
+            subtotal = s.price * s.quantity
             total_amount += subtotal
-
             services_list.append({
                 "name": s.name,
                 "quantity": s.quantity,
                 "unit": s.unit,
-                "price": price,
+                "price": s.price,
                 "subtotal": subtotal
             })
-
-        # Округляем итоговую сумму до целых рублей
-        total_amount = round(total_amount, 2)
 
         # Генерируем PDF
         pdf_bytes = generate_contract_pdf(
             client_info=client_info,
             services=services_list,
-            total_amount=total_amount,
-            contract_number=contract_number
+            total_amount=total_amount
         )
 
-        # Формируем имя файла с номером договора
-        # ASCII имя для fallback + UTF-8 для современных браузеров
-        filename_ascii = f"Contract_{contract_number}.pdf"
-        filename_utf8 = f"Договор_{contract_number}.pdf"
-        filename_encoded = url_quote(filename_utf8)
+        # Формируем имя файла (URL-кодируем для заголовка)
+        contract_date = datetime.now()
+        contract_number = f"DOG-{contract_date.strftime('%d%m%y')}-001"
+        filename = f"Contract_{contract_number}_{request.company.inn}.pdf"
+        filename_encoded = url_quote(filename)
 
         return Response(
             content=pdf_bytes,
             media_type="application/pdf",
             headers={
-                "Content-Disposition": f'attachment; filename="{filename_ascii}"; filename*=UTF-8\'\'{filename_encoded}',
-                "X-Contract-Number": contract_number
+                "Content-Disposition": f"attachment; filename=\"{filename}\"; filename*=UTF-8''{filename_encoded}"
             }
         )
 
@@ -3280,7 +2493,7 @@ async def generate_act(request: ActGenerateRequest):
 async def api_register(data: UserRegister):
     """Регистрация нового пользователя"""
     return register_user(data.email, data.password, name=data.name, phone=data.phone, inn=data.inn,
-                         company_name=data.company_name, city=data.city, region=data.region, source=data.source)
+                         company_name=data.company_name, city=data.city, region=data.region)
 
 
 @app.post("/api/auth/login")
@@ -3566,17 +2779,6 @@ async def api_create_callback(
 
     callback_id = CallbackDB.create(callback_data)
 
-    # Создаём уведомление для всех сотрудников
-    with get_db() as conn:
-        notify_all_employees(
-            conn,
-            'callback',
-            'Новая заявка на звонок',
-            f'{contact_name} - {contact_phone}',
-            '/employee/inbox',
-            'phone'
-        )
-
     # Отправляем уведомление всем менеджерам
     manager_emails = os.getenv('CONTACT_TO_EMAIL', 'damirslk@mail.ru,turbin.ar8@gmail.com').split(',')
     source_name = {
@@ -3590,168 +2792,6 @@ async def api_create_callback(
         background_tasks.add_task(send_email, email.strip(), subject, body)
 
     return {"status": "success", "callback_id": callback_id}
-
-
-# ======================== ПАРТНЁРСКИЕ ЗАЯВКИ ========================
-
-class PartnerRequestData(BaseModel):
-    company_name: str
-    contact_name: str
-    contact_phone: str
-    contact_email: str
-    partner_type: str
-    comment: Optional[str] = None
-
-
-class RepresentativeRequestData(BaseModel):
-    """Заявка на региональное представительство"""
-    contact_name: str
-    contact_phone: str
-    contact_email: str
-    city: str
-    region: Optional[str] = None
-    company_name: Optional[str] = None
-    inn: Optional[str] = None
-    experience: Optional[str] = None  # Опыт в продажах/маркировке
-    comment: Optional[str] = None
-
-@app.post("/api/partner-request")
-async def api_create_partner_request(
-    data: PartnerRequestData,
-    background_tasks: BackgroundTasks
-):
-    """Создать заявку на партнёрство (публичная страница)"""
-
-    # Сохраняем как callback с особым типом
-    callback_data = {
-        "user_id": None,
-        "contact_name": data.contact_name,
-        "contact_phone": data.contact_phone,
-        "contact_email": data.contact_email,
-        "company_inn": None,
-        "company_name": data.company_name,
-        "products": [],
-        "comment": f"[Заявка на партнёрство]\nТип: {data.partner_type}\n{data.comment or ''}",
-        "source": "partner_request"
-    }
-
-    callback_id = CallbackDB.create(callback_data)
-
-    # Отправляем уведомление менеджерам
-    manager_emails = os.getenv('CONTACT_TO_EMAIL', 'damirslk@mail.ru,turbin.ar8@gmail.com').split(',')
-
-    partner_type_names = {
-        "integrator": "Системный интегратор",
-        "accounting": "Бухгалтерские услуги",
-        "logistics": "ВЭД/Логистика",
-        "fulfillment": "Фулфилмент",
-        "consultant": "Бизнес-консультант",
-        "printing": "Типография/Принтинг",
-        "it": "IT-компания",
-        "other": "Другое"
-    }
-
-    subject = f"Заявка на партнёрство #{callback_id}"
-    body = f"""
-    <h2>Новая заявка на партнёрство</h2>
-    <table style="border-collapse: collapse; width: 100%;">
-        <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Компания:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">{data.company_name}</td></tr>
-        <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Контактное лицо:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">{data.contact_name}</td></tr>
-        <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Телефон:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">{data.contact_phone}</td></tr>
-        <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Email:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">{data.contact_email}</td></tr>
-        <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Тип партнёра:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">{partner_type_names.get(data.partner_type, data.partner_type)}</td></tr>
-        <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Комментарий:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">{data.comment or '-'}</td></tr>
-    </table>
-    <p style="margin-top: 20px; color: #666;">Заявка создана через страницу "Партнёрам"</p>
-    """
-
-    for email in manager_emails:
-        background_tasks.add_task(send_email, email.strip(), subject, body)
-
-    return {"status": "success", "request_id": callback_id}
-
-
-@app.post("/api/representative-request")
-async def api_create_representative_request(
-    data: RepresentativeRequestData,
-    background_tasks: BackgroundTasks
-):
-    """Создать заявку на региональное представительство"""
-
-    # Сохраняем как callback с особым типом
-    callback_data = {
-        "user_id": None,
-        "contact_name": data.contact_name,
-        "contact_phone": data.contact_phone,
-        "contact_email": data.contact_email,
-        "company_inn": data.inn,
-        "company_name": data.company_name or f"Представитель: {data.city}",
-        "products": [],
-        "comment": f"[ЗАЯВКА НА ПРЕДСТАВИТЕЛЬСТВО]\nГород: {data.city}\nРегион: {data.region or '-'}\nОпыт: {data.experience or '-'}\nКомментарий: {data.comment or '-'}",
-        "source": "representative_request"
-    }
-
-    callback_id = CallbackDB.create(callback_data)
-
-    # Отправляем уведомление менеджерам
-    manager_emails = os.getenv('CONTACT_TO_EMAIL', 'damirslk@mail.ru,turbin.ar8@gmail.com').split(',')
-
-    subject = f"🌟 ЗАЯВКА НА ПРЕДСТАВИТЕЛЬСТВО #{callback_id} — {data.city}"
-    body = f"""
-    <div style="font-family: Arial, sans-serif; max-width: 600px;">
-        <div style="background: linear-gradient(135deg, #FFDA07, #F5C300); padding: 20px; border-radius: 12px 12px 0 0;">
-            <h2 style="margin: 0; color: #000;">🌟 Заявка на региональное представительство</h2>
-        </div>
-        <div style="background: #fff; padding: 20px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 12px 12px;">
-            <table style="width: 100%; border-collapse: collapse;">
-                <tr>
-                    <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: bold; width: 40%;">🏙️ Город:</td>
-                    <td style="padding: 12px; border-bottom: 1px solid #eee; color: #000; font-size: 16px;"><strong>{data.city}</strong></td>
-                </tr>
-                <tr>
-                    <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: bold;">📍 Регион:</td>
-                    <td style="padding: 12px; border-bottom: 1px solid #eee;">{data.region or 'Не указан'}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: bold;">👤 Контактное лицо:</td>
-                    <td style="padding: 12px; border-bottom: 1px solid #eee;">{data.contact_name}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: bold;">📞 Телефон:</td>
-                    <td style="padding: 12px; border-bottom: 1px solid #eee;"><a href="tel:{data.contact_phone}">{data.contact_phone}</a></td>
-                </tr>
-                <tr>
-                    <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: bold;">📧 Email:</td>
-                    <td style="padding: 12px; border-bottom: 1px solid #eee;"><a href="mailto:{data.contact_email}">{data.contact_email}</a></td>
-                </tr>
-                <tr>
-                    <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: bold;">🏢 Компания:</td>
-                    <td style="padding: 12px; border-bottom: 1px solid #eee;">{data.company_name or 'Физ. лицо'}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: bold;">📋 ИНН:</td>
-                    <td style="padding: 12px; border-bottom: 1px solid #eee;">{data.inn or 'Не указан'}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: bold;">💼 Опыт:</td>
-                    <td style="padding: 12px; border-bottom: 1px solid #eee;">{data.experience or 'Не указан'}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 12px; font-weight: bold;">💬 Комментарий:</td>
-                    <td style="padding: 12px;">{data.comment or '-'}</td>
-                </tr>
-            </table>
-            <p style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; color: #666; font-size: 14px;">
-                Заявка создана через страницу "Партнёрам" → "Стать представителем"
-            </p>
-        </div>
-    </div>
-    """
-
-    for email in manager_emails:
-        background_tasks.add_task(send_email, email.strip(), subject, body)
-
-    return {"status": "success", "request_id": callback_id}
 
 
 # ======================== АДМИНКА ========================
@@ -3984,7 +3024,6 @@ class ClientCreate(BaseModel):
     kpp: Optional[str] = None
     ogrn: Optional[str] = None
     address: Optional[str] = None
-    city: Optional[str] = None
     director_name: Optional[str] = None  # ФИО генерального директора
     comment: Optional[str] = None
     source: Optional[str] = "manual"
@@ -4002,7 +3041,6 @@ class ClientUpdate(BaseModel):
     kpp: Optional[str] = None
     ogrn: Optional[str] = None
     address: Optional[str] = None
-    city: Optional[str] = None
     director_name: Optional[str] = None  # ФИО генерального директора
     comment: Optional[str] = None
     status: Optional[str] = None
@@ -4417,40 +3455,6 @@ async def api_get_overdue_callbacks(user: Dict = Depends(require_employee)):
     return {"callbacks": callbacks, "count": len(callbacks)}
 
 
-# --- Профиль сотрудника ---
-@app.get("/api/employee/profile")
-async def api_get_employee_profile(user: Dict = Depends(require_employee)):
-    """Получить профиль текущего сотрудника"""
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute('''
-            SELECT id, email, name, phone, role, created_at
-            FROM users WHERE id = ?
-        ''', (user["id"],))
-        row = cursor.fetchone()
-        if row:
-            return dict(row)
-    raise HTTPException(status_code=404, detail="Пользователь не найден")
-
-
-@app.put("/api/employee/profile")
-async def api_update_employee_profile(data: Dict, user: Dict = Depends(require_employee)):
-    """Обновить профиль сотрудника (имя, телефон)"""
-    name = data.get("name")
-    phone = data.get("phone")
-
-    if not name or len(name.strip()) < 2:
-        raise HTTPException(status_code=400, detail="Введите ФИО (минимум 2 символа)")
-
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute('''
-            UPDATE users SET name = ?, phone = ? WHERE id = ?
-        ''', (name.strip(), phone, user["id"]))
-
-    return {"success": True, "name": name.strip()}
-
-
 # --- Список менеджеров (для назначения заявок) ---
 @app.get("/api/employee/managers")
 async def api_get_managers(user: Dict = Depends(require_employee)):
@@ -4458,10 +3462,10 @@ async def api_get_managers(user: Dict = Depends(require_employee)):
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute('''
-            SELECT id, email, name, role
+            SELECT id, email, role
             FROM users
             WHERE role IN ('employee', 'superadmin') AND is_active = 1
-            ORDER BY name, email
+            ORDER BY email
         ''')
         managers = [dict(row) for row in cursor.fetchall()]
     return {"managers": managers}
@@ -4478,26 +3482,6 @@ async def api_superadmin_assign_callback(
     manager_id = data.get("manager_id")
     if not manager_id:
         raise HTTPException(status_code=400, detail="manager_id обязателен")
-
-    success = CallbackDBExtended.assign_to(callback_id, manager_id)
-    return {"success": success}
-
-
-# --- Назначение заявки на себя (для любого менеджера) ---
-@app.put("/api/employee/callbacks/{callback_id}/assign")
-async def api_employee_assign_callback(
-    callback_id: int,
-    data: Dict,
-    user: Dict = Depends(require_employee)
-):
-    """Назначить заявку на менеджера (employee может назначить только на себя, superadmin - на любого)"""
-    manager_id = data.get("manager_id")
-    if not manager_id:
-        raise HTTPException(status_code=400, detail="manager_id обязателен")
-
-    # Employee может назначить только на себя, superadmin - на любого
-    if user["role"] == "employee" and manager_id != user["id"]:
-        raise HTTPException(status_code=403, detail="Вы можете назначить заявку только на себя")
 
     success = CallbackDBExtended.assign_to(callback_id, manager_id)
     return {"success": success}
@@ -4529,10 +3513,6 @@ async def api_employee_get_quotes(
             WHERE 1=1
         '''
         params = []
-
-        if client_id:
-            query += " AND t.client_id = ?"
-            params.append(client_id)
 
         if status:
             query += ' AND q.status = ?'
@@ -4684,10 +3664,6 @@ async def api_employee_get_contracts(
         '''
         params = []
 
-        if client_id:
-            query += " AND t.client_id = ?"
-            params.append(client_id)
-
         if status:
             query += ' AND ct.status = ?'
             params.append(status)
@@ -4729,10 +3705,6 @@ async def api_employee_get_callbacks(
             WHERE 1=1
         '''
         params = []
-
-        if client_id:
-            query += " AND t.client_id = ?"
-            params.append(client_id)
 
         if status:
             query += ' AND cb.status = ?'
@@ -4817,40 +3789,6 @@ async def api_employee_update_callback_comment(
     return {"success": True}
 
 
-
-# --- Удаление заявок ---
-class BulkDeleteRequest(BaseModel):
-    ids: List[int]
-
-@app.delete("/api/employee/callbacks/{callback_id}")
-async def api_employee_delete_callback(
-    callback_id: int,
-    user: Dict = Depends(require_employee)
-):
-    """Удалить одну заявку"""
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM callbacks WHERE id = ?", (callback_id,))
-        if cursor.rowcount == 0:
-            raise HTTPException(status_code=404, detail="Заявка не найдена")
-    return {"success": True}
-
-@app.post("/api/employee/callbacks/bulk-delete")
-async def api_employee_bulk_delete_callbacks(
-    request: BulkDeleteRequest,
-    user: Dict = Depends(require_employee)
-):
-    """Массовое удаление заявок"""
-    if not request.ids:
-        raise HTTPException(status_code=400, detail="Не выбраны заявки")
-    with get_db() as conn:
-        cursor = conn.cursor()
-        placeholders = ",".join(["?"] * len(request.ids))
-        cursor.execute(f"DELETE FROM callbacks WHERE id IN ({placeholders})", request.ids)
-        deleted_count = cursor.rowcount
-    return {"success": True, "deleted_count": deleted_count}
-
-
 @app.post("/api/employee/callbacks/{callback_id}/convert")
 async def api_employee_convert_callback(
     callback_id: int,
@@ -4914,89 +3852,7 @@ async def api_employee_get_clients(
                     client['manager_name'] = manager['name'] or manager['email'].split('@')[0]
                     client['manager_email'] = manager['email']
 
-            # Количество задач
-            cursor.execute("SELECT COUNT(*) as cnt FROM tasks WHERE client_id = ? AND status != 'completed'", (client_id,))
-            tasks_row = cursor.fetchone()
-            client["tasks_count"] = tasks_row["cnt"] if tasks_row else 0
-
     return {"clients": clients}
-
-
-
-# --- Проверка дублей контактов ---
-@app.get("/api/employee/clients/check-duplicate")
-async def check_client_duplicate(
-    phone: str = None,
-    email: str = None,
-    inn: str = None,
-    user: Dict = Depends(require_employee)
-):
-    """Проверить есть ли клиент с таким телефоном/email/ИНН"""
-    duplicates = []
-    
-    with get_db() as conn:
-        cursor = conn.cursor()
-        
-        if phone and len(phone) >= 5:
-            # Очищаем телефон от форматирования для поиска
-            clean_phone = ''.join(filter(str.isdigit, phone))
-            if len(clean_phone) >= 5:
-                cursor.execute('''
-                    SELECT id, contact_name, company_name, contact_phone, contact_email
-                    FROM clients 
-                    WHERE REPLACE(REPLACE(REPLACE(REPLACE(contact_phone, ' ', ''), '-', ''), '(', ''), ')', '') LIKE ?
-                    LIMIT 5
-                ''', (f'%{clean_phone[-10:]}%',))
-                for row in cursor.fetchall():
-                    duplicates.append({
-                        "id": row["id"],
-                        "name": row["contact_name"],
-                        "company": row["company_name"],
-                        "phone": row["contact_phone"],
-                        "email": row["contact_email"],
-                        "match_type": "phone"
-                    })
-        
-        if email and len(email) >= 3 and '@' in email:
-            cursor.execute('''
-                SELECT id, contact_name, company_name, contact_phone, contact_email
-                FROM clients 
-                WHERE LOWER(contact_email) = LOWER(?)
-                LIMIT 5
-            ''', (email,))
-            for row in cursor.fetchall():
-                if not any(d["id"] == row["id"] for d in duplicates):
-                    duplicates.append({
-                        "id": row["id"],
-                        "name": row["contact_name"],
-                        "company": row["company_name"],
-                        "phone": row["contact_phone"],
-                        "email": row["contact_email"],
-                        "match_type": "email"
-                    })
-        
-        if inn and len(inn) >= 10:
-            cursor.execute('''
-                SELECT id, contact_name, company_name, contact_phone, contact_email, inn
-                FROM clients 
-                WHERE inn = ?
-                LIMIT 5
-            ''', (inn,))
-            for row in cursor.fetchall():
-                if not any(d["id"] == row["id"] for d in duplicates):
-                    duplicates.append({
-                        "id": row["id"],
-                        "name": row["contact_name"],
-                        "company": row["company_name"],
-                        "phone": row["contact_phone"],
-                        "email": row["contact_email"],
-                        "match_type": "inn"
-                    })
-    
-    return {
-        "has_duplicates": len(duplicates) > 0,
-        "duplicates": duplicates
-    }
 
 
 @app.post("/api/employee/clients")
@@ -5697,10 +4553,8 @@ async def api_employee_send_documents(
 
 # ======================== ТЕСТ ТН ВЭД ========================
 
-# Загружаем базу ТН ВЭД из JSON при старте (с кэшированием)
+# Загружаем базу ТН ВЭД из JSON при старте
 _tnved_data = None
-_tnved_stats_cache = None
-_timeline_data_cache = None
 
 def get_tnved_data():
     """Загрузить данные ТН ВЭД из JSON"""
@@ -5716,46 +4570,6 @@ def get_tnved_data():
             logger.warning("TNVED JSON not found, returning empty list")
             _tnved_data = []
     return _tnved_data
-
-def get_tnved_stats_cached():
-    """Закэшированная статистика ТН ВЭД"""
-    global _tnved_stats_cache
-    if _tnved_stats_cache is None:
-        data = get_tnved_data()
-        total = len(data) if data else 0
-        mandatory = 0
-        experimental = 0
-        for category in CATEGORIES_DATA:
-            for subcategory in category.get("subcategories", []):
-                for product in subcategory.get("products", []):
-                    status = product.get("marking_status", "not_required")
-                    if status == "mandatory":
-                        mandatory += 1
-                    elif status == "experiment":
-                        experimental += 1
-        _tnved_stats_cache = {
-            "loaded": True,
-            "total": total,
-            "mandatory": mandatory,
-            "experimental": experimental,
-            "not_required": total - mandatory - experimental
-        }
-    return _tnved_stats_cache
-
-def get_timeline_data_cached():
-    """Закэшированные данные timeline"""
-    global _timeline_data_cache
-    if _timeline_data_cache is None:
-        try:
-            timeline_path = os.path.join(os.path.dirname(__file__), 'data', 'marking_timeline.json')
-            if os.path.exists(timeline_path):
-                with open(timeline_path, 'r', encoding='utf-8') as f:
-                    _timeline_data_cache = json.load(f)
-                logger.info("Loaded marking_timeline.json")
-        except Exception as e:
-            logger.error(f"Failed to load marking_timeline.json: {e}")
-            _timeline_data_cache = {}
-    return _timeline_data_cache
 
 
 @app.get("/api/tnved/search")
@@ -5787,1657 +4601,33 @@ async def api_tnved_search(q: str = "", limit: int = 50):
 @app.get("/api/tnved/stats")
 async def api_tnved_stats():
     """Статистика: всего кодов из tnved.json, обязательных/эксперимент из CATEGORIES_DATA"""
-    return get_tnved_stats_cached()
 
+    # Total from tnved.json
+    data = get_tnved_data()
+    total = len(data) if data else 0
 
-# ======================== TIMELINE API ========================
+    # Mandatory/Experiment from CATEGORIES_DATA (our curated products)
+    mandatory = 0
+    experimental = 0
 
-def get_timeline_stats_with_upcoming():
-    """Расчёт статистики с ближайшими дедлайнами"""
-    from datetime import datetime, timedelta
-
-    data = get_timeline_data_cached()
-    if not data:
-        return {
-            "active": 0,
-            "partial": 0,
-            "upcoming_count": 0,
-            "upcoming_events": []
-        }
-
-    categories = data.get("categories", {})
-    today = datetime.now().date()
-    six_months_later = today + timedelta(days=180)
-
-    active = 0
-    partial = 0
-    upcoming_events = []
-
-    for cat_name, cat_data in categories.items():
-        status = cat_data.get("status", "")
-        if status == "active":
-            active += 1
-        elif status == "partial":
-            partial += 1
-
-        # Собираем будущие события
-        for event in cat_data.get("events", []):
-            if not event.get("is_completed", False):
-                date_str = event.get("date", "")
-                if date_str:
-                    try:
-                        event_date = datetime.strptime(date_str, "%Y-%m-%d").date()
-                        if today < event_date <= six_months_later:
-                            upcoming_events.append({
-                                "date": date_str,
-                                "date_display": event.get("date_display", ""),
-                                "category": cat_name,
-                                "title": event.get("title", ""),
-                                "type_label": event.get("type_label", ""),
-                                "description": event.get("description", "")[:200] if event.get("description") else ""
-                            })
-                    except:
-                        pass
-
-    # Сортируем по дате
-    upcoming_events.sort(key=lambda x: x["date"])
+    for category in CATEGORIES_DATA:
+        for subcategory in category.get("subcategories", []):
+            for product in subcategory.get("products", []):
+                status = product.get("marking_status", "not_required")
+                if status == "mandatory":
+                    mandatory += 1
+                elif status == "experiment":
+                    experimental += 1
 
     return {
-        "active": active,
-        "partial": partial,
-        "upcoming_count": len(upcoming_events),
-        "upcoming_events": upcoming_events[:10]  # Топ 10 ближайших
-    }
-
-@app.get("/api/marking/timeline/stats")
-async def api_timeline_stats():
-    """Статистика по срокам маркировки с ближайшими дедлайнами"""
-    stats = get_timeline_stats_with_upcoming()
-    return {"statistics": stats}
-
-
-@app.get("/api/marking/timeline")
-async def api_timeline():
-    """Полные данные по срокам маркировки"""
-    data = get_timeline_data_cached()
-    if not data:
-        return {"categories": {}, "groups": [], "statistics": {}}
-
-    return data
-
-
-@app.get("/api/marking/timeline/category/{category_id}")
-async def api_timeline_category(category_id: str):
-    """Данные по конкретной категории"""
-    data = get_timeline_data_cached()
-    if not data or "categories" not in data:
-        raise HTTPException(status_code=404, detail="Category not found")
-
-    categories = data.get("categories", {})
-
-    if category_id in categories:
-        return categories[category_id]
-
-    from urllib.parse import unquote
-    decoded_id = unquote(category_id)
-    for cat_name, cat_data in categories.items():
-        if cat_name == decoded_id or cat_data.get("id") == category_id:
-            return cat_data
-
-    raise HTTPException(status_code=404, detail="Category not found")
-
-
-# ======================== PILOT EXPERIMENTS API ========================
-
-def get_pilot_experiments_data():
-    """Load pilot_experiments.json"""
-    try:
-        path = os.path.join(os.path.dirname(__file__), 'data', 'pilot_experiments.json')
-        if os.path.exists(path):
-            with open(path, 'r', encoding='utf-8') as f:
-                return json.load(f)
-    except Exception as e:
-        logger.error(f"Failed to load pilot_experiments.json: {e}")
-    return None
-
-
-@app.get("/api/pilot/experiments")
-async def api_pilot_experiments():
-    """Список всех пилотных экспериментов"""
-    data = get_pilot_experiments_data()
-    if not data:
-        return {"experiments": [], "total": 0, "active_count": 0, "completed_count": 0}
-
-    return {
-        "experiments": list(data.get("experiments", {}).values()),
-        "total": data.get("total_experiments", 0),
-        "active_count": data.get("active_count", 0),
-        "completed_count": data.get("completed_count", 0)
-    }
-
-
-@app.get("/api/pilot/stats")
-async def api_pilot_stats():
-    """Статистика по пилотным проектам"""
-    data = get_pilot_experiments_data()
-    if not data:
-        return {"total": 0, "active": 0, "completed": 0, "products_count": 0}
-
-    total_products = sum(
-        exp.get("products_count", 0)
-        for exp in data.get("experiments", {}).values()
-    )
-
-    return {
-        "total": data.get("total_experiments", 0),
-        "active": data.get("active_count", 0),
-        "completed": data.get("completed_count", 0),
-        "products_count": total_products
-    }
-
-
-# ======================== PARTNER API ========================
-
-class PartnerCreateRequest(BaseModel):
-    partner_type: str  # 'legal' or 'individual'
-    contact_name: str
-    contact_phone: str
-    contact_email: str
-    company_name: Optional[str] = None
-    inn: Optional[str] = None
-    commission_rate: float = 10.0
-
-class PartnerUpdateRequest(BaseModel):
-    partner_type: Optional[str] = None
-    contact_name: Optional[str] = None
-    contact_phone: Optional[str] = None
-    contact_email: Optional[str] = None
-    company_name: Optional[str] = None
-    inn: Optional[str] = None
-    commission_rate: Optional[float] = None
-    status: Optional[str] = None
-
-@app.get("/api/employee/partners")
-async def get_partners(status: Optional[str] = None, current_user: dict = Depends(require_employee)):
-    """Получить список партнёров"""
-    partners = PartnerDB.get_all(status)
-
-    # Подсчитываем статистику
-    total = len(partners)
-    active = sum(1 for p in partners if p.get('status') == 'active')
-    pending = sum(1 for p in partners if p.get('status') == 'pending')
-
-    return {
-        "partners": partners,
-        "stats": {
-            "total": total,
-            "active": active,
-            "pending": pending
-        }
-    }
-
-@app.post("/api/employee/partners")
-async def create_partner(data: PartnerCreateRequest, current_user: dict = Depends(require_employee)):
-    """Создать партнёра"""
-    try:
-        result = PartnerDB.create(data.dict(), created_by=current_user.get('id'))
-        return {
-            "success": True,
-            "partner_id": result['id'],
-            "ref_code": result['ref_code'],
-            "password": result['password']
-        }
-    except Exception as e:
-        logger.error(f"Failed to create partner: {e}")
-        raise HTTPException(status_code=400, detail=str(e))
-
-@app.get("/api/employee/partners/{partner_id}")
-async def get_partner(partner_id: int, current_user: dict = Depends(require_employee)):
-    """Получить партнёра по ID"""
-    partner = PartnerDB.get_by_id(partner_id)
-    if not partner:
-        raise HTTPException(status_code=404, detail="Partner not found")
-
-    # Получаем статистику
-    stats = PartnerDB.get_stats(partner_id)
-
-    return {
-        "partner": partner,
-        "stats": stats
-    }
-
-@app.put("/api/employee/partners/{partner_id}")
-async def update_partner(partner_id: int, data: PartnerUpdateRequest, current_user: dict = Depends(require_employee)):
-    """Обновить партнёра"""
-    update_data = {k: v for k, v in data.dict().items() if v is not None}
-    if not update_data:
-        raise HTTPException(status_code=400, detail="No data to update")
-
-    success = PartnerDB.update(partner_id, update_data)
-    if not success:
-        raise HTTPException(status_code=404, detail="Partner not found")
-
-    return {"success": True}
-
-@app.post("/api/employee/partners/{partner_id}/activate")
-async def activate_partner(partner_id: int, current_user: dict = Depends(require_employee)):
-    """Активировать партнёра"""
-    success = PartnerDB.activate(partner_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Partner not found")
-    return {"success": True}
-
-@app.post("/api/employee/partners/{partner_id}/deactivate")
-async def deactivate_partner(partner_id: int, current_user: dict = Depends(require_employee)):
-    """Деактивировать партнёра"""
-    success = PartnerDB.deactivate(partner_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Partner not found")
-    return {"success": True}
-
-@app.post("/api/employee/partners/{partner_id}/invite")
-async def send_partner_invite(partner_id: int, current_user: dict = Depends(require_employee)):
-    """Отправить приглашение партнёру"""
-    partner = PartnerDB.get_by_id(partner_id)
-    if not partner:
-        raise HTTPException(status_code=404, detail="Partner not found")
-
-    try:
-        # Генерируем токен и обновляем статус на 'invited'
-        invite_token = PartnerDB.set_invitation_sent(partner_id)
-        if not invite_token:
-            raise HTTPException(status_code=500, detail="Failed to generate invite token")
-
-        # Отправляем email с ссылкой на регистрацию
-        from email_service import send_partner_invitation_with_link
-        send_partner_invitation_with_link(
-            to_email=partner['contact_email'],
-            invite_token=invite_token,
-            ref_code=partner['ref_code'],
-            contact_name=partner['contact_name']
-        )
-
-        return {"success": True, "message": "Приглашение отправлено"}
-    except Exception as e:
-        logger.error(f"Failed to send partner invite: {e}")
-        raise HTTPException(status_code=500, detail=f"Ошибка отправки: {str(e)}")
-
-
-class AcceptInviteRequest(BaseModel):
-    token: str
-    password: str
-
-
-@app.post("/api/partner/accept-invite")
-async def accept_partner_invite(data: AcceptInviteRequest):
-    """Партнёр принимает приглашение и устанавливает пароль"""
-    partner = PartnerDB.accept_invitation(data.token, data.password)
-    if not partner:
-        raise HTTPException(status_code=400, detail="Недействительная или устаревшая ссылка")
-
-    return {
-        "success": True,
-        "message": "Регистрация завершена",
-        "email": partner['contact_email']
-    }
-
-
-@app.get("/api/partner/invite/{token}")
-async def get_invite_info(token: str):
-    """Получить информацию о приглашении по токену"""
-    partner = PartnerDB.get_by_invite_token(token)
-    if not partner:
-        raise HTTPException(status_code=404, detail="Приглашение не найдено или устарело")
-
-    if partner['status'] not in ('invited', 'pending'):
-        raise HTTPException(status_code=400, detail="Приглашение уже использовано")
-
-    return {
-        "valid": True,
-        "email": partner['contact_email'],
-        "name": partner['contact_name'],
-        "company": partner['company_name']
-    }
-
-@app.delete("/api/employee/partners/{partner_id}")
-async def delete_partner(partner_id: int, current_user: dict = Depends(require_employee)):
-    """Удалить партнёра (для сотрудников)"""
-    success = PartnerDB.delete(partner_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Partner not found")
-    return {"success": True}
-
-@app.delete("/api/admin/partners/{partner_id}")
-async def admin_delete_partner(partner_id: int, current_user: dict = Depends(require_superadmin)):
-    """Удалить партнёра (для супер-админов)"""
-    success = PartnerDB.delete(partner_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Partner not found")
-    return {"success": True}
-
-# Partner cabinet API
-@app.get("/api/partner/me")
-async def get_partner_me(current_user: dict = Depends(require_auth)):
-    """Получить данные текущего партнёра"""
-    if current_user.get('role') != 'partner':
-        raise HTTPException(status_code=403, detail="Not a partner")
-
-    partner = PartnerDB.get_by_user_id(current_user['id'])
-    if not partner:
-        raise HTTPException(status_code=404, detail="Partner not found")
-
-    return {"partner": partner}
-
-@app.get("/api/partner/stats")
-async def get_partner_stats(current_user: dict = Depends(require_auth)):
-    """Получить статистику партнёра"""
-    if current_user.get('role') != 'partner':
-        raise HTTPException(status_code=403, detail="Not a partner")
-
-    partner = PartnerDB.get_by_user_id(current_user['id'])
-    if not partner:
-        raise HTTPException(status_code=404, detail="Partner not found")
-
-    stats = PartnerDB.get_stats(partner['id'])
-    return stats
-
-@app.get("/api/partner/leads")
-async def get_partner_leads(current_user: dict = Depends(require_auth)):
-    """Получить клиентов партнёра"""
-    if current_user.get('role') != 'partner':
-        raise HTTPException(status_code=403, detail="Not a partner")
-
-    partner = PartnerDB.get_by_user_id(current_user['id'])
-    if not partner:
-        raise HTTPException(status_code=404, detail="Partner not found")
-
-    leads = PartnerDB.get_leads(partner['id'])
-    return {"leads": leads}
-
-# Public API for ref code validation
-@app.get("/api/ref/{ref_code}")
-async def validate_ref_code(ref_code: str):
-    """Проверить валидность реферального кода"""
-    partner = PartnerDB.get_by_ref_code(ref_code)
-    if not partner:
-        raise HTTPException(status_code=404, detail="Invalid ref code")
-
-    return {
-        "valid": True,
-        "partner_name": partner.get('company_name') or partner.get('contact_name')
+        "loaded": True,
+        "total": total,
+        "mandatory": mandatory,
+        "experimental": experimental,
+        "not_required": total - mandatory - experimental
     }
 
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
-
-
-# ======================== API ОБУЧЕНИЯ ДЛЯ ПАРТНЁРОВ ========================
-
-# --- Список курсов партнёра ---
-@app.get("/api/partner/courses")
-async def get_partner_courses(user: Dict = Depends(require_partner)):
-    """Получить курсы с прогрессом партнёра"""
-    with get_db() as conn:
-        # Получаем partner_id из users
-        cursor = conn.cursor()
-        cursor.execute('SELECT id FROM partners WHERE user_id = ?', (user['id'],))
-        partner_row = cursor.fetchone()
-        if not partner_row:
-            raise HTTPException(status_code=404, detail="Партнёр не найден")
-        partner_id = partner_row['id']
-
-        courses = EducationDB.get_partner_courses(conn, partner_id)
-        return {"courses": courses}
-
-
-# --- Детали курса с главами ---
-@app.get("/api/partner/courses/{course_id}")
-async def get_partner_course_detail(course_id: int, user: Dict = Depends(require_partner)):
-    """Получить курс с главами и прогрессом"""
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute('SELECT id FROM partners WHERE user_id = ?', (user['id'],))
-        partner_row = cursor.fetchone()
-        if not partner_row:
-            raise HTTPException(status_code=404, detail="Партнёр не найден")
-        partner_id = partner_row['id']
-
-        course = EducationDB.get_partner_course_detail(conn, partner_id, course_id)
-        if not course:
-            raise HTTPException(status_code=404, detail="Курс не найден")
-        return course
-
-
-# --- Начать главу ---
-@app.post("/api/partner/chapters/{chapter_id}/start")
-async def start_chapter(chapter_id: int, user: Dict = Depends(require_partner)):
-    """Начать прохождение главы"""
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute('SELECT id FROM partners WHERE user_id = ?', (user['id'],))
-        partner_row = cursor.fetchone()
-        if not partner_row:
-            raise HTTPException(status_code=404, detail="Партнёр не найден")
-        partner_id = partner_row['id']
-
-        # Проверяем что глава существует
-        chapter = EducationDB.get_chapter(conn, chapter_id)
-        if not chapter:
-            raise HTTPException(status_code=404, detail="Глава не найдена")
-
-        # Проверяем доступ к курсу
-        course_detail = EducationDB.get_partner_course_detail(conn, partner_id, chapter['course_id'])
-        if not course_detail or not course_detail.get('has_access'):
-            raise HTTPException(status_code=403, detail="Нет доступа к курсу")
-
-        # Проверяем что глава доступна (не заблокирована)
-        chapter_in_list = next((ch for ch in course_detail['chapters'] if ch['id'] == chapter_id), None)
-        if not chapter_in_list or chapter_in_list['progress_status'] == 'locked':
-            raise HTTPException(status_code=403, detail="Глава ещё не доступна")
-
-        EducationDB.start_chapter(conn, partner_id, chapter_id)
-        return {"success": True, "message": "Глава начата"}
-
-
-# --- Обновить прогресс видео ---
-class VideoProgressRequest(BaseModel):
-    progress_seconds: int
-    watched: bool = False
-
-@app.post("/api/partner/chapters/{chapter_id}/video-progress")
-async def update_video_progress(
-    chapter_id: int,
-    request: VideoProgressRequest,
-    user: Dict = Depends(require_partner)
-):
-    """Обновить прогресс просмотра видео"""
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute('SELECT id FROM partners WHERE user_id = ?', (user['id'],))
-        partner_row = cursor.fetchone()
-        if not partner_row:
-            raise HTTPException(status_code=404, detail="Партнёр не найден")
-        partner_id = partner_row['id']
-
-        EducationDB.update_video_progress(
-            conn,
-            partner_id,
-            chapter_id,
-            request.progress_seconds,
-            request.watched
-        )
-        return {"success": True}
-
-
-# --- Получить тест главы ---
-@app.get("/api/partner/chapters/{chapter_id}/test")
-async def get_chapter_test(chapter_id: int, user: Dict = Depends(require_partner)):
-    """Получить тест главы (без правильных ответов!)"""
-    import json as json_lib
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute('SELECT id FROM partners WHERE user_id = ?', (user['id'],))
-        partner_row = cursor.fetchone()
-        if not partner_row:
-            raise HTTPException(status_code=404, detail="Партнёр не найден")
-        partner_id = partner_row['id']
-
-        test = EducationDB.get_chapter_test(conn, chapter_id)
-        if not test:
-            raise HTTPException(status_code=404, detail="Тест не найден")
-
-        # Убираем правильные ответы из вопросов!
-        questions = json_lib.loads(test['questions_json'])
-        for q in questions:
-            q.pop('correct', None)
-            q.pop('explanation', None)
-
-        # Получаем попытки
-        attempts = EducationDB.get_partner_test_attempts(conn, partner_id, test['id'])
-
-        return {
-            "test_id": test['id'],
-            "title": test['title'],
-            "passing_score": test['passing_score'],
-            "max_attempts": test['max_attempts'],
-            "attempts_used": len(attempts),
-            "questions": questions,
-            "last_attempt": attempts[0] if attempts else None
-        }
-
-
-# --- Сдать тест ---
-class SubmitTestRequest(BaseModel):
-    answers: dict  # {"1": [0], "2": [1, 2], ...}
-
-@app.post("/api/partner/tests/{test_id}/submit")
-async def submit_test(
-    test_id: int,
-    request: SubmitTestRequest,
-    user: Dict = Depends(require_partner)
-):
-    """Сдать тест"""
-    import json as json_lib
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute('SELECT id FROM partners WHERE user_id = ?', (user['id'],))
-        partner_row = cursor.fetchone()
-        if not partner_row:
-            raise HTTPException(status_code=404, detail="Партнёр не найден")
-        partner_id = partner_row['id']
-
-        result = EducationDB.submit_test(
-            conn,
-            partner_id,
-            test_id,
-            json_lib.dumps(request.answers)
-        )
-
-        if result and 'error' in result:
-            raise HTTPException(status_code=400, detail=result['error'])
-
-        return result
-
-
-# ======================== API ОБУЧЕНИЯ ДЛЯ АДМИНКИ ========================
-
-# --- Статистика обучения ---
-@app.get("/api/admin/education/stats")
-async def get_education_stats(user: Dict = Depends(require_admin)):
-    """Статистика по обучению"""
-    with get_db() as conn:
-        stats = EducationDB.get_education_stats(conn)
-        # Добавляем дополнительные поля для совместимости с фронтендом
-        stats['partners_in_progress'] = stats.get('partners_learning', 0)
-        stats['certificates_issued'] = stats.get('partners_completed', 0)
-        stats['avg_completion_rate'] = stats.get('average_progress', 0)
-        return stats
-
-
-# --- Прогресс партнёров ---
-@app.get("/api/admin/education/progress")
-async def get_partners_progress(
-    course_id: Optional[int] = None,
-    user: Dict = Depends(require_admin)
-):
-    """Прогресс партнёров по обучению"""
-    with get_db() as conn:
-        progress_list = EducationDB.get_partners_progress(conn, course_id)
-        # Форматируем для фронтенда
-        result = []
-        for p in progress_list:
-            total = p.get('total_chapters', 0)
-            completed = p.get('completed_chapters', 0)
-            progress_pct = round((completed / total) * 100) if total > 0 else 0
-            result.append({
-                'partner_id': p['partner_id'],
-                'partner_name': p['contact_name'],
-                'company_name': p['company_name'],
-                'course_id': p['course_id'],
-                'course_title': p['course_title'],
-                'status': p['course_status'],
-                'progress': progress_pct,
-                'certificate_number': p.get('certificate_number')
-            })
-        return {"partners": result}
-
-
-# --- Список курсов для админки ---
-@app.get("/api/admin/education/courses")
-async def admin_get_courses(user: Dict = Depends(require_admin)):
-    """Получить все курсы (включая неактивные)"""
-    with get_db() as conn:
-        courses = EducationDB.get_all_courses(conn, include_inactive=True)
-        return {"courses": courses}
-
-
-# --- Создать курс ---
-class CreateCourseRequest(BaseModel):
-    title: str
-    description: Optional[str] = None
-    cover_url: Optional[str] = None
-    price: float = 0
-
-@app.post("/api/admin/education/courses")
-async def admin_create_course(
-    request: CreateCourseRequest,
-    user: Dict = Depends(require_admin)
-):
-    """Создать новый курс"""
-    with get_db() as conn:
-        course_id = EducationDB.create_course(
-            conn,
-            request.title,
-            request.description,
-            request.cover_url,
-            request.price
-        )
-        return {"success": True, "course_id": course_id}
-
-
-# --- Обновить курс ---
-class UpdateCourseRequest(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    cover_url: Optional[str] = None
-    price: Optional[float] = None
-    is_active: Optional[bool] = None
-    sort_order: Optional[int] = None
-
-@app.put("/api/admin/education/courses/{course_id}")
-async def admin_update_course(
-    course_id: int,
-    request: UpdateCourseRequest,
-    user: Dict = Depends(require_admin)
-):
-    """Обновить курс"""
-    with get_db() as conn:
-        updates = request.model_dump(exclude_none=True)
-        if updates:
-            EducationDB.update_course(conn, course_id, **updates)
-        return {"success": True}
-
-
-# --- Получить главы курса ---
-@app.get("/api/admin/education/courses/{course_id}/chapters")
-async def admin_get_chapters(course_id: int, user: Dict = Depends(require_admin)):
-    """Получить главы курса"""
-    with get_db() as conn:
-        chapters = EducationDB.get_course_chapters(conn, course_id, include_inactive=True)
-        return {"chapters": chapters}
-
-
-# --- Создать главу ---
-class CreateChapterRequest(BaseModel):
-    title: str
-    description: Optional[str] = None
-    video_url: Optional[str] = None
-    video_duration: Optional[int] = None
-    content_html: Optional[str] = None
-
-@app.post("/api/admin/education/courses/{course_id}/chapters")
-async def admin_create_chapter(
-    course_id: int,
-    request: CreateChapterRequest,
-    user: Dict = Depends(require_admin)
-):
-    """Создать главу"""
-    with get_db() as conn:
-        chapter_id = EducationDB.create_chapter(
-            conn,
-            course_id,
-            request.title,
-            request.description,
-            request.video_url,
-            request.video_duration,
-            request.content_html
-        )
-        return {"success": True, "chapter_id": chapter_id}
-
-
-# --- Обновить главу ---
-class UpdateChapterRequest(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    video_url: Optional[str] = None
-    video_duration: Optional[int] = None
-    content_html: Optional[str] = None
-    sort_order: Optional[int] = None
-    is_active: Optional[bool] = None
-
-@app.put("/api/admin/education/chapters/{chapter_id}")
-async def admin_update_chapter(
-    chapter_id: int,
-    request: UpdateChapterRequest,
-    user: Dict = Depends(require_admin)
-):
-    """Обновить главу"""
-    with get_db() as conn:
-        updates = request.model_dump(exclude_none=True)
-        if updates:
-            EducationDB.update_chapter(conn, chapter_id, **updates)
-        return {"success": True}
-
-
-# --- Удалить главу ---
-@app.delete("/api/admin/education/chapters/{chapter_id}")
-async def admin_delete_chapter(chapter_id: int, user: Dict = Depends(require_admin)):
-    """Удалить главу"""
-    with get_db() as conn:
-        EducationDB.delete_chapter(conn, chapter_id)
-        return {"success": True}
-
-
-# --- Получить тест главы (для админа) ---
-@app.get("/api/admin/education/chapters/{chapter_id}/test")
-async def admin_get_test(chapter_id: int, user: Dict = Depends(require_admin)):
-    """Получить тест главы"""
-    import json as json_lib
-    with get_db() as conn:
-        test = EducationDB.get_chapter_test(conn, chapter_id)
-        if test:
-            test['questions'] = json_lib.loads(test['questions_json'])
-        return {"test": test}
-
-
-# --- Сохранить тест главы ---
-class SaveTestRequest(BaseModel):
-    title: str = "Тест по главе"
-    passing_score: int = 80
-    max_attempts: int = 3
-    questions: list  # Список вопросов
-
-@app.post("/api/admin/education/chapters/{chapter_id}/test")
-async def admin_save_test(
-    chapter_id: int,
-    request: SaveTestRequest,
-    user: Dict = Depends(require_admin)
-):
-    """Сохранить тест главы"""
-    import json as json_lib
-    with get_db() as conn:
-        test_id = EducationDB.create_or_update_test(
-            conn,
-            chapter_id,
-            json_lib.dumps(request.questions, ensure_ascii=False),
-            request.passing_score,
-            request.max_attempts,
-            request.title
-        )
-        return {"success": True, "test_id": test_id}
-
-
-# --- Выдать доступ к курсу ---
-class GrantAccessRequest(BaseModel):
-    partner_id: int
-    course_id: int
-    expires_at: Optional[str] = None
-
-@app.post("/api/admin/education/grant-access")
-async def admin_grant_access(
-    request: GrantAccessRequest,
-    user: Dict = Depends(require_admin)
-):
-    """Выдать партнёру доступ к курсу"""
-    with get_db() as conn:
-        EducationDB.grant_course_access(
-            conn,
-            request.partner_id,
-            request.course_id,
-            user.get('id'),
-            request.expires_at
-        )
-        return {"success": True}
-
-
-# --- Отозвать доступ к курсу ---
-@app.delete("/api/admin/education/access/{partner_id}/{course_id}")
-async def admin_revoke_access(
-    partner_id: int,
-    course_id: int,
-    user: Dict = Depends(require_admin)
-):
-    """Отозвать доступ к курсу"""
-    with get_db() as conn:
-        EducationDB.revoke_course_access(conn, partner_id, course_id)
-        return {"success": True}
-
-
-# ======================== СЕРТИФИКАТ ========================
-
-@app.get("/api/partner/courses/{course_id}/certificate")
-async def get_certificate(course_id: int, user: Dict = Depends(require_partner)):
-    """Получить информацию о сертификате"""
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute('SELECT id FROM partners WHERE user_id = ?', (user['id'],))
-        partner_row = cursor.fetchone()
-        if not partner_row:
-            raise HTTPException(status_code=404, detail="Партнёр не найден")
-        partner_id = partner_row['id']
-
-        # Проверяем что курс завершён
-        cursor.execute('''
-            SELECT pcp.*, c.title as course_title, p.contact_name, p.company_name
-            FROM partner_course_progress pcp
-            JOIN courses c ON c.id = pcp.course_id
-            JOIN partners p ON p.id = pcp.partner_id
-            WHERE pcp.partner_id = ? AND pcp.course_id = ? AND pcp.status = 'completed'
-        ''', (partner_id, course_id))
-
-        row = cursor.fetchone()
-        if not row:
-            raise HTTPException(status_code=404, detail="Курс не завершён")
-
-        data = dict(row)
-
-        # Генерируем номер сертификата если его нет
-        if not data.get('certificate_number'):
-            import datetime
-            cert_num = f"CERT-{datetime.datetime.now().strftime('%Y%m%d')}-{partner_id}-{course_id}"
-            cursor.execute('''
-                UPDATE partner_course_progress
-                SET certificate_number = ?
-                WHERE partner_id = ? AND course_id = ?
-            ''', (cert_num, partner_id, course_id))
-            conn.commit()
-            data['certificate_number'] = cert_num
-
-        return {
-            "certificate_number": data['certificate_number'],
-            "partner_name": data['contact_name'],
-            "company_name": data['company_name'],
-            "course_title": data['course_title'],
-            "completed_at": data['completed_at'],
-            "download_url": f"/api/partner/courses/{course_id}/certificate/download"
-        }
-
-
-@app.get("/api/partner/courses/{course_id}/certificate/download")
-async def download_certificate(course_id: int, user: Dict = Depends(require_partner)):
-    """Скачать PDF сертификат"""
-    from certificate_generator import CertificateGenerator
-
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute('SELECT id FROM partners WHERE user_id = ?', (user['id'],))
-        partner_row = cursor.fetchone()
-        if not partner_row:
-            raise HTTPException(status_code=404, detail="Партнёр не найден")
-        partner_id = partner_row['id']
-
-        cursor.execute('''
-            SELECT pcp.*, c.title as course_title, p.contact_name, p.company_name
-            FROM partner_course_progress pcp
-            JOIN courses c ON c.id = pcp.course_id
-            JOIN partners p ON p.id = pcp.partner_id
-            WHERE pcp.partner_id = ? AND pcp.course_id = ? AND pcp.status = 'completed'
-        ''', (partner_id, course_id))
-
-        row = cursor.fetchone()
-        if not row:
-            raise HTTPException(status_code=404, detail="Курс не завершён")
-
-        data = dict(row)
-
-        # Генерируем номер если нет
-        if not data.get('certificate_number'):
-            import datetime
-            cert_num = f"CERT-{datetime.datetime.now().strftime('%Y%m%d')}-{partner_id}-{course_id}"
-            cursor.execute('''
-                UPDATE partner_course_progress
-                SET certificate_number = ?
-                WHERE partner_id = ? AND course_id = ?
-            ''', (cert_num, partner_id, course_id))
-            conn.commit()
-            data['certificate_number'] = cert_num
-
-        # Генерируем PDF
-        generator = CertificateGenerator()
-        pdf_bytes = generator.generate_certificate(
-            partner_name=data['contact_name'],
-            company_name=data['company_name'],
-            course_title=data['course_title'],
-            certificate_number=data['certificate_number'],
-            completed_at=data['completed_at'],
-            verify_url=f"https://promarkirui.ru/verify/{data['certificate_number']}"
-        )
-
-        return Response(
-            content=pdf_bytes,
-            media_type="application/pdf",
-            headers={
-                "Content-Disposition": f"attachment; filename=certificate_{data['certificate_number']}.pdf"
-            }
-        )
-
-# --- Удаление клиентов ---
-@app.delete("/api/employee/clients/{client_id}")
-async def api_employee_delete_client(client_id: int, user: Dict = Depends(require_employee)):
-    """Удалить одного клиента"""
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM clients WHERE id = ?", (client_id,))
-        if cursor.rowcount == 0:
-            raise HTTPException(status_code=404, detail="Клиент не найден")
-    return {"success": True}
-
-@app.post("/api/employee/clients/bulk-delete")
-async def api_employee_bulk_delete_clients(request: BulkDeleteRequest, user: Dict = Depends(require_employee)):
-    """Массовое удаление клиентов"""
-    if not request.ids:
-        raise HTTPException(status_code=400, detail="Не выбраны клиенты")
-    with get_db() as conn:
-        cursor = conn.cursor()
-        placeholders = ",".join(["?"] * len(request.ids))
-        cursor.execute(f"DELETE FROM clients WHERE id IN ({placeholders})", request.ids)
-        deleted_count = cursor.rowcount
-    return {"success": True, "deleted_count": deleted_count}
-
-# --- Удаление договоров ---
-@app.delete("/api/employee/contracts/{contract_id}")
-async def api_employee_delete_contract(contract_id: int, user: Dict = Depends(require_employee)):
-    """Удалить один договор"""
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM contracts WHERE id = ?", (contract_id,))
-        if cursor.rowcount == 0:
-            raise HTTPException(status_code=404, detail="Договор не найден")
-    return {"success": True}
-
-@app.post("/api/employee/contracts/bulk-delete")
-async def api_employee_bulk_delete_contracts(request: BulkDeleteRequest, user: Dict = Depends(require_employee)):
-    """Массовое удаление договоров"""
-    if not request.ids:
-        raise HTTPException(status_code=400, detail="Не выбраны договоры")
-    with get_db() as conn:
-        cursor = conn.cursor()
-        placeholders = ",".join(["?"] * len(request.ids))
-        cursor.execute(f"DELETE FROM contracts WHERE id IN ({placeholders})", request.ids)
-        deleted_count = cursor.rowcount
-    return {"success": True, "deleted_count": deleted_count}
-
-# --- Удаление КП ---
-@app.delete("/api/employee/quotes/{quote_id}")
-async def api_employee_delete_quote(quote_id: int, user: Dict = Depends(require_employee)):
-    """Удалить одно КП"""
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM quotes WHERE id = ?", (quote_id,))
-        if cursor.rowcount == 0:
-            raise HTTPException(status_code=404, detail="КП не найдено")
-    return {"success": True}
-
-@app.post("/api/employee/quotes/bulk-delete")
-async def api_employee_bulk_delete_quotes(request: BulkDeleteRequest, user: Dict = Depends(require_employee)):
-    """Массовое удаление КП"""
-    if not request.ids:
-        raise HTTPException(status_code=400, detail="Не выбраны КП")
-    with get_db() as conn:
-        cursor = conn.cursor()
-        placeholders = ",".join(["?"] * len(request.ids))
-        cursor.execute(f"DELETE FROM quotes WHERE id IN ({placeholders})", request.ids)
-        deleted_count = cursor.rowcount
-    return {"success": True, "deleted_count": deleted_count}
-
-# --- Удаление счетов ---
-@app.delete("/api/employee/invoices/{invoice_id}")
-async def api_employee_delete_invoice(invoice_id: int, user: Dict = Depends(require_employee)):
-    """Удалить один счёт"""
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM invoices WHERE id = ?", (invoice_id,))
-        if cursor.rowcount == 0:
-            raise HTTPException(status_code=404, detail="Счёт не найден")
-    return {"success": True}
-
-@app.post("/api/employee/invoices/bulk-delete")
-async def api_employee_bulk_delete_invoices(request: BulkDeleteRequest, user: Dict = Depends(require_employee)):
-    """Массовое удаление счетов"""
-    if not request.ids:
-        raise HTTPException(status_code=400, detail="Не выбраны счета")
-    with get_db() as conn:
-        cursor = conn.cursor()
-        placeholders = ",".join(["?"] * len(request.ids))
-        cursor.execute(f"DELETE FROM invoices WHERE id IN ({placeholders})", request.ids)
-        deleted_count = cursor.rowcount
-    return {"success": True, "deleted_count": deleted_count}
-
-
-# --- Удаление курса ---
-@app.delete("/api/admin/education/courses/{course_id}")
-async def admin_delete_course(
-    course_id: int,
-    user: Dict = Depends(require_admin)
-):
-    """Удалить курс и все связанные данные"""
-    with get_db() as conn:
-        cursor = conn.cursor()
-        
-        # 1. Удаляем попытки тестов
-        cursor.execute('''
-            DELETE FROM partner_test_attempts WHERE test_id IN (
-                SELECT id FROM chapter_tests WHERE chapter_id IN (
-                    SELECT id FROM course_chapters WHERE course_id = ?
-                )
-            )
-        ''', (course_id,))
-        
-        # 2. Удаляем тесты глав
-        cursor.execute('''
-            DELETE FROM chapter_tests WHERE chapter_id IN (
-                SELECT id FROM course_chapters WHERE course_id = ?
-            )
-        ''', (course_id,))
-        
-        # 3. Удаляем прогресс по главам
-        cursor.execute('''
-            DELETE FROM partner_chapter_progress WHERE chapter_id IN (
-                SELECT id FROM course_chapters WHERE course_id = ?
-            )
-        ''', (course_id,))
-        
-        # 4. Удаляем главы курса
-        cursor.execute('DELETE FROM course_chapters WHERE course_id = ?', (course_id,))
-        
-        # 5. Удаляем доступы к курсу
-        cursor.execute('DELETE FROM partner_course_access WHERE course_id = ?', (course_id,))
-        
-        # 6. Удаляем прогресс по курсу
-        cursor.execute('DELETE FROM partner_course_progress WHERE course_id = ?', (course_id,))
-        
-        # 7. Удаляем сам курс
-        cursor.execute('DELETE FROM courses WHERE id = ?', (course_id,))
-        
-        conn.commit()
-        return {"success": True, "message": "Курс удалён"}
-
-
-@app.get("/api/admin/education/courses/{course_id}/access")
-async def get_course_access_list(
-    course_id: int,
-    user: Dict = Depends(require_admin)
-):
-    """Получить список партнёров с информацией о доступе к курсу"""
-    with get_db() as conn:
-        cursor = conn.cursor()
-        
-        # Получаем всех партнёров с информацией о доступе
-        cursor.execute('''
-            SELECT 
-                p.id,
-                p.company_name,
-                p.contact_name,
-                p.inn,
-                p.contact_email,
-                CASE WHEN pca.id IS NOT NULL THEN 1 ELSE 0 END as has_access,
-                pca.granted_at,
-                pca.expires_at,
-                pcp.status as progress_status,
-                pcp.status as progress
-            FROM partners p
-            LEFT JOIN partner_course_access pca ON pca.partner_id = p.id AND pca.course_id = ?
-            LEFT JOIN partner_course_progress pcp ON pcp.partner_id = p.id AND pcp.course_id = ?
-            ORDER BY p.company_name
-        ''', (course_id, course_id))
-        
-        partners = [dict(row) for row in cursor.fetchall()]
-        
-        return {"partners": partners}
-
-
-# --- Выдать доступ всем партнёрам ---
-@app.post("/api/admin/education/courses/{course_id}/grant-all")
-async def grant_access_to_all_partners(
-    course_id: int,
-    user: Dict = Depends(require_admin)
-):
-    """Выдать доступ к курсу всем партнёрам"""
-    with get_db() as conn:
-        cursor = conn.cursor()
-        
-        # Получаем всех партнёров без доступа к этому курсу
-        cursor.execute('''
-            SELECT p.id FROM partners p
-            WHERE NOT EXISTS (
-                SELECT 1 FROM partner_course_access pca 
-                WHERE pca.partner_id = p.id AND pca.course_id = ?
-            )
-        ''', (course_id,))
-        
-        partners = cursor.fetchall()
-        granted_count = 0
-        
-        for partner in partners:
-            EducationDB.grant_course_access(
-                conn,
-                partner['id'],
-                course_id,
-                user.get('id'),
-                None
-            )
-            granted_count += 1
-        
-        return {"success": True, "granted_count": granted_count}
-
-
-
-
-# ======================== СИСТЕМА УВЕДОМЛЕНИЙ ========================
-
-# --- Получить уведомления пользователя ---
-@app.get("/api/notifications")
-async def get_notifications(
-    limit: int = 50,
-    unread_only: bool = False,
-    user: Dict = Depends(get_current_user)
-):
-    """Получить уведомления текущего пользователя"""
-    with get_db() as conn:
-        cursor = conn.cursor()
-        
-        user_type = 'employee'
-        user_id = user.get('id')
-        
-        if user.get('partner_id'):
-            user_type = 'partner'
-            user_id = user.get('partner_id')
-        elif user.get('client_id'):
-            user_type = 'client'
-            user_id = user.get('client_id')
-        
-        query = '''
-            SELECT id, type, title, message, link, icon, is_read, created_at
-            FROM notifications
-            WHERE user_id = ? AND user_type = ?
-        '''
-        params = [user_id, user_type]
-        
-        if unread_only:
-            query += ' AND is_read = 0'
-        
-        query += ' ORDER BY created_at DESC LIMIT ?'
-        params.append(limit)
-        
-        cursor.execute(query, params)
-        notifications = [dict(row) for row in cursor.fetchall()]
-        
-        cursor.execute('''
-            SELECT COUNT(*) as count FROM notifications 
-            WHERE user_id = ? AND user_type = ? AND is_read = 0
-        ''', (user_id, user_type))
-        unread_count = cursor.fetchone()['count']
-        
-        return {
-            "notifications": notifications,
-            "unread_count": unread_count
-        }
-
-
-@app.put("/api/notifications/{notification_id}/read")
-async def mark_notification_read(
-    notification_id: int,
-    user: Dict = Depends(get_current_user)
-):
-    """Пометить уведомление как прочитанное"""
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute('''
-            UPDATE notifications 
-            SET is_read = 1, read_at = CURRENT_TIMESTAMP
-            WHERE id = ?
-        ''', (notification_id,))
-        conn.commit()
-        return {"success": True}
-
-
-@app.put("/api/notifications/read-all")
-async def mark_all_notifications_read(user: Dict = Depends(get_current_user)):
-    """Пометить все уведомления как прочитанные"""
-    with get_db() as conn:
-        cursor = conn.cursor()
-        
-        user_type = 'employee'
-        user_id = user.get('id')
-        
-        if user.get('partner_id'):
-            user_type = 'partner'
-            user_id = user.get('partner_id')
-        elif user.get('client_id'):
-            user_type = 'client'
-            user_id = user.get('client_id')
-        
-        cursor.execute('''
-            UPDATE notifications 
-            SET is_read = 1, read_at = CURRENT_TIMESTAMP
-            WHERE user_id = ? AND user_type = ? AND is_read = 0
-        ''', (user_id, user_type))
-        conn.commit()
-        return {"success": True, "updated": cursor.rowcount}
-
-
-@app.delete("/api/notifications/{notification_id}")
-async def delete_notification(
-    notification_id: int,
-    user: Dict = Depends(get_current_user)
-):
-    """Удалить уведомление"""
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute('DELETE FROM notifications WHERE id = ?', (notification_id,))
-        conn.commit()
-        return {"success": True}
-
-
-@app.delete("/api/notifications/clear-read")
-async def clear_read_notifications(user: Dict = Depends(get_current_user)):
-    """Удалить все прочитанные уведомления"""
-    with get_db() as conn:
-        cursor = conn.cursor()
-        
-        user_type = 'employee'
-        user_id = user.get('id')
-        
-        if user.get('partner_id'):
-            user_type = 'partner'
-            user_id = user.get('partner_id')
-        elif user.get('client_id'):
-            user_type = 'client'
-            user_id = user.get('client_id')
-        
-        cursor.execute('''
-            DELETE FROM notifications 
-            WHERE user_id = ? AND user_type = ? AND is_read = 1
-        ''', (user_id, user_type))
-        conn.commit()
-        return {"success": True, "deleted": cursor.rowcount}
-
-
-def create_notification(conn, user_id, user_type, notif_type, title, message, link=None, icon='bell'):
-    """Создать уведомление для пользователя"""
-    cursor = conn.cursor()
-    cursor.execute('''
-        INSERT INTO notifications (user_id, user_type, type, title, message, link, icon)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    ''', (user_id, user_type, notif_type, title, message, link, icon))
-    conn.commit()
-    return cursor.lastrowid
-
-
-def notify_all_employees(conn, notif_type, title, message, link=None, icon='bell'):
-    """Отправить уведомление всем сотрудникам"""
-    cursor = conn.cursor()
-    cursor.execute("SELECT id FROM users WHERE role IN ('admin', 'manager', 'superadmin', 'employee')")
-    employees = cursor.fetchall()
-    
-    for emp in employees:
-        create_notification(conn, emp['id'], 'employee', notif_type, title, message, link, icon)
-
-
-# ======================== ГЛОБАЛЬНЫЙ ПОИСК ========================
-
-
-# ======================== ГЛОБАЛЬНЫЙ ПОИСК ========================
-
-@app.get("/api/search")
-async def global_search(q: str, limit: int = 15, user: Dict = Depends(get_current_user)):
-    """Глобальный поиск по клиентам, заявкам, партнёрам, договорам"""
-    if not q or len(q) < 2:
-        return {"results": []}
-    
-    results = []
-    
-    # Для кириллицы делаем варианты регистра
-    q_original = q.strip()
-    q_capitalized = q_original.capitalize()
-    q_lower = q_original.lower()
-    q_upper = q_original.upper()
-    
-    search_variants = list(set([
-        f"%{q_original}%",
-        f"%{q_capitalized}%", 
-        f"%{q_lower}%",
-        f"%{q_upper}%"
-    ]))
-    
-    with get_db() as conn:
-        cursor = conn.cursor()
-        
-        # Поиск по клиентам
-        client_conditions = []
-        client_params = []
-        for field in ['company_name', 'contact_name', 'contact_phone', 'inn']:
-            for v in search_variants:
-                client_conditions.append(f"{field} LIKE ?")
-                client_params.append(v)
-        
-        cursor.execute(f'''
-            SELECT id, company_name, contact_name, contact_phone, inn
-            FROM clients
-            WHERE {" OR ".join(client_conditions)}
-            ORDER BY created_at DESC
-            LIMIT ?
-        ''', client_params + [limit])
-        
-        for row in cursor.fetchall():
-            client = dict(row)
-            results.append({
-                "type": "client",
-                "id": client["id"],
-                "title": client["company_name"] or client["contact_name"],
-                "subtitle": f"{client.get('contact_phone', '')} • ИНН: {client.get('inn', '-')}"
-            })
-        
-        # Поиск по заявкам (callbacks)
-        cb_conditions = []
-        cb_params = []
-        for field in ['contact_name', 'contact_phone', 'company_name']:
-            for v in search_variants:
-                cb_conditions.append(f"{field} LIKE ?")
-                cb_params.append(v)
-        
-        cursor.execute(f'''
-            SELECT id, contact_name, contact_phone, company_name
-            FROM callbacks
-            WHERE {" OR ".join(cb_conditions)}
-            ORDER BY created_at DESC
-            LIMIT ?
-        ''', cb_params + [limit])
-        
-        for row in cursor.fetchall():
-            cb = dict(row)
-            results.append({
-                "type": "callback",
-                "id": cb["id"],
-                "title": cb["contact_name"],
-                "subtitle": f"{cb.get('contact_phone', '')} • {cb.get('company_name', '')}"
-            })
-        
-        # Поиск по партнёрам
-        partner_conditions = []
-        partner_params = []
-        for field in ['company_name', 'contact_name', 'contact_phone', 'inn']:
-            for v in search_variants:
-                partner_conditions.append(f"{field} LIKE ?")
-                partner_params.append(v)
-        
-        cursor.execute(f'''
-            SELECT id, company_name, contact_name, contact_phone, inn
-            FROM partners
-            WHERE {" OR ".join(partner_conditions)}
-            ORDER BY created_at DESC
-            LIMIT ?
-        ''', partner_params + [limit])
-        
-        for row in cursor.fetchall():
-            partner = dict(row)
-            results.append({
-                "type": "partner",
-                "id": partner["id"],
-                "title": partner["company_name"] or partner["contact_name"],
-                "subtitle": f"{partner.get('contact_phone', '')} • ИНН: {partner.get('inn', '-')}"
-            })
-        
-        # Поиск по договорам (только по номеру и клиенту)
-        contract_conditions = []
-        contract_params = []
-        for field in ['c.contract_number', 'cl.company_name', 'cl.contact_name']:
-            for v in search_variants:
-                contract_conditions.append(f"{field} LIKE ?")
-                contract_params.append(v)
-        
-        cursor.execute(f'''
-            SELECT c.id, c.contract_number, c.total_amount, cl.company_name as client_name, cl.contact_name
-            FROM contracts c
-            LEFT JOIN clients cl ON cl.id = c.client_id
-            WHERE {" OR ".join(contract_conditions)}
-            ORDER BY c.created_at DESC
-            LIMIT ?
-        ''', contract_params + [limit])
-        
-        for row in cursor.fetchall():
-            contract = dict(row)
-            client_display = contract.get('client_name') or contract.get('contact_name') or ''
-            results.append({
-                "type": "contract",
-                "id": contract["id"],
-                "title": f"Договор {contract.get('contract_number', '')}",
-                "subtitle": client_display
-            })
-        
-        # Поиск по КП (только по номеру и клиенту)
-        quote_conditions = []
-        quote_params = []
-        for field in ['q.quote_number', 'cl.company_name', 'cl.contact_name', 'q.contact_name']:
-            for v in search_variants:
-                quote_conditions.append(f"{field} LIKE ?")
-                quote_params.append(v)
-        
-        cursor.execute(f'''
-            SELECT q.id, q.quote_number, q.total_amount, cl.company_name as client_name, 
-                   COALESCE(cl.contact_name, q.contact_name) as contact
-            FROM quotes q
-            LEFT JOIN clients cl ON cl.id = q.client_id
-            WHERE {" OR ".join(quote_conditions)}
-            ORDER BY q.created_at DESC
-            LIMIT ?
-        ''', quote_params + [limit])
-        
-        for row in cursor.fetchall():
-            quote = dict(row)
-            client_display = quote.get('client_name') or quote.get('contact') or ''
-            results.append({
-                "type": "quote",
-                "id": quote["id"],
-                "title": f"КП {quote.get('quote_number', '')}",
-                "subtitle": client_display
-            })
-    
-    # Убираем дубликаты
-    seen = set()
-    unique_results = []
-    for item in results:
-        key = (item["type"], item["id"])
-        if key not in seen:
-            seen.add(key)
-            unique_results.append(item)
-    
-    # Сортируем по релевантности
-    def relevance_score(item):
-        title_lower = (item.get("title") or "").lower()
-        q_check = q.lower()
-        if title_lower == q_check:
-            return 0
-        if title_lower.startswith(q_check):
-            return 1
-        if q_check in title_lower:
-            return 2
-        return 3
-    
-    unique_results.sort(key=relevance_score)
-    
-    return {"results": unique_results[:limit]}
-
-
-# ======================== СИСТЕМА ЗАДАЧ ДЛЯ МЕНЕДЖЕРОВ ========================
-
-# --- Получить задачи ---
-@app.get("/api/employee/tasks")
-async def get_tasks(
-    status: str = None,
-    assigned_to: int = None,
-    client_id: int = None,
-    user: Dict = Depends(require_employee)
-):
-    """Получить задачи (свои или все для superadmin)"""
-    with get_db() as conn:
-        cursor = conn.cursor()
-        
-        is_superadmin = user.get('role') == 'superadmin'
-        
-        query = '''
-            SELECT t.*, 
-                   u1.email as assigned_email,
-                   u2.email as creator_email,
-                   c.company_name as client_name
-            FROM tasks t
-            LEFT JOIN users u1 ON t.assigned_to = u1.id
-            LEFT JOIN users u2 ON t.created_by = u2.id
-            LEFT JOIN clients c ON t.client_id = c.id
-            WHERE 1=1
-        '''
-        params = []
-        
-        if not is_superadmin:
-            query += ' AND t.assigned_to = ?'
-            params.append(user['id'])
-        elif assigned_to:
-            query += ' AND t.assigned_to = ?'
-            params.append(assigned_to)
-        
-        if client_id:
-            query += " AND t.client_id = ?"
-            params.append(client_id)
-
-        if status:
-            query += ' AND t.status = ?'
-            params.append(status)
-        
-        query += ' ORDER BY t.due_date ASC NULLS LAST, t.created_at DESC'
-        
-        cursor.execute(query, params)
-        tasks = [dict(row) for row in cursor.fetchall()]
-        
-        return {"tasks": tasks}
-
-
-# --- Создать задачу (только superadmin) ---
-@app.post("/api/employee/tasks")
-async def create_task(
-    request: Request,
-    user: Dict = Depends(require_employee)
-):
-    """Создать задачу для сотрудника"""
-    
-    data = await request.json()
-    
-    title = data.get('title')
-    if not title:
-        raise HTTPException(status_code=400, detail="Укажите название задачи")
-    
-    assigned_to = data.get('assigned_to')
-    if not assigned_to:
-        assigned_to = user["id"]  # По умолчанию назначаем себе
-    if False:  # Старая проверка отключена
-        raise HTTPException(status_code=400, detail="Укажите исполнителя")
-    
-    # Не-superadmin может назначать задачи только себе
-    if user.get("role") != "superadmin" and int(assigned_to) != user["id"]:
-        raise HTTPException(status_code=403, detail="Вы можете назначать задачи только себе")
-    
-    with get_db() as conn:
-        cursor = conn.cursor()
-        
-        cursor.execute('''
-            INSERT INTO tasks (title, description, assigned_to, created_by, client_id, priority, due_date)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            title,
-            data.get('description'),
-            assigned_to,
-            user['id'],
-            data.get('client_id'),
-            data.get('priority', 'normal'),
-            data.get('due_date')
-        ))
-        conn.commit()
-        task_id = cursor.lastrowid
-        
-        create_notification(
-            conn, 
-            assigned_to, 
-            'employee',
-            'task',
-            'Новая задача',
-            title,
-            '/employee/tasks',
-            'file'
-        )
-        
-        return {"success": True, "task_id": task_id}
-
-
-# --- Обновить задачу ---
-@app.put("/api/employee/tasks/{task_id}")
-async def update_task(
-    task_id: int,
-    request: Request,
-    user: Dict = Depends(require_employee)
-):
-    """Обновить статус или данные задачи"""
-    data = await request.json()
-    
-    with get_db() as conn:
-        cursor = conn.cursor()
-        
-        cursor.execute('SELECT * FROM tasks WHERE id = ?', (task_id,))
-        task = cursor.fetchone()
-        
-        if not task:
-            raise HTTPException(status_code=404, detail="Задача не найдена")
-        
-        is_superadmin = user.get('role') == 'superadmin'
-        is_assigned = task['assigned_to'] == user['id']
-        
-        if not is_superadmin and not is_assigned:
-            raise HTTPException(status_code=403, detail="Нет доступа к этой задаче")
-        
-        if not is_superadmin:
-            new_status = data.get('status')
-            if new_status:
-                if new_status == 'completed':
-                    cursor.execute('''
-                        UPDATE tasks SET status = ?, completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-                        WHERE id = ?
-                    ''', (new_status, task_id))
-                else:
-                    cursor.execute('''
-                        UPDATE tasks SET status = ?, completed_at = NULL, updated_at = CURRENT_TIMESTAMP
-                        WHERE id = ?
-                    ''', (new_status, task_id))
-        else:
-            updates = []
-            params = []
-            
-            for field in ['title', 'description', 'assigned_to', 'client_id', 'priority', 'status', 'due_date']:
-                if field in data:
-                    updates.append(f'{field} = ?')
-                    params.append(data[field])
-            
-            if data.get('status') == 'completed':
-                updates.append('completed_at = CURRENT_TIMESTAMP')
-            elif data.get('status') and data.get('status') != 'completed':
-                updates.append('completed_at = NULL')
-            
-            if updates:
-                updates.append('updated_at = CURRENT_TIMESTAMP')
-                params.append(task_id)
-                query = f"UPDATE tasks SET {', '.join(updates)} WHERE id = ?"
-                cursor.execute(query, params)
-        
-        conn.commit()
-        return {"success": True}
-
-
-# --- Удалить задачу (только superadmin) ---
-@app.delete("/api/employee/tasks/{task_id}")
-async def delete_task(
-    task_id: int,
-    user: Dict = Depends(require_employee)
-):
-    """Удалить задачу"""
-    if user.get('role') != 'superadmin':
-        raise HTTPException(status_code=403, detail="Только superadmin может удалять задачи")
-    
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute('DELETE FROM tasks WHERE id = ?', (task_id,))
-        conn.commit()
-        return {"success": True}
-
-
-# --- Получить сотрудников для назначения задач ---
-@app.get("/api/employee/staff-list")
-async def get_staff_list(user: Dict = Depends(require_employee)):
-    """Получить список сотрудников для выбора исполнителя"""
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute('''
-            SELECT id, email, role FROM users 
-            WHERE role IN ('admin', 'manager', 'superadmin', 'employee')
-            ORDER BY email
-        ''')
-        staff = [dict(row) for row in cursor.fetchall()]
-        return {"staff": staff}

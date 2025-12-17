@@ -62,6 +62,8 @@ import EmployeeSettings from './pages/employee/EmployeeSettings';
 import EmployeeRoute from './components/employee/EmployeeRoute';
 import EmployeeLayout from './components/employee/EmployeeLayout';
 import EmployeePartners from './pages/employee/EmployeePartners';
+import EmployeeEducation from './pages/employee/EmployeeEducation';
+import EmployeeTasks from './pages/employee/EmployeeTasks';
 
 // Partner pages
 import { PartnerAuthProvider } from './context/PartnerAuthContext';
@@ -73,6 +75,13 @@ import PartnerLeads from './pages/partner/PartnerLeads';
 import PartnerCalculator from './pages/partner/PartnerCalculator';
 import PartnerMaterials from './pages/partner/PartnerMaterials';
 import PartnerSettings from './pages/partner/PartnerSettings';
+import AcceptInvitePage from './pages/partner/AcceptInvitePage';
+import PartnerEducation from './pages/partner/PartnerEducation';
+import PartnerCourseView from './pages/partner/PartnerCourseView';
+import PartnerChapterView from './pages/partner/PartnerChapterView';
+
+// Admin education
+import AdminEducation from './pages/admin/AdminEducation';
 
 // Main layout wrapper
 const MainLayout = ({ children }) => (
@@ -160,6 +169,11 @@ function App() {
                     <AdminLayout><AdminCallbacksPage /></AdminLayout>
                   </AdminRoute>
                 } />
+                <Route path="/admin/education" element={
+                  <AdminRoute>
+                    <AdminLayout><AdminEducation /></AdminLayout>
+                  </AdminRoute>
+                } />
 
                 {/* Employee routes */}
                 <Route path="/employee/login" element={<EmployeeLoginPage />} />
@@ -238,9 +252,20 @@ function App() {
                     <EmployeeLayout><EmployeePartners /></EmployeeLayout>
                   </EmployeeRoute>
                 } />
+                <Route path="/employee/education" element={
+                  <EmployeeRoute>
+                    <EmployeeLayout><EmployeeEducation /></EmployeeLayout>
+                  </EmployeeRoute>
+                } />
+                <Route path="/employee/tasks" element={
+                  <EmployeeRoute>
+                    <EmployeeLayout><EmployeeTasks /></EmployeeLayout>
+                  </EmployeeRoute>
+                } />
 
                 {/* Partner routes */}
                 <Route path="/partner/login" element={<PartnerLoginPage />} />
+                <Route path="/partner/accept-invite" element={<AcceptInvitePage />} />
                 <Route path="/partner" element={
                   <PartnerRoute>
                     <PartnerLayout><PartnerDashboard /></PartnerLayout>
@@ -264,6 +289,21 @@ function App() {
                 <Route path="/partner/settings" element={
                   <PartnerRoute>
                     <PartnerLayout><PartnerSettings /></PartnerLayout>
+                  </PartnerRoute>
+                } />
+                <Route path="/partner/education" element={
+                  <PartnerRoute>
+                    <PartnerLayout><PartnerEducation /></PartnerLayout>
+                  </PartnerRoute>
+                } />
+                <Route path="/partner/education/:courseId" element={
+                  <PartnerRoute>
+                    <PartnerLayout><PartnerCourseView /></PartnerLayout>
+                  </PartnerRoute>
+                } />
+                <Route path="/partner/education/:courseId/:chapterId" element={
+                  <PartnerRoute>
+                    <PartnerLayout><PartnerChapterView /></PartnerLayout>
                   </PartnerRoute>
                 } />
               </Routes>
