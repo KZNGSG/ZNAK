@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends, Request
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends, Request, Form, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel, EmailStr, field_validator
@@ -8,8 +8,10 @@ from dotenv import load_dotenv
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
 from email.header import Header
-from email.utils import formataddr
+from email.utils import formataddr, formatdate
 import logging
 import httpx
 import uuid
@@ -2393,6 +2395,10 @@ async def send_contact(request: ContactRequest, background_tasks: BackgroundTask
     }
     callback_id = CallbackDB.create(callback_data)
 
+    # Telegram
+    tg_text = format_callback_telegram(callback_id, request.name, request.phone, "contact_form", [], request.comment)
+    background_tasks.add_task(send_telegram_notification, tg_text)
+
     # Отправляем на все адреса менеджеров
     contact_emails = os.getenv('CONTACT_TO_EMAIL', 'damirslk@mail.ru,turbin.ar8@gmail.com').split(',')
     subject = f"Заявка #{callback_id} на {request.request_type} от {request.name}"
@@ -2531,6 +2537,66 @@ async def training_enroll(request: TrainingEnrollRequest, background_tasks: Back
         "enrollment_id": enrollment_id
     }
 
+
+
+# ======================== TELEGRAM NOTIFICATIONS ========================
+
+TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '')
+TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID', '')
+
+async def send_telegram_notification(text: str):
+    """Отправить уведомление в Telegram"""
+    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+        print("Telegram not configured")
+        return False
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
+                json={
+                    "chat_id": TELEGRAM_CHAT_ID,
+                    "text": text,
+                    "parse_mode": "HTML"
+                },
+                timeout=10.0
+            )
+            return response.status_code == 200
+    except Exception as e:
+        print(f"Telegram error: {e}")
+        return False
+
+def format_callback_telegram(callback_id: int, contact_name: str, contact_phone: str, source: str, products: list = None, comment: str = None):
+    """Форматировать сообщение о новой заявке для Telegram"""
+    source_labels = {
+        'check_page': 'Проверка товара',
+        'quote_page': 'Запрос КП',
+        'contact_form': 'Контактная форма',
+        'unknown': 'Другое'
+    }
+    source_label = source_labels.get(source, source or 'Сайт')
+    
+    text = f"""🔔 <b>Новая заявка #{callback_id}</b>
+
+👤 <b>{contact_name}</b>
+📞 {contact_phone}
+📍 Источник: {source_label}"""
+    
+    if products:
+        text += "\n\n📦 <b>Товары:</b>"
+        for p in products[:5]:  # Max 5 products
+            name = p.get('name', '')[:50]
+            tnved = p.get('tnved', '')
+            text += f"\n• {name} ({tnved})"
+        if len(products) > 5:
+            text += f"\n... и ещё {len(products) - 5}"
+    
+    if comment:
+        text += f"\n\n💬 {comment[:200]}"
+    
+    text += f"\n\n🔗 <a href=\"https://promarkirui.ru/employee/inbox\">Открыть в CRM</a>"
+    
+    return text
 
 # ======================== DADATA COMPANY LOOKUP ========================
 
@@ -3566,6 +3632,10 @@ async def api_create_callback(
 
     callback_id = CallbackDB.create(callback_data)
 
+    # Отправляем в Telegram
+    tg_text = format_callback_telegram(callback_id, contact_name, contact_phone, data.source, data.products, data.comment)
+    background_tasks.add_task(send_telegram_notification, tg_text)
+
     # Создаём уведомление для всех сотрудников
     with get_db() as conn:
         notify_all_employees(
@@ -4530,10 +4600,6 @@ async def api_employee_get_quotes(
         '''
         params = []
 
-        if client_id:
-            query += " AND t.client_id = ?"
-            params.append(client_id)
-
         if status:
             query += ' AND q.status = ?'
             params.append(status)
@@ -4684,10 +4750,6 @@ async def api_employee_get_contracts(
         '''
         params = []
 
-        if client_id:
-            query += " AND t.client_id = ?"
-            params.append(client_id)
-
         if status:
             query += ' AND ct.status = ?'
             params.append(status)
@@ -4729,10 +4791,6 @@ async def api_employee_get_callbacks(
             WHERE 1=1
         '''
         params = []
-
-        if client_id:
-            query += " AND t.client_id = ?"
-            params.append(client_id)
 
         if status:
             query += ' AND cb.status = ?'
@@ -7441,3 +7499,549 @@ async def get_staff_list(user: Dict = Depends(require_employee)):
         ''')
         staff = [dict(row) for row in cursor.fetchall()]
         return {"staff": staff}
+
+
+# ======================== CATEGORY REQUIREMENTS API ========================
+
+def get_category_requirements_data():
+    """Load category_requirements.json"""
+    try:
+        path = os.path.join(os.path.dirname(__file__), 'data', 'category_requirements.json')
+        if os.path.exists(path):
+            with open(path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+    except Exception as e:
+        logger.error(f"Failed to load category_requirements.json: {e}")
+    return None
+
+
+@app.get("/api/marking/requirements")
+async def api_all_requirements():
+    """Получить требования по всем категориям"""
+    data = get_category_requirements_data()
+    if not data:
+        return {"categories": {}, "total": 0}
+    
+    return {
+        "categories": data,
+        "total": len(data)
+    }
+
+
+@app.get("/api/marking/requirements/{category_name}")
+async def api_category_requirements(category_name: str):
+    """Получить требования по конкретной категории (сроки, исключения, чек-лист)"""
+    data = get_category_requirements_data()
+    if not data:
+        raise HTTPException(status_code=404, detail="Requirements data not found")
+    
+    from urllib.parse import unquote
+    decoded_name = unquote(category_name)
+    
+    # Прямой поиск
+    if decoded_name in data:
+        return {
+            "category": decoded_name,
+            **data[decoded_name]
+        }
+    
+    # Поиск с частичным совпадением
+    for cat_name, cat_data in data.items():
+        if decoded_name.lower() in cat_name.lower() or cat_name.lower() in decoded_name.lower():
+            return {
+                "category": cat_name,
+                **cat_data
+            }
+    
+    raise HTTPException(status_code=404, detail=f"Category '{decoded_name}' not found")
+
+
+@app.get("/api/marking/deadlines")
+async def api_all_deadlines():
+    """Получить все сроки по всем категориям (для сводной таблицы)"""
+    data = get_category_requirements_data()
+    if not data:
+        return {"deadlines": []}
+    
+    deadlines = []
+    for cat_name, cat_data in data.items():
+        deadlines.append({
+            "category": cat_name,
+            "decree": cat_data.get("decree", {}),
+            "deadlines": cat_data.get("deadlines", {})
+        })
+    
+    return {"deadlines": deadlines, "total": len(deadlines)}
+
+
+@app.get("/api/marking/exceptions")
+async def api_all_exceptions():
+    """Получить все исключения по всем категориям"""
+    data = get_category_requirements_data()
+    if not data:
+        return {"exceptions": []}
+    
+    exceptions = []
+    for cat_name, cat_data in data.items():
+        exceptions.append({
+            "category": cat_name,
+            "exceptions": cat_data.get("exceptions", [])
+        })
+    
+    return {"exceptions": exceptions, "total": len(exceptions)}
+
+
+# ======================== ПОЧТОВЫЙ КЛИЕНТ (IMAP/SMTP) ========================
+
+import imaplib
+import email
+from email.header import decode_header
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
+from datetime import datetime
+import re
+
+# Почтовые ящики для CRM
+EMAIL_ACCOUNTS = [
+    {'email': 'mng@promarkirui.ru', 'password': 'BABvA%wT2u57', 'name': 'Менеджер'},
+    {'email': 'teh@promarkirui.ru', 'password': 'H9lf&%mR!Wwl', 'name': 'Техподдержка'},
+    {'email': 'info@promarkirui.ru', 'password': '&UDnQCJUE757', 'name': 'Инфо'},
+    {'email': 'noreply@promarkirui.ru', 'password': 'wK2jnyo*t7jm', 'name': 'Noreply'},
+]
+
+IMAP_HOST = 'imap.beget.com'
+IMAP_PORT = 993
+
+def decode_mime_header(header):
+    """Декодировать заголовок письма"""
+    if not header:
+        return ''
+    decoded_parts = decode_header(header)
+    result = []
+    for part, charset in decoded_parts:
+        if isinstance(part, bytes):
+            result.append(part.decode(charset or 'utf-8', errors='ignore'))
+        else:
+            result.append(part)
+    return ''.join(result)
+
+def get_email_body(msg):
+    """Извлечь тело письма"""
+    body = ''
+    if msg.is_multipart():
+        for part in msg.walk():
+            content_type = part.get_content_type()
+            if content_type == 'text/plain':
+                try:
+                    body = part.get_payload(decode=True).decode('utf-8', errors='ignore')
+                    break
+                except:
+                    pass
+            elif content_type == 'text/html' and not body:
+                try:
+                    body = part.get_payload(decode=True).decode('utf-8', errors='ignore')
+                except:
+                    pass
+    else:
+        try:
+            body = msg.get_payload(decode=True).decode('utf-8', errors='ignore')
+        except:
+            body = str(msg.get_payload())
+    return body
+
+def fetch_emails_from_account(account, folder='INBOX', limit=50):
+    """Получить письма из ящика"""
+    emails = []
+    try:
+        mail = imaplib.IMAP4_SSL(IMAP_HOST, IMAP_PORT)
+        mail.login(account['email'], account['password'])
+        mail.select(folder)
+        
+        _, messages = mail.search(None, 'ALL')
+        email_ids = messages[0].split()
+        
+        # Берём последние N писем
+        for email_id in email_ids[-limit:][::-1]:
+            _, msg_data = mail.fetch(email_id, '(RFC822 FLAGS)')
+            for response_part in msg_data:
+                if isinstance(response_part, tuple):
+                    msg = email.message_from_bytes(response_part[1])
+                    
+                    # Проверяем флаги (прочитано/не прочитано)
+                    flags = msg_data[0].decode() if isinstance(msg_data[0], bytes) else str(msg_data[0])
+                    is_read = '\\Seen' in flags
+                    
+                    subject = decode_mime_header(msg['Subject'])
+                    from_addr = decode_mime_header(msg['From'])
+                    to_addr = decode_mime_header(msg['To'])
+                    date_str = msg['Date']
+                    
+                    # Парсим дату
+                    try:
+                        date_tuple = email.utils.parsedate_tz(date_str)
+                        if date_tuple:
+                            timestamp = email.utils.mktime_tz(date_tuple)
+                            date = datetime.fromtimestamp(timestamp).isoformat()
+                        else:
+                            date = date_str
+                    except:
+                        date = date_str
+                    
+                    body = get_email_body(msg)
+                    
+                    emails.append({
+                        'id': email_id.decode(),
+                        'account': account['email'],
+                        'account_name': account['name'],
+                        'subject': subject,
+                        'from': from_addr,
+                        'to': to_addr,
+                        'date': date,
+                        'body': body[:5000],  # Ограничиваем размер
+                        'is_read': is_read
+                    })
+        
+        mail.logout()
+    except Exception as e:
+        print(f"IMAP error for {account['email']}: {e}")
+    
+    return emails
+
+@app.get("/api/email/accounts")
+async def get_email_accounts(user: Dict = Depends(require_employee)):
+    """Получить список почтовых ящиков с учётом прав доступа"""
+    # Superadmin видит все ящики
+    if user.get('role') == 'superadmin':
+        return {"accounts": [{"email": a['email'], "name": a['name']} for a in EMAIL_ACCOUNTS]}
+    
+    # Для остальных - проверяем email_access
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT email_access FROM users WHERE id = ?', (user['id'],))
+        row = cursor.fetchone()
+        if row and row['email_access']:
+            allowed = row['email_access'].split(',')
+            filtered = [a for a in EMAIL_ACCOUNTS if a['email'] in allowed]
+            return {"accounts": [{"email": a['email'], "name": a['name']} for a in filtered]}
+    
+    # Если нет настроек доступа - пустой список
+    return {"accounts": []}
+
+@app.get("/api/email/messages")
+async def get_email_messages(
+    account: str = None,
+    folder: str = 'INBOX',
+    limit: int = 50,
+    user: Dict = Depends(require_employee)
+):
+    """Получить письма из ящика или всех ящиков"""
+    all_emails = []
+    
+    if account:
+        # Конкретный ящик
+        acc = next((a for a in EMAIL_ACCOUNTS if a['email'] == account), None)
+        if acc:
+            all_emails = fetch_emails_from_account(acc, folder, limit)
+    else:
+        # Все ящики
+        for acc in EMAIL_ACCOUNTS:
+            emails = fetch_emails_from_account(acc, folder, limit)
+            all_emails.extend(emails)
+    
+    # Сортируем по дате (новые первые)
+    all_emails.sort(key=lambda x: x.get('date') or '', reverse=True)
+    
+    return {"messages": all_emails[:limit]}
+
+@app.get("/api/email/unread-count")
+async def get_unread_count(user: Dict = Depends(require_employee)):
+    """Получить количество непрочитанных писем"""
+    total_unread = 0
+    accounts_unread = []
+    
+    for acc in EMAIL_ACCOUNTS:
+        try:
+            mail = imaplib.IMAP4_SSL(IMAP_HOST, IMAP_PORT)
+            mail.login(acc['email'], acc['password'])
+            mail.select('INBOX')
+            _, messages = mail.search(None, 'UNSEEN')
+            unread = len(messages[0].split()) if messages[0] else 0
+            total_unread += unread
+            accounts_unread.append({'email': acc['email'], 'name': acc['name'], 'unread': unread})
+            mail.logout()
+        except Exception as e:
+            print(f"Error checking unread for {acc['email']}: {e}")
+            accounts_unread.append({'email': acc['email'], 'name': acc['name'], 'unread': 0})
+    
+    return {"total": total_unread, "accounts": accounts_unread}
+
+@app.post("/api/email/send")
+async def send_email_api(
+    to: str = Form(...),
+    subject: str = Form(...),
+    body: str = Form(...),
+    from_account: str = Form('mng@promarkirui.ru'),
+    files: List[UploadFile] = File(default=[]),
+    user: Dict = Depends(require_employee)
+):
+    """Отправить письмо с вложениями"""
+    if not all([to, subject, body]):
+        raise HTTPException(status_code=400, detail="Заполните все поля")
+    
+    # Ограничения
+    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB на файл
+    MAX_TOTAL_SIZE = 25 * 1024 * 1024  # 25MB всего
+    ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'gif', 'zip', 'rar', 'txt', 'csv'}
+    
+    # Находим аккаунт
+    acc = next((a for a in EMAIL_ACCOUNTS if a['email'] == from_account), EMAIL_ACCOUNTS[0])
+    
+    try:
+        import smtplib
+        msg = MIMEMultipart()
+        msg['From'] = formataddr((acc['name'], acc['email']))
+        msg['To'] = to
+        msg['Subject'] = subject
+        msg['Date'] = formatdate(localtime=True)
+        msg.attach(MIMEText(body, "plain", "utf-8"))
+        
+        # Обработка вложений
+        total_size = 0
+        for file in files:
+            if file.filename:
+                ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
+                if ext not in ALLOWED_EXTENSIONS:
+                    raise HTTPException(status_code=400, detail=f"Недопустимый тип файла: {ext}")
+                
+                content = await file.read()
+                file_size = len(content)
+                
+                if file_size > MAX_FILE_SIZE:
+                    raise HTTPException(status_code=400, detail=f"Файл {file.filename} слишком большой (макс 10MB)")
+                
+                total_size += file_size
+                if total_size > MAX_TOTAL_SIZE:
+                    raise HTTPException(status_code=400, detail="Общий размер файлов превышает 25MB")
+                
+                # Определяем MIME тип
+                import mimetypes
+                mime_type, _ = mimetypes.guess_type(file.filename)
+                if mime_type:
+                    maintype, subtype = mime_type.split('/')
+                else:
+                    maintype, subtype = 'application', 'octet-stream'
+                
+                part = MIMEBase(maintype, subtype)
+                part.set_payload(content)
+                encoders.encode_base64(part)
+                
+                # Правильное кодирование имени файла (RFC 2231)
+                from email.utils import encode_rfc2231
+                encoded_filename = encode_rfc2231(file.filename, 'utf-8')
+                part.add_header('Content-Disposition', 'attachment', filename=('utf-8', '', file.filename))
+                msg.attach(part)
+        
+        print(f"SENDING EMAIL: from={acc['email']} to={to} subject={subject} attachments={len(files)}")
+        
+        with smtplib.SMTP_SSL('smtp.beget.com', 465) as server:
+            server.login(acc['email'], acc['password'])
+            server.send_message(msg)
+        
+        # Сохраняем копию в папку Отправленные
+        try:
+            import imaplib
+            imap = imaplib.IMAP4_SSL('imap.beget.com', 993)
+            imap.login(acc['email'], acc['password'])
+            imap.append('INBOX.Sent', '\\Seen', None, msg.as_bytes())
+            imap.logout()
+        except Exception as e:
+            print(f"Warning: Could not save to Sent folder: {e}")
+        
+        return {"success": True, "message": "Письмо отправлено"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Ошибка отправки: {str(e)}")
+
+@app.post("/api/email/mark-read")
+async def mark_email_read(
+    data: Dict,
+    user: Dict = Depends(require_employee)
+):
+    """Отметить письмо как прочитанное"""
+    account_email = data.get('account')
+    email_id = data.get('email_id')
+    
+    acc = next((a for a in EMAIL_ACCOUNTS if a['email'] == account_email), None)
+    if not acc:
+        raise HTTPException(status_code=404, detail="Аккаунт не найден")
+    
+    try:
+        mail = imaplib.IMAP4_SSL(IMAP_HOST, IMAP_PORT)
+        mail.login(acc['email'], acc['password'])
+        mail.select('INBOX')
+        mail.store(email_id.encode(), '+FLAGS', '\\Seen')
+        mail.logout()
+        return {"success": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/email/delete")
+async def delete_email(
+    data: Dict,
+    user: Dict = Depends(require_employee)
+):
+    """Удалить письмо"""
+    account_email = data.get('account')
+    email_id = data.get('email_id')
+    folder = data.get('folder', 'INBOX')
+    
+    acc = next((a for a in EMAIL_ACCOUNTS if a['email'] == account_email), None)
+    if not acc:
+        raise HTTPException(status_code=404, detail="Аккаунт не найден")
+    
+    try:
+        mail = imaplib.IMAP4_SSL(IMAP_HOST, IMAP_PORT)
+        mail.login(acc['email'], acc['password'])
+        mail.select(folder)
+        # Помечаем письмо как удалённое
+        mail.store(str(email_id).encode(), '+FLAGS', '\\Deleted')
+        # Выполняем удаление
+        mail.expunge()
+        mail.logout()
+        return {"success": True, "message": "Письмо удалено"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Ошибка удаления: {str(e)}")
+
+@app.get("/api/email/stats")
+async def get_email_stats(user: Dict = Depends(require_employee)):
+    """Получить статистику по почте"""
+    from datetime import datetime, timedelta
+    
+    today = datetime.now().date()
+    week_ago = today - timedelta(days=7)
+    
+    total_today_received = 0
+    total_today_sent = 0
+    total_week = 0
+    accounts_stats = {}
+    
+    for acc in EMAIL_ACCOUNTS:
+        acc_stats = {
+            'today_received': 0,
+            'today_sent': 0,
+            'week_total': 0
+        }
+        
+        try:
+            mail = imaplib.IMAP4_SSL(IMAP_HOST, IMAP_PORT)
+            mail.login(acc['email'], acc['password'])
+            
+            # Входящие сегодня
+            mail.select('INBOX')
+            today_str = today.strftime('%d-%b-%Y')
+            status, msgs = mail.search(None, f'(SINCE {today_str})')
+            if status == 'OK' and msgs[0]:
+                acc_stats['today_received'] = len(msgs[0].split())
+                total_today_received += acc_stats['today_received']
+            
+            # За неделю (входящие)
+            week_str = week_ago.strftime('%d-%b-%Y')
+            status, msgs = mail.search(None, f'(SINCE {week_str})')
+            if status == 'OK' and msgs[0]:
+                acc_stats['week_total'] = len(msgs[0].split())
+            
+            # Отправленные сегодня
+            try:
+                mail.select('INBOX.Sent')
+                status, msgs = mail.search(None, f'(SINCE {today_str})')
+                if status == 'OK' and msgs[0]:
+                    acc_stats['today_sent'] = len(msgs[0].split())
+                    total_today_sent += acc_stats['today_sent']
+                
+                # За неделю (отправленные)
+                status, msgs = mail.search(None, f'(SINCE {week_str})')
+                if status == 'OK' and msgs[0]:
+                    acc_stats['week_total'] += len(msgs[0].split())
+            except:
+                pass
+            
+            total_week += acc_stats['week_total']
+            mail.logout()
+        except Exception as e:
+            print(f"Stats error for {acc['email']}: {e}")
+        
+        accounts_stats[acc['email']] = acc_stats
+    
+    return {
+        "today": {
+            "received": total_today_received,
+            "sent": total_today_sent
+        },
+        "week": {
+            "total": total_week
+        },
+        "accounts": accounts_stats
+    }
+
+
+# ==================== EMAIL ACCESS MANAGEMENT ====================
+
+@app.get("/api/email/access")
+async def get_email_access_settings(user: Dict = Depends(require_employee)):
+    """Получить настройки доступа к почте (только для superadmin)"""
+    if user.get('role') != 'superadmin':
+        raise HTTPException(status_code=403, detail="Доступ запрещён")
+    
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT id, email, name, role, email_access 
+            FROM users 
+            WHERE role IN ('employee', 'superadmin') AND is_active = 1
+            ORDER BY name
+        ''')
+        employees = []
+        for row in cursor.fetchall():
+            employees.append({
+                'id': row['id'],
+                'email': row['email'],
+                'name': row['name'] or row['email'],
+                'role': row['role'],
+                'email_access': row['email_access'].split(',') if row['email_access'] else []
+            })
+    
+    return {
+        'employees': employees,
+        'available_accounts': [{'email': a['email'], 'name': a['name']} for a in EMAIL_ACCOUNTS]
+    }
+
+
+@app.post("/api/email/access")
+async def update_email_access(
+    data: Dict,
+    user: Dict = Depends(require_employee)
+):
+    """Обновить настройки доступа к почте (только для superadmin)"""
+    if user.get('role') != 'superadmin':
+        raise HTTPException(status_code=403, detail="Доступ запрещён")
+    
+    user_id = data.get('user_id')
+    email_access = data.get('email_access', [])
+    
+    if not user_id:
+        raise HTTPException(status_code=400, detail="Не указан пользователь")
+    
+    # Преобразуем список в строку
+    access_str = ','.join(email_access) if email_access else None
+    
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('UPDATE users SET email_access = ? WHERE id = ?', (access_str, user_id))
+        conn.commit()
+    
+    return {"success": True, "message": "Доступ обновлён"}
+
