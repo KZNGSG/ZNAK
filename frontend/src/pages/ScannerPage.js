@@ -48,7 +48,7 @@ const ScannerPage = () => {
 
   return (
     <div className="fade-in">
-      <SEO />
+      <SEO title='Сканер DataMatrix' description='Проверка DataMatrix кода товара. Убедитесь, что маркировка нанесена правильно.' keywords='сканер datamatrix, проверка маркировки' canonical='/scanner' />
       {/* Hero Section */}
       <section className="relative py-16 sm:py-20 noise-bg overflow-hidden">
         <motion.div

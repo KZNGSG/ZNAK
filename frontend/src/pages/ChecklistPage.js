@@ -105,7 +105,7 @@ const ChecklistPage = () => {
 
   return (
     <div className="fade-in">
-      <SEO />
+      <SEO title='Чек-лист по маркировке' description='Пошаговый чек-лист для внедрения маркировки товаров на вашем предприятии.' keywords='чек-лист маркировка' canonical='/checklist' />
       {/* Hero Section */}
       <section className="relative py-16 sm:py-20 noise-bg overflow-hidden">
         <motion.div

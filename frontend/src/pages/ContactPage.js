@@ -119,7 +119,7 @@ const ContactPage = () => {
 
   return (
     <div className="py-12 bg-gradient-to-b from-slate-50 to-white min-h-screen">
-      <SEO />
+      <SEO title='Контакты' description='Свяжитесь с нами для консультации по маркировке товаров. Ответим на ваши вопросы в течение 30 минут.' keywords='контакты про маркируй, консультация маркировка' canonical='/contacts' />
       <div className="mx-auto max-w-[700px] px-4 sm:px-6 lg:px-8">
         {/* Back Button */}
         <button

@@ -295,7 +295,7 @@ const PartnersPage = () => {
 
   return (
     <div className="min-h-screen">
-      <SEO />
+      <SEO title='Партнерская программа' description='Станьте партнером Про.Маркируй. Зарабатывайте на маркировке товаров.' keywords='партнерская программа маркировка' canonical='/partners' />
       {/* Hero Section */}
       <section className="relative py-16 sm:py-20 noise-bg overflow-hidden">
         <motion.div

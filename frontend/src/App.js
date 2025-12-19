@@ -7,6 +7,7 @@ import { AdminAuthProvider } from './context/AdminAuthContext';
 import { EmployeeAuthProvider } from './context/EmployeeAuthContext';
 import Header from './components/Header';
 import Footer from './components/Footer';
+import GlobalSchema from './components/GlobalSchema';
 import HomePage from './pages/HomePage';
 import CheckProductPage from './pages/CheckProductPage';
 import ImportPage from './pages/ImportPage';
@@ -63,6 +64,7 @@ import EmployeeRoute from './components/employee/EmployeeRoute';
 import EmployeeLayout from './components/employee/EmployeeLayout';
 import EmployeePartners from './pages/employee/EmployeePartners';
 import EmployeeEducation from './pages/employee/EmployeeEducation';
+import EmployeeEmail from './pages/employee/EmployeeEmail';
 import EmployeeTasks from './pages/employee/EmployeeTasks';
 
 // Partner pages
@@ -102,6 +104,7 @@ function App() {
           <PartnerAuthProvider>
             <Router>
             <div className="App">
+              <GlobalSchema />
               <Toaster position="top-right" richColors />
               <Routes>
                 {/* Main site routes */}
@@ -260,6 +263,11 @@ function App() {
                 <Route path="/employee/tasks" element={
                   <EmployeeRoute>
                     <EmployeeLayout><EmployeeTasks /></EmployeeLayout>
+                  </EmployeeRoute>
+                } />
+                <Route path="/employee/email" element={
+                  <EmployeeRoute>
+                    <EmployeeLayout><EmployeeEmail /></EmployeeLayout>
                   </EmployeeRoute>
                 } />
 

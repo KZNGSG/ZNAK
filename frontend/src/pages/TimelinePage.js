@@ -15,8 +15,13 @@ import {
   Users,
   Package,
   ArrowRight,
-  AlertTriangle
+  AlertTriangle,
+  FileText,
+  ListChecks,
+  Ban,
+  ExternalLink
 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import SEO from '../components/SEO';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -74,6 +79,10 @@ const TimelinePage = () => {
   const [audienceFilter, setAudienceFilter] = useState([]);
   const [showOnlyUpcoming, setShowOnlyUpcoming] = useState(false);
 
+  // Requirements data from new API
+  const [requirements, setRequirements] = useState(null);
+  const [requirementsLoading, setRequirementsLoading] = useState(false);
+
   // Carousel state
   const carouselRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -83,6 +92,15 @@ const TimelinePage = () => {
     fetchData();
     fetchUpcomingStats();
   }, []);
+
+  // Fetch requirements when category changes
+  useEffect(() => {
+    if (selectedCategory) {
+      fetchRequirements(selectedCategory);
+    } else {
+      setRequirements(null);
+    }
+  }, [selectedCategory]);
 
   useEffect(() => {
     if (selectedCategory) {
@@ -119,6 +137,24 @@ const TimelinePage = () => {
       }
     } catch (error) {
       console.error('Failed to fetch upcoming stats:', error);
+    }
+  };
+
+  const fetchRequirements = async (categoryName) => {
+    setRequirementsLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/api/marking/requirements/${encodeURIComponent(categoryName)}`);
+      if (response.ok) {
+        const result = await response.json();
+        setRequirements(result);
+      } else {
+        setRequirements(null);
+      }
+    } catch (error) {
+      console.error('Failed to fetch requirements:', error);
+      setRequirements(null);
+    } finally {
+      setRequirementsLoading(false);
     }
   };
 
@@ -209,9 +245,138 @@ const TimelinePage = () => {
 
   const deadlineCards = Object.values(groupedDeadlines).slice(0, 8);
 
+  // Render deadlines tab content
+  const renderDeadlinesTab = () => {
+    if (!requirements?.deadlines) {
+      return (
+        <div className="px-5 py-8 text-center text-gray-500">
+          <Clock className="w-10 h-10 mx-auto mb-2 text-gray-300" />
+          <p className="text-sm">Нет данных о сроках</p>
+        </div>
+      );
+    }
+
+    const deadlineLabels = {
+      registration: 'Регистрация в ЧЗ',
+      integration_setup: 'Настройка интеграции',
+      testing: 'Тестирование',
+      marking_report: 'Отчёт о маркировке',
+      upd_transfer: 'Передача УПД',
+      retail_data: 'Данные о розничной продаже',
+      labeling: 'Нанесение маркировки',
+      code_order: 'Заказ кодов',
+      remains_marking: 'Маркировка остатков'
+    };
+
+    return (
+      <div className="divide-y divide-gray-100">
+        {Object.entries(requirements.deadlines).map(([key, value]) => (
+          <div key={key} className="px-5 py-3 flex items-start gap-3">
+            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+              <Clock className="w-4 h-4 text-blue-600" />
+            </div>
+            <div className="flex-1">
+              <div className="text-sm font-medium text-gray-900">
+                {deadlineLabels[key] || key}
+              </div>
+              <div className="text-sm text-gray-600 mt-0.5">
+                {value}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  // Render exceptions tab content
+  const renderExceptionsTab = () => {
+    if (!requirements?.exceptions || requirements.exceptions.length === 0) {
+      return (
+        <div className="px-5 py-8 text-center text-gray-500">
+          <Ban className="w-10 h-10 mx-auto mb-2 text-gray-300" />
+          <p className="text-sm">Нет исключений для этой категории</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="divide-y divide-gray-100">
+        {requirements.exceptions.map((exception, idx) => (
+          <div key={idx} className="px-5 py-3 flex items-start gap-3">
+            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
+              <Ban className="w-4 h-4 text-amber-600" />
+            </div>
+            <div className="flex-1">
+              <div className="text-sm text-gray-700">
+                {exception}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  // Render checklist tab content
+  const renderChecklistTab = () => {
+    if (!requirements?.checklist || requirements.checklist.length === 0) {
+      return (
+        <div className="px-5 py-8 text-center text-gray-500">
+          <ListChecks className="w-10 h-10 mx-auto mb-2 text-gray-300" />
+          <p className="text-sm">Нет чек-листа для этой категории</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="divide-y divide-gray-100">
+        {requirements.checklist.map((item, idx) => (
+          <div key={idx} className="px-5 py-3 flex items-start gap-3">
+            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center text-xs font-medium text-emerald-700">
+              {idx + 1}
+            </div>
+            <div className="flex-1">
+              <div className="text-sm text-gray-700">
+                {item}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  // Render decree info
+  const renderDecreeInfo = () => {
+    if (!requirements?.decree) return null;
+
+    return (
+      <div className="px-5 py-3 bg-gray-50 border-b border-gray-200">
+        <div className="flex items-center gap-2 text-sm">
+          <FileText className="w-4 h-4 text-gray-500" />
+          <span className="text-gray-600">Постановление:</span>
+          <span className="font-medium text-gray-900">
+            {requirements.decree.full_name || `№ ${requirements.decree.number} от ${requirements.decree.date}`}
+          </span>
+          {requirements.decree.url && (
+            <a
+              href={requirements.decree.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-yellow-600 hover:text-yellow-700 ml-1"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="max-w-[1400px] mx-auto px-4 py-6">
-      <SEO />
+      <SEO title='Сроки маркировки товаров 2025' description='Актуальные сроки ввода обязательной маркировки товаров в России. Календарь маркировки на 2025 год: одежда, обувь, молочка, вода, пиво.' keywords='сроки маркировки, календарь маркировки 2025, когда маркировка обязательна' canonical='/timeline' />
       {/* Header with Moscow Time */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
@@ -364,7 +529,7 @@ const TimelinePage = () => {
           </div>
         </div>
 
-        {/* Right: Timeline details */}
+        {/* Right: Timeline details with Tabs */}
         <div className="lg:col-span-2">
           {selectedCategoryData ? (
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -408,113 +573,186 @@ const TimelinePage = () => {
                 )}
               </div>
 
-              {/* Filters */}
-              <div className="px-5 py-2 border-b border-gray-200 bg-gray-50">
-                <div className="flex flex-wrap items-center gap-2 text-xs">
-                  <div className="flex items-center gap-1.5 text-gray-600">
-                    <Filter className="w-3.5 h-3.5" />
-                    Фильтры:
-                  </div>
-                  <label className="flex items-center gap-1 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={showOnlyUpcoming}
-                      onChange={(e) => setShowOnlyUpcoming(e.target.checked)}
-                      className="rounded border-gray-300 text-yellow-500 focus:ring-yellow-500 w-3.5 h-3.5"
-                    />
-                    Только предстоящие
-                  </label>
-                  <div className="h-3 w-px bg-gray-300" />
-                  {['Производитель', 'Импортёр', 'Оптовик', 'Розница'].map(aud => (
-                    <label key={aud} className="flex items-center gap-1 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={audienceFilter.includes(aud)}
-                        onChange={() => toggleAudienceFilter(aud)}
-                        className="rounded border-gray-300 text-yellow-500 focus:ring-yellow-500 w-3.5 h-3.5"
-                      />
-                      {aud}
-                    </label>
-                  ))}
-                </div>
-              </div>
+              {/* Decree info */}
+              {renderDecreeInfo()}
 
-              {/* Events list */}
-              <div className="divide-y divide-gray-100 max-h-[400px] overflow-y-auto">
-                {filterEvents(selectedCategoryData.events || []).map((event, idx) => (
-                  <div
-                    key={idx}
-                    className={`px-5 py-3 ${event.is_completed ? 'bg-white' : 'bg-amber-50/30'}`}
+              {/* Tabs */}
+              <Tabs defaultValue="timeline" className="w-full">
+                <TabsList className="w-full justify-start rounded-none border-b border-gray-200 bg-gray-50 p-0 h-auto">
+                  <TabsTrigger
+                    value="timeline"
+                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-yellow-500 data-[state=active]:bg-white px-4 py-2.5 text-sm"
                   >
-                    <div className="flex items-start gap-3">
-                      {/* Status icon */}
-                      <div className={`mt-0.5 flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${
-                        event.is_completed
-                          ? 'bg-emerald-100 text-emerald-600'
-                          : 'bg-amber-100 text-amber-600'
-                      }`}>
-                        {event.is_completed ? (
-                          <CheckCircle2 className="w-4 h-4" />
-                        ) : (
-                          <Clock className="w-4 h-4" />
-                        )}
+                    <Calendar className="w-4 h-4 mr-1.5" />
+                    События
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="deadlines"
+                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-yellow-500 data-[state=active]:bg-white px-4 py-2.5 text-sm"
+                  >
+                    <Clock className="w-4 h-4 mr-1.5" />
+                    Сроки
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="exceptions"
+                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-yellow-500 data-[state=active]:bg-white px-4 py-2.5 text-sm"
+                  >
+                    <Ban className="w-4 h-4 mr-1.5" />
+                    Исключения
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="checklist"
+                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-yellow-500 data-[state=active]:bg-white px-4 py-2.5 text-sm"
+                  >
+                    <ListChecks className="w-4 h-4 mr-1.5" />
+                    Чек-лист
+                  </TabsTrigger>
+                </TabsList>
+
+                {/* Timeline Tab */}
+                <TabsContent value="timeline" className="m-0">
+                  {/* Filters */}
+                  <div className="px-5 py-2 border-b border-gray-200 bg-gray-50">
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <div className="flex items-center gap-1.5 text-gray-600">
+                        <Filter className="w-3.5 h-3.5" />
+                        Фильтры:
                       </div>
-
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <span className={`text-sm font-medium ${event.is_completed ? 'text-gray-500' : 'text-gray-900'}`}>
-                            {event.date_display}
-                          </span>
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                            event.is_completed
-                              ? 'bg-gray-100 text-gray-500'
-                              : 'bg-amber-100 text-amber-700'
-                          }`}>
-                            {event.type_label}
-                          </span>
-                        </div>
-
-                        <h4 className={`text-sm mb-1 ${event.is_completed ? 'text-gray-600' : 'text-gray-900'}`}>
-                          {event.title}
-                        </h4>
-
-                        {/* Audiences */}
-                        <div className="flex flex-wrap gap-1">
-                          {event.audiences_display?.map(aud => {
-                            const Icon = audienceIcons[aud] || Users;
-                            return (
-                              <span key={aud} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-gray-100 rounded text-[10px] text-gray-600">
-                                <Icon className="w-2.5 h-2.5" />
-                                {aud}
-                              </span>
-                            );
-                          })}
-                        </div>
-
-                        {/* Description (collapsible) */}
-                        {event.description && (
-                          <details className="text-xs text-gray-600 mt-1">
-                            <summary className="cursor-pointer text-yellow-600 hover:text-yellow-700">
-                              Подробнее
-                            </summary>
-                            <p className="mt-1.5 p-2 bg-gray-50 rounded-lg whitespace-pre-line text-[11px]">
-                              {event.description}
-                            </p>
-                          </details>
-                        )}
-                      </div>
+                      <label className="flex items-center gap-1 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={showOnlyUpcoming}
+                          onChange={(e) => setShowOnlyUpcoming(e.target.checked)}
+                          className="rounded border-gray-300 text-yellow-500 focus:ring-yellow-500 w-3.5 h-3.5"
+                        />
+                        Только предстоящие
+                      </label>
+                      <div className="h-3 w-px bg-gray-300" />
+                      {['Производитель', 'Импортёр', 'Оптовик', 'Розница'].map(aud => (
+                        <label key={aud} className="flex items-center gap-1 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={audienceFilter.includes(aud)}
+                            onChange={() => toggleAudienceFilter(aud)}
+                            className="rounded border-gray-300 text-yellow-500 focus:ring-yellow-500 w-3.5 h-3.5"
+                          />
+                          {aud}
+                        </label>
+                      ))}
                     </div>
                   </div>
-                ))}
 
-                {filterEvents(selectedCategoryData.events || []).length === 0 && (
-                  <div className="px-5 py-8 text-center text-gray-500">
-                    <AlertCircle className="w-10 h-10 mx-auto mb-2 text-gray-300" />
-                    <p className="text-sm">Нет событий по выбранным фильтрам</p>
+                  {/* Events list */}
+                  <div className="divide-y divide-gray-100 max-h-[400px] overflow-y-auto">
+                    {filterEvents(selectedCategoryData.events || []).map((event, idx) => (
+                      <div
+                        key={idx}
+                        className={`px-5 py-3 ${event.is_completed ? 'bg-white' : 'bg-amber-50/30'}`}
+                      >
+                        <div className="flex items-start gap-3">
+                          {/* Status icon */}
+                          <div className={`mt-0.5 flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${
+                            event.is_completed
+                              ? 'bg-emerald-100 text-emerald-600'
+                              : 'bg-amber-100 text-amber-600'
+                          }`}>
+                            {event.is_completed ? (
+                              <CheckCircle2 className="w-4 h-4" />
+                            ) : (
+                              <Clock className="w-4 h-4" />
+                            )}
+                          </div>
+
+                          {/* Content */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <span className={`text-sm font-medium ${event.is_completed ? 'text-gray-500' : 'text-gray-900'}`}>
+                                {event.date_display}
+                              </span>
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                                event.is_completed
+                                  ? 'bg-gray-100 text-gray-500'
+                                  : 'bg-amber-100 text-amber-700'
+                              }`}>
+                                {event.type_label}
+                              </span>
+                            </div>
+
+                            <h4 className={`text-sm mb-1 ${event.is_completed ? 'text-gray-600' : 'text-gray-900'}`}>
+                              {event.title}
+                            </h4>
+
+                            {/* Audiences */}
+                            <div className="flex flex-wrap gap-1">
+                              {event.audiences_display?.map(aud => {
+                                const Icon = audienceIcons[aud] || Users;
+                                return (
+                                  <span key={aud} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-gray-100 rounded text-[10px] text-gray-600">
+                                    <Icon className="w-2.5 h-2.5" />
+                                    {aud}
+                                  </span>
+                                );
+                              })}
+                            </div>
+
+                            {/* Description (collapsible) */}
+                            {event.description && (
+                              <details className="text-xs text-gray-600 mt-1">
+                                <summary className="cursor-pointer text-yellow-600 hover:text-yellow-700">
+                                  Подробнее
+                                </summary>
+                                <p className="mt-1.5 p-2 bg-gray-50 rounded-lg whitespace-pre-line text-[11px]">
+                                  {event.description}
+                                </p>
+                              </details>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    {filterEvents(selectedCategoryData.events || []).length === 0 && (
+                      <div className="px-5 py-8 text-center text-gray-500">
+                        <AlertCircle className="w-10 h-10 mx-auto mb-2 text-gray-300" />
+                        <p className="text-sm">Нет событий по выбранным фильтрам</p>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                </TabsContent>
+
+                {/* Deadlines Tab */}
+                <TabsContent value="deadlines" className="m-0 max-h-[400px] overflow-y-auto">
+                  {requirementsLoading ? (
+                    <div className="px-5 py-8 text-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-yellow-500 mx-auto"></div>
+                    </div>
+                  ) : (
+                    renderDeadlinesTab()
+                  )}
+                </TabsContent>
+
+                {/* Exceptions Tab */}
+                <TabsContent value="exceptions" className="m-0 max-h-[400px] overflow-y-auto">
+                  {requirementsLoading ? (
+                    <div className="px-5 py-8 text-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-yellow-500 mx-auto"></div>
+                    </div>
+                  ) : (
+                    renderExceptionsTab()
+                  )}
+                </TabsContent>
+
+                {/* Checklist Tab */}
+                <TabsContent value="checklist" className="m-0 max-h-[400px] overflow-y-auto">
+                  {requirementsLoading ? (
+                    <div className="px-5 py-8 text-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-yellow-500 mx-auto"></div>
+                    </div>
+                  ) : (
+                    renderChecklistTab()
+                  )}
+                </TabsContent>
+              </Tabs>
             </div>
           ) : (
             <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">

@@ -12,7 +12,7 @@ const ConsultationPage = () => {
 
   return (
     <div className="py-12 bg-gradient-to-b from-[rgb(var(--brand-yellow-50))] to-white min-h-screen">
-      <SEO />
+      <SEO title='Консультация по маркировке' description='Бесплатная консультация эксперта по маркировке товаров. Ответим на все вопросы по системе Честный ЗНАК.' keywords='консультация маркировка, помощь честный знак' canonical='/consultation' />
       <div className="mx-auto max-w-[900px] px-4 sm:px-6 lg:px-8">
         {/* Back button */}
         <Button

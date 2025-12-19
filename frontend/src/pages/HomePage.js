@@ -41,7 +41,12 @@ const HomePage = () => {
 
   return (
     <div className="fade-in">
-      <SEO />
+      <SEO
+        title='Маркировка товаров под ключ'
+        description='Полное сопровождение маркировки товаров. Проверка подлежит ли товар маркировке, подбор оборудования, обучение работе с Честный ЗНАК. Бесплатная консультация!'
+        keywords='маркировка товаров, честный знак, маркировка под ключ, сопровождение маркировки'
+        canonical='/'
+      />
       {/* Hero Section - Enhanced */}
       <section className="relative py-20 sm:py-32 noise-bg overflow-hidden" data-testid="hero-section">
         {/* Enhanced decorative elements - Yellow glow */}
@@ -93,7 +98,7 @@ const HomePage = () => {
               <div className="flex flex-wrap gap-4 pt-4">
                 <Button
                   onClick={() => navigate('/check')}
-                  className="btn-gradient rounded-2xl px-8 py-4 text-base font-bold h-auto shadow-lg hover:shadow-2xl"
+                  className="btn-gradient btn-pulse rounded-2xl px-8 py-4 text-base font-bold h-auto"
                   data-testid="hero-primary-cta"
                 >
                   Проверить товар →

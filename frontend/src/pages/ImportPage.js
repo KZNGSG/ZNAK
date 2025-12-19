@@ -93,7 +93,7 @@ const ImportPage = () => {
 
   return (
     <div className="py-12 bg-gradient-to-b from-slate-50 to-white min-h-screen">
-      <SEO />
+      <SEO title='Импорт товаров и маркировка' description='Как правильно завезти и промаркировать импортный товар. Пошаговая инструкция по маркировке импорта в системе Честный ЗНАК.' keywords='импорт маркировка, маркировка импортного товара' canonical='/import' />
       <div className="mx-auto max-w-[1200px] px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="text-3xl sm:text-4xl font-semibold text-primary mb-2">Импорт товаров</h1>

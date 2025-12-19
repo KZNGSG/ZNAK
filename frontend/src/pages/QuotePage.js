@@ -638,7 +638,7 @@ const QuotePage = () => {
 
   return (
     <div className="py-12 bg-gradient-to-b from-slate-50 to-white min-h-screen">
-      <SEO />
+      <SEO title='Коммерческое предложение' description='Получите коммерческое предложение на услуги маркировки товаров.' keywords='КП маркировка' canonical='/quote' noindex={true} />
       <div className="mx-auto max-w-[1200px] px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">

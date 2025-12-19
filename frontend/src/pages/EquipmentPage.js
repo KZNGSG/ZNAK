@@ -81,7 +81,7 @@ const EquipmentPage = () => {
 
   return (
     <div className="py-12 bg-gradient-to-b from-slate-50 to-white min-h-screen">
-      <SEO />
+      <SEO title='Оборудование для маркировки товаров' description='Подбор оборудования для маркировки: принтеры этикеток, сканеры DataMatrix, ТСД. Помощь в выборе под ваши задачи и бюджет.' keywords='оборудование для маркировки, принтер datamatrix, сканер честный знак' canonical='/equipment' />
       <div className="mx-auto max-w-[1200px] px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="text-3xl sm:text-4xl font-semibold text-primary mb-2">Оснащение производства</h1>

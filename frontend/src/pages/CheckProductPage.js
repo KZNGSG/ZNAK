@@ -417,7 +417,12 @@ const CheckProductPage = () => {
 
   return (
     <div className="py-12 bg-gradient-to-b from-slate-50 to-white min-h-screen">
-      <SEO />
+      <SEO
+        title='Проверка товара на маркировку'
+        description='Бесплатно проверьте, подлежит ли ваш товар обязательной маркировке по коду ТН ВЭД. Актуальная база товаров системы Честный ЗНАК на 2025 год.'
+        keywords='проверка маркировки, подлежит ли товар маркировке, ТН ВЭД маркировка'
+        canonical='/check'
+      />
       <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
         <div className="mb-8 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
           <div>
