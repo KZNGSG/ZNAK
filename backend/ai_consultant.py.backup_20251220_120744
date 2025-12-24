@@ -1,0 +1,776 @@
+"""
+AI Consultant - Модуль AI-консультанта для promarkirui.ru
+Версия с LangGraph агентом
+"""
+
+import os
+import json
+import uuid
+import sqlite3
+import httpx
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Annotated, TypedDict, Literal
+from contextlib import contextmanager
+
+from fastapi import APIRouter, HTTPException, Request, Depends, BackgroundTasks
+from pydantic import BaseModel
+
+# LangGraph imports
+from langchain_anthropic import ChatAnthropic
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+from langchain_core.tools import tool
+from langgraph.graph import StateGraph, END
+from langgraph.prebuilt import ToolNode
+from langgraph.graph.message import add_messages
+
+# ==================== НАСТРОЙКИ ====================
+
+ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY')
+TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '')
+TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID', '')
+
+# Цены на токены Claude (за 1M токенов)
+PRICING = {
+    'claude-sonnet-4-20250514': {'input': 3.0, 'output': 15.0},
+    'claude-3-5-sonnet-20241022': {'input': 3.0, 'output': 15.0},
+    'claude-3-haiku-20240307': {'input': 0.25, 'output': 1.25},
+}
+
+# ==================== БАЗА ДАННЫХ ====================
+
+DB_PATH = '/var/www/promarkirui/backend/promarkirui.db'
+
+@contextmanager
+def get_db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    try:
+        yield conn
+    finally:
+        conn.close()
+
+# ==================== МОДЕЛИ API ====================
+
+class ChatMessage(BaseModel):
+    message: str
+    session_id: Optional[str] = None
+
+class SettingsUpdate(BaseModel):
+    setting_key: str
+    setting_value: str
+
+class KnowledgeItem(BaseModel):
+    category: str
+    question: Optional[str] = None
+    answer: str
+    keywords: Optional[str] = None
+    priority: int = 0
+
+class QuickReply(BaseModel):
+    trigger_words: str
+    response: str
+
+# ==================== LANGGRAPH AGENT ====================
+
+# Ленивая загрузка данных о товарах (избегаем кругового импорта)
+_categories_data = None
+_products_lookup = None
+
+def get_categories_data():
+    """Получить данные о категориях (ленивая загрузка)"""
+    global _categories_data
+    if _categories_data is None:
+        try:
+            from server import CATEGORIES_DATA
+            _categories_data = CATEGORIES_DATA
+        except ImportError:
+            _categories_data = []
+    return _categories_data
+
+def get_products_lookup():
+    """Получить справочник товаров (ленивая загрузка)"""
+    global _products_lookup
+    if _products_lookup is None:
+        try:
+            from server import PRODUCTS_LOOKUP
+            _products_lookup = PRODUCTS_LOOKUP
+        except ImportError:
+            _products_lookup = {}
+    return _products_lookup
+
+# Состояние агента
+class AgentState(TypedDict):
+    messages: Annotated[list, add_messages]
+
+# ==================== ИНСТРУМЕНТЫ АГЕНТА ====================
+
+@tool
+def search_product(query: str) -> str:
+    """
+    Поиск товара по названию. Используй когда клиент спрашивает о товаре.
+
+    Args:
+        query: Название товара (обувь, молоко, одежда и т.д.)
+    """
+    query_lower = query.lower()
+    results = []
+    categories = get_categories_data()
+
+    for category in categories:
+        for subcategory in category.get("subcategories", []):
+            if query_lower in subcategory.get("name", "").lower() or query_lower in category.get("name", "").lower():
+                for product in subcategory.get("products", [])[:3]:
+                    status = product.get("marking_status", "unknown")
+                    since = product.get("mandatory_since", "")
+
+                    status_text = {
+                        "mandatory": "✅ Обязательная",
+                        "voluntary": "📋 Добровольная",
+                        "planned": "📅 Планируется"
+                    }.get(status, "❓")
+
+                    results.append(f"• {product.get('name')} (ТН ВЭД: {product.get('tnved')}) — {status_text}" + (f", с {since}" if since else ""))
+
+                if len(results) >= 5:
+                    break
+
+    if results:
+        return f"Найдено по запросу '{query}':\n" + "\n".join(results[:5])
+    return f"Товар '{query}' не найден. Уточните название или опишите товар подробнее."
+
+
+@tool
+def check_tnved(code: str) -> str:
+    """
+    Проверка по коду ТН ВЭД. Используй когда клиент называет код.
+
+    Args:
+        code: Код ТН ВЭД (например 6403, 0401)
+    """
+    code = code.strip().replace(" ", "")
+    products = get_products_lookup()
+
+    for product_id, product in products.items():
+        tnved = product.get("tnved", "").replace(" ", "")
+        if tnved.startswith(code) or code.startswith(tnved[:4]):
+            status = product.get("marking_status")
+            since = product.get("mandatory_since", "")
+            timeline = product.get("timeline", {})
+
+            if status == "mandatory":
+                reqs = timeline.get("current_requirements", ["Регистрация в Честном ЗНАКе"])
+                return f"""✅ Код {code} — ОБЯЗАТЕЛЬНАЯ маркировка!
+
+📦 {product.get('name')}
+📅 С: {since or timeline.get('start_date', 'уточняйте')}
+
+Требования:
+""" + "\n".join(f"• {r}" for r in reqs[:4]) + "\n\nНужна помощь с внедрением? Оставьте заявку!"
+
+            elif status == "voluntary":
+                return f"📋 Код {code} — добровольная маркировка. Товар: {product.get('name')}"
+
+            elif status == "planned":
+                return f"📅 Код {code} — маркировка планируется с {since}. Товар: {product.get('name')}"
+
+    return f"Код {code} не найден в базе маркируемых товаров."
+
+
+@tool
+def get_fines() -> str:
+    """Информация о штрафах. Используй когда спрашивают о штрафах."""
+    return """⚠️ ШТРАФЫ за нарушения маркировки:
+
+**Производство/ввоз без маркировки:**
+• Юрлица: 50 000 - 100 000 ₽ + конфискация
+• ИП: 5 000 - 10 000 ₽
+
+**Продажа без маркировки:**
+• Юрлица: 50 000 - 300 000 ₽ + конфискация
+• ИП: 5 000 - 10 000 ₽
+
+**Уголовная (от 1,5 млн ₽):** до 3 лет
+
+⚡ Штрафы за КАЖДУЮ единицу товара!
+
+Лучше внедрить маркировку — поможем!"""
+
+
+@tool
+def get_equipment(business_type: str) -> str:
+    """
+    Рекомендации по оборудованию.
+
+    Args:
+        business_type: Тип бизнеса (магазин, склад, производство)
+    """
+    bt = business_type.lower()
+
+    if any(w in bt for w in ["магазин", "розниц", "малый", "небольш"]):
+        return """🏪 Для малого бизнеса/розницы:
+
+• Принтер: TSC TE200 или Godex G500 (от 15 000 ₽)
+• Сканер: Honeywell 1450g (от 5 000 ₽)
+• Итого: 20 000 - 35 000 ₽
+
+Поможем подобрать и настроить — оставьте заявку!"""
+
+    elif any(w in bt for w in ["склад", "опт", "средн"]):
+        return """📦 Для склада/опта:
+
+• Принтер: Zebra ZD220 (от 25 000 ₽)
+• ТСД: Urovo DT40 (от 30 000 ₽)
+• Сканер: Zebra DS4608 (от 8 000 ₽)
+• Итого: 60 000 - 100 000 ₽
+
+Нужна помощь с выбором? Оставьте заявку!"""
+
+    else:
+        return """🏭 Для производства:
+
+• Промышленный принтер: Zebra ZT230 (от 80 000 ₽)
+• Аппликатор: от 150 000 ₽
+• ТСД: Zebra MC9300 (от 60 000 ₽)
+• Итого: от 300 000 ₽
+
+Проведём аудит и подберём решение — оставьте заявку!"""
+
+
+@tool
+def get_registration_guide() -> str:
+    """Как зарегистрироваться в Честном ЗНАКе."""
+    return """📋 Регистрация в Честном ЗНАКе:
+
+1️⃣ Получите КЭП (электронную подпись) — 1-3 дня
+2️⃣ Зарегистрируйтесь на markirovka.crpt.ru
+3️⃣ Настройте ЭДО (Диадок, СБИС, 1С-ЭДО)
+4️⃣ Подключите оборудование
+5️⃣ Закажите коды (50 коп. за код)
+
+⏱️ Весь процесс: 3-7 дней
+
+Сложно разобраться? Поможем пройти регистрацию — оставьте заявку!"""
+
+
+@tool
+def site_help(question: str) -> str:
+    """
+    Помощь по сайту promarkirui.ru
+
+    Args:
+        question: Что ищет клиент
+    """
+    q = question.lower()
+
+    if any(w in q for w in ["проверить", "срок", "товар"]):
+        return "🔍 Проверить товар: на главной странице выберите категорию → подкатегорию → увидите статус. Или спросите меня!"
+
+    if any(w in q for w in ["кп", "цен", "стоим", "заказ"]):
+        return "📄 КП: нажмите 'Получить КП' на сайте или скажите мне что нужно — передам менеджеру!"
+
+    if any(w in q for w in ["обуч", "курс"]):
+        return "📚 Обучение: раздел 'Обучение' на сайте. Хотите записаться? Оставьте заявку!"
+
+    return """🌐 На сайте promarkirui.ru:
+• Главная — проверка товаров
+• Обучение — курсы
+• Партнёрам — партнёрская программа
+
+Что ищете? Помогу!"""
+
+
+_created_requests = set()  # Хранит phone для защиты от дублей
+
+@tool
+def create_request(name: str, phone: str, request_type: str, comment: str) -> str:
+    """
+    Создать заявку. ОБЯЗАТЕЛЬНО используй когда клиент ВПЕРВЫЕ оставляет имя и телефон!
+    НЕ вызывай повторно если уже создал заявку для этого клиента.
+
+    Args:
+        name: Имя клиента
+        phone: Телефон
+        request_type: Тип (консультация, КП, обучение)
+        comment: Описание запроса
+    """
+    # Защита от дублей
+    phone_clean = ''.join(c for c in phone if c.isdigit())[-10:]
+    if phone_clean in _created_requests:
+        print(f"[CREATE_REQUEST] Дубль! Заявка для {phone} уже создана")
+        return f"Заявка для {name} уже передана экспертам, скоро позвонят!"
+
+    print(f"[CREATE_REQUEST] Вызван инструмент! name={name}, phone={phone}, type={request_type}")
+    try:
+        response = httpx.post(
+            "http://localhost:8001/api/contact/send",
+            json={
+                "name": name,
+                "phone": phone,
+                "request_type": f"AI-бот: {request_type}",
+                "comment": f"[От AI-консультанта]\n{comment}",
+                "consent": True
+            },
+            timeout=10
+        )
+        print(f"[CREATE_REQUEST] Response: {response.status_code} - {response.text[:200]}")
+
+        if response.status_code == 200:
+            _created_requests.add(phone_clean)  # Запоминаем чтобы не дублить
+            return f"Заявка передана! Эксперты свяжутся с {name} в течение 15 минут."
+        return f"Произошла ошибка: {response.status_code}. Попробуйте ещё раз."
+    except Exception as e:
+        print(f"[CREATE_REQUEST] Error: {e}")
+        _created_requests.add(phone_clean)  # Даже при ошибке запоминаем
+        return "Заявка передана экспертам, скоро свяжутся!"
+
+
+@tool
+def call_manager(client_info: str, question: str, summary: str) -> str:
+    """
+    Позвать менеджера. Используй когда не можешь помочь или клиент просит.
+
+    Args:
+        client_info: Информация о клиенте
+        question: Вопрос
+        summary: Резюме диалога
+    """
+    if TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID:
+        try:
+            msg = f"🤖 Запрос от AI-бота\n\n👤 {client_info}\n❓ {question}\n📝 {summary}"
+            httpx.post(
+                f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
+                json={"chat_id": TELEGRAM_CHAT_ID, "text": msg},
+                timeout=10
+            )
+        except:
+            pass
+
+    return "✅ Менеджер уведомлён и скоро свяжется!"
+
+
+# ==================== СИСТЕМНЫЙ ПРОМПТ ====================
+
+SYSTEM_PROMPT = """Ты — Мария, консультант компании Про.Маркируй. Общаешься как живой человек, НЕ как бот.
+
+🎯 ЦЕЛЬ: Выявить потребность, собрать контакт, передать эксперту.
+
+⚠️ ВАЖНО: Ты уже поздоровалась с клиентом! НЕ здоровайся повторно (не пиши "привет", "добрый день", "здравствуйте" в начале). Сразу отвечай по делу.
+
+📋 КАК ОБЩАТЬСЯ:
+
+1. **КОРОТКО** — 1-2 предложения максимум, как в мессенджере
+2. **ПО-ЧЕЛОВЕЧЕСКИ** — без официоза, дружелюбно, с опечатками иногда можно
+3. **ЗАДАВАЙ ВОПРОСЫ** — выясняй ситуацию клиента:
+   - Какой товар/бизнес?
+   - Из какого города?
+   - Сколько примерно позиций/кодов нужно?
+   - Уже работаете с маркировкой или только планируете?
+
+4. **НЕ ДАВАЙ ДЛИННЫХ ЛЕКЦИЙ** — если спрашивают про штрафы, скажи коротко и спроси "а у вас какая ситуация?"
+
+5. **ВЕДИ К КОНТАКТУ** — после 2-3 вопросов предложи:
+   "Слушайте, давайте я передам вашу ситуацию нашим экспертам — они детально всё расскажут. Куда вам удобнее написать — в телеграм, ватсап или лучше позвонить?"
+
+6. **СБОР КОНТАКТА** — когда клиент готов:
+   "Оставьте плиз номер телефона, напишут в течение 15 минут"
+   После получения: "Отлично, передал! В течение 15 минут с вами свяжутся. Если что — я тут)"
+
+⚠️ ВАЖНО:
+- Когда клиент ВПЕРВЫЕ даёт телефон — вызови create_request ОДИН раз!
+- После создания заявки НЕ вызывай create_request повторно
+- Никогда не говори что ты бот/AI/искусственный интеллект
+- Если спрашивают "ты бот?" — отвечай уверенно: "Нет, я Мария, консультант)"
+- НЕ используй эмодзи вообще — это выглядит как бот
+- Не отправляй на другие сайты
+
+ПРИМЕРЫ ОТВЕТОВ:
+❌ Плохо: "Здравствуйте! Я AI-консультант. Маркировка обязательна для следующих категорий товаров: 1) Обувь 2) Одежда 3) Молочная продукция..."
+✅ Хорошо: "Добрый день) у вас вопрос по маркировке?"
+
+❌ Плохо: "Штрафы за отсутствие маркировки составляют от 50 000 до 300 000 рублей для юридических лиц..."
+✅ Хорошо: "Штрафы серьёзные — до 300к для юрлиц. А у вас какая ситуация, уже работаете с маркировкой?"
+
+Отвечай на русском, коротко и по делу."""
+
+
+# ==================== СОЗДАНИЕ АГЕНТА ====================
+
+_agent = None
+
+def create_agent():
+    """Создать LangGraph агента"""
+    model = ChatAnthropic(
+        model="claude-sonnet-4-20250514",
+        temperature=0.3,
+        max_tokens=1024,
+        api_key=ANTHROPIC_API_KEY
+    )
+
+    tools = [
+        search_product,
+        check_tnved,
+        get_fines,
+        get_equipment,
+        get_registration_guide,
+        site_help,
+        create_request,
+        call_manager
+    ]
+
+    model_with_tools = model.bind_tools(tools)
+
+    graph = StateGraph(AgentState)
+
+    def call_model(state: AgentState):
+        messages = state["messages"]
+        system = SystemMessage(content=SYSTEM_PROMPT)
+        response = model_with_tools.invoke([system] + messages)
+        return {"messages": [response]}
+
+    def should_continue(state: AgentState) -> Literal["tools", "__end__"]:
+        last_message = state["messages"][-1]
+        if hasattr(last_message, 'tool_calls') and last_message.tool_calls:
+            return "tools"
+        return "__end__"
+
+    graph.add_node("agent", call_model)
+    graph.add_node("tools", ToolNode(tools))
+
+    graph.set_entry_point("agent")
+    graph.add_conditional_edges("agent", should_continue)
+    graph.add_edge("tools", "agent")
+
+    return graph.compile()
+
+
+def get_agent():
+    """Получить агента (singleton)"""
+    global _agent
+    if _agent is None:
+        _agent = create_agent()
+    return _agent
+
+
+# ==================== РОУТЕР ====================
+
+router = APIRouter(prefix='/api/ai', tags=['AI Consultant'])
+
+
+def get_settings() -> Dict:
+    """Получить настройки AI"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT setting_key, setting_value FROM ai_settings')
+        return {row['setting_key']: row['setting_value'] for row in cursor.fetchall()}
+
+
+def check_quick_reply(message: str) -> Optional[str]:
+    """Проверить быстрые ответы — только для простых сообщений без вопросов"""
+    message_lower = message.lower().strip()
+
+    # Если есть знак вопроса — это вопрос, не используем quick reply
+    if '?' in message_lower:
+        return None
+
+    # Быстрые ответы только для очень коротких сообщений (приветствия, благодарности)
+    if len(message_lower) > 25:
+        return None
+
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT trigger_words, response FROM ai_quick_replies WHERE is_active = 1')
+
+        for row in cursor.fetchall():
+            triggers = [t.strip().lower() for t in row['trigger_words'].split(',')]
+            for trigger in triggers:
+                # Точное совпадение или триггер + знак препинания
+                if message_lower == trigger or message_lower in [trigger + '!', trigger + '.', trigger + ',']:
+                    return row['response']
+
+    return None
+
+
+@router.post('/chat')
+async def chat_endpoint(data: ChatMessage):
+    """Основной эндпоинт чата"""
+    settings = get_settings()
+
+    # Проверяем активность бота
+    if settings.get('is_active') != 'true':
+        return {"response": "Бот временно недоступен. Позвоните нам!", "session_id": data.session_id}
+
+    # Проверяем быстрые ответы
+    quick = check_quick_reply(data.message)
+    if quick:
+        return {"response": quick, "session_id": data.session_id or str(uuid.uuid4())}
+
+    # Создаём/получаем сессию
+    session_id = data.session_id or str(uuid.uuid4())
+
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        # Проверяем существование диалога
+        cursor.execute('SELECT id FROM ai_conversations WHERE session_id = ?', (session_id,))
+        conv = cursor.fetchone()
+
+        if not conv:
+            cursor.execute('''
+                INSERT INTO ai_conversations (session_id, status, started_at, last_message_at)
+                VALUES (?, 'active', ?, ?)
+            ''', (session_id, datetime.now().isoformat(), datetime.now().isoformat()))
+            conn.commit()
+            conv_id = cursor.lastrowid
+        else:
+            conv_id = conv['id']
+
+        # Сохраняем сообщение пользователя
+        cursor.execute('''
+            INSERT INTO ai_messages (conversation_id, role, content, created_at)
+            VALUES (?, 'user', ?, ?)
+        ''', (conv_id, data.message, datetime.now().isoformat()))
+        conn.commit()
+
+        # Загружаем историю
+        cursor.execute('''
+            SELECT role, content FROM ai_messages
+            WHERE conversation_id = ?
+            ORDER BY created_at
+            LIMIT 20
+        ''', (conv_id,))
+        history = [{"role": row['role'], "content": row['content']} for row in cursor.fetchall()]
+
+    # Вызываем агента
+    try:
+        agent = get_agent()
+
+        # Конвертируем историю
+        messages = []
+        for msg in history[:-1]:  # Без последнего (текущего) сообщения
+            if msg["role"] == "user":
+                messages.append(HumanMessage(content=msg["content"]))
+            else:
+                messages.append(AIMessage(content=msg["content"]))
+
+        messages.append(HumanMessage(content=data.message))
+
+        # Вызов агента
+        result = agent.invoke({"messages": messages})
+        response_content = result["messages"][-1].content
+
+        # Обработка ответа — может быть строкой или списком
+        if isinstance(response_content, list):
+            # Если список — извлекаем текстовые части
+            response_text = ""
+            for item in response_content:
+                if isinstance(item, dict) and item.get("type") == "text":
+                    response_text += item.get("text", "")
+                elif isinstance(item, str):
+                    response_text += item
+            if not response_text:
+                response_text = "Простите, не смог обработать ответ. Попробуйте ещё раз)"
+        else:
+            response_text = str(response_content)
+
+        # Считаем токены (приблизительно)
+        input_tokens = sum(len(str(m.content)) // 4 for m in messages)
+        output_tokens = len(response_text) // 4
+
+    except Exception as e:
+        print(f"Agent error: {e}")
+        response_text = "Извините, произошла ошибка. Попробуйте позже или позвоните нам!"
+        input_tokens = 0
+        output_tokens = 0
+
+    # Сохраняем ответ
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        cursor.execute('''
+            INSERT INTO ai_messages (conversation_id, role, content, tokens_input, tokens_output, created_at)
+            VALUES (?, 'assistant', ?, ?, ?, ?)
+        ''', (conv_id, response_text, input_tokens, output_tokens, datetime.now().isoformat()))
+
+        cursor.execute('''
+            UPDATE ai_conversations SET last_message_at = ? WHERE id = ?
+        ''', (datetime.now().isoformat(), conv_id))
+
+        # Записываем использование токенов
+        model = settings.get('model', 'claude-sonnet-4-20250514')
+        pricing = PRICING.get(model, PRICING['claude-sonnet-4-20250514'])
+        cost = (input_tokens * pricing['input'] + output_tokens * pricing['output']) / 1_000_000
+
+        cursor.execute('''
+            INSERT INTO ai_token_usage (conversation_id, model, tokens_input, tokens_output, cost_usd)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (conv_id, model, input_tokens, output_tokens, cost))
+
+        conn.commit()
+
+    return {"response": response_text, "session_id": session_id}
+
+
+# ==================== ОСТАЛЬНЫЕ ЭНДПОИНТЫ (без изменений) ====================
+
+@router.get('/stats')
+async def get_stats():
+    """Статистика AI"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        today = datetime.now().strftime('%Y-%m-%d')
+
+        # Диалоги
+        cursor.execute('SELECT COUNT(*) as total FROM ai_conversations')
+        total_convs = cursor.fetchone()['total']
+
+        cursor.execute('SELECT COUNT(*) as today FROM ai_conversations WHERE date(started_at) = ?', (today,))
+        today_convs = cursor.fetchone()['today']
+
+        cursor.execute("SELECT COUNT(*) as leads FROM ai_conversations WHERE status = 'lead'")
+        leads = cursor.fetchone()['leads']
+
+        # Токены
+        cursor.execute('SELECT SUM(tokens_input) as inp, SUM(tokens_output) as out, SUM(cost_usd) as cost FROM ai_token_usage')
+        tokens = cursor.fetchone()
+
+        cursor.execute('SELECT SUM(cost_usd) as cost FROM ai_token_usage WHERE date(created_at) = ?', (today,))
+        today_cost = cursor.fetchone()['cost'] or 0
+
+        # По дням
+        cursor.execute('''
+            SELECT date(created_at) as date, SUM(cost_usd) as cost, COUNT(*) as requests
+            FROM ai_token_usage
+            GROUP BY date(created_at)
+            ORDER BY date DESC
+            LIMIT 7
+        ''')
+        daily = [{"date": row['date'], "cost": row['cost'], "requests": row['requests']} for row in cursor.fetchall()]
+
+        return {
+            "conversations": {"total": total_convs, "today": today_convs, "leads": leads},
+            "tokens": {
+                "total_input": tokens['inp'] or 0,
+                "total_output": tokens['out'] or 0,
+                "total_cost_usd": tokens['cost'] or 0,
+                "today_cost_usd": today_cost
+            },
+            "daily": daily
+        }
+
+
+@router.get('/conversations')
+async def get_conversations():
+    """Список диалогов"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT c.*,
+                   (SELECT content FROM ai_messages WHERE conversation_id = c.id AND role = 'user' ORDER BY created_at LIMIT 1) as first_message,
+                   (SELECT COUNT(*) FROM ai_messages WHERE conversation_id = c.id) as message_count
+            FROM ai_conversations c
+            ORDER BY c.last_message_at DESC
+            LIMIT 100
+        ''')
+        return [dict(row) for row in cursor.fetchall()]
+
+
+@router.get('/conversations/{conv_id}')
+async def get_conversation(conv_id: int):
+    """Детали диалога"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        cursor.execute('SELECT * FROM ai_conversations WHERE id = ?', (conv_id,))
+        conv = cursor.fetchone()
+        if not conv:
+            raise HTTPException(404, "Conversation not found")
+
+        cursor.execute('SELECT * FROM ai_messages WHERE conversation_id = ? ORDER BY created_at', (conv_id,))
+        messages = [dict(row) for row in cursor.fetchall()]
+
+        return {"conversation": dict(conv), "messages": messages}
+
+
+@router.get('/settings')
+async def get_settings_endpoint():
+    """Получить настройки"""
+    return get_settings()
+
+
+@router.post('/settings')
+async def update_settings(data: SettingsUpdate):
+    """Обновить настройку"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO ai_settings (setting_key, setting_value)
+            VALUES (?, ?)
+            ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value
+        ''', (data.setting_key, data.setting_value))
+        conn.commit()
+    return {"success": True}
+
+
+@router.get('/knowledge')
+async def get_knowledge():
+    """Получить базу знаний"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM ai_knowledge_base ORDER BY priority DESC')
+        return [dict(row) for row in cursor.fetchall()]
+
+
+@router.post('/knowledge')
+async def add_knowledge(data: KnowledgeItem):
+    """Добавить в базу знаний"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO ai_knowledge_base (category, question, answer, priority, is_active)
+            VALUES (?, ?, ?, ?, 1)
+        ''', (data.category, data.question, data.answer, data.priority))
+        conn.commit()
+        return {"id": cursor.lastrowid}
+
+
+@router.delete('/knowledge/{item_id}')
+async def delete_knowledge(item_id: int):
+    """Удалить из базы знаний"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM ai_knowledge_base WHERE id = ?', (item_id,))
+        conn.commit()
+    return {"success": True}
+
+
+@router.get('/quick-replies')
+async def get_quick_replies():
+    """Получить быстрые ответы"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM ai_quick_replies ORDER BY id')
+        return [dict(row) for row in cursor.fetchall()]
+
+
+@router.post('/quick-replies')
+async def add_quick_reply(data: QuickReply):
+    """Добавить быстрый ответ"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO ai_quick_replies (trigger_words, response, is_active)
+            VALUES (?, ?, 1)
+        ''', (data.trigger_words, data.response))
+        conn.commit()
+        return {"id": cursor.lastrowid}
+
+
+@router.delete('/quick-replies/{item_id}')
+async def delete_quick_reply(item_id: int):
+    """Удалить быстрый ответ"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM ai_quick_replies WHERE id = ?', (item_id,))
+        conn.commit()
+    return {"success": True}

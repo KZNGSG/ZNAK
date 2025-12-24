@@ -8,7 +8,7 @@ import {
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { toast } from 'sonner';
-import SEO from '../components/SEO';
+import SEO, { schemas } from '../components/SEO';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 

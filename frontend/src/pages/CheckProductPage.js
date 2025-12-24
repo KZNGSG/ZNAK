@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Stepper from '../components/Stepper';
-import SEO from '../components/SEO';
+import SEO, { schemas } from '../components/SEO';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -421,7 +421,7 @@ const CheckProductPage = () => {
         title='Проверка товара на маркировку'
         description='Бесплатно проверьте, подлежит ли ваш товар обязательной маркировке по коду ТН ВЭД. Актуальная база товаров системы Честный ЗНАК на 2025 год.'
         keywords='проверка маркировки, подлежит ли товар маркировке, ТН ВЭД маркировка'
-        canonical='/check'
+        canonical='/check' schema={[schemas.organization, schemas.breadcrumb([{name: 'Главная', url: '/'}, {name: 'Проверка товара', url: '/check'}])]}
       />
       <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
         <div className="mb-8 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">

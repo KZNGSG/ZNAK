@@ -14,7 +14,7 @@ import {
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import Stepper from '../components/Stepper';
-import SEO from '../components/SEO';
+import SEO, { schemas } from '../components/SEO';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -638,7 +638,7 @@ const QuotePage = () => {
 
   return (
     <div className="py-12 bg-gradient-to-b from-slate-50 to-white min-h-screen">
-      <SEO title='Коммерческое предложение' description='Получите коммерческое предложение на услуги маркировки товаров.' keywords='КП маркировка' canonical='/quote' noindex={true} />
+      <SEO title='Коммерческое предложение' description='Получите коммерческое предложение на услуги маркировки товаров.' keywords='КП маркировка' canonical='/quote' schema={[schemas.organization, schemas.breadcrumb([{name: 'Главная', url: '/'}, {name: 'Получить КП', url: '/quote'}])]} noindex={true} />
       <div className="mx-auto max-w-[1200px] px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">

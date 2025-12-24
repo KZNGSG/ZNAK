@@ -4,14 +4,15 @@ import { motion } from 'framer-motion';
 import {
   BookOpen, Search, Clock, ArrowRight, Tag,
   Shield, Printer, Ship, AlertTriangle, FileText,
-  ChevronRight, ChevronLeft, TrendingUp, Package
+  ChevronRight, ChevronLeft, TrendingUp, Package, Play
 } from 'lucide-react';
 import { Input } from '../components/ui/input';
-import SEO from '../components/SEO';
+import SEO, { schemas } from '../components/SEO';
 
 // Категории статей
 const CATEGORIES = [
-  { id: 'all', name: 'Все статьи', icon: BookOpen, color: 'gray' },
+  { id: 'all', name: 'Все материалы', icon: BookOpen, color: 'gray' },
+  { id: 'video', name: 'Видео', icon: Play, color: 'rose' },
   { id: 'chestny-znak', name: 'Честный ЗНАК', icon: Shield, color: 'blue' },
   { id: 'oborudovanie', name: 'Оборудование', icon: Printer, color: 'purple' },
   { id: 'import', name: 'Импорт', icon: Ship, color: 'cyan' },
@@ -495,10 +496,105 @@ const ARTICLES = [
     popular: false,
     tags: ['маркировка производство', 'честный знак производитель', 'оборудование для маркировки', 'внедрение маркировки']
   },
+  // ==================== ВИДЕО (одна страница со всеми видео) ====================
+  {
+    id: 'video',
+    title: 'Видеоуроки по маркировке',
+    excerpt: 'Практические разборы от Артёма Турбина. Реальные кейсы, советы и пошаговые инструкции — 6 видео.',
+    category: 'video',
+    readTime: 45,
+    date: '2025-12-19',
+    popular: true,
+    isVideoPage: true,
+    videoCount: 6,
+    tags: ['видео', 'маркировка', 'обучение', 'практика', 'честный знак']
+  },
+  // ==================== SEO-СТАТЬИ ПО КАТЕГОРИЯМ ТОВАРОВ (декабрь 2025) ====================
+  {
+    id: 'markirovka-masel-polnyj-gajd',
+    title: 'Маркировка масел в 2025: полный гайд для бизнеса',
+    excerpt: 'Всё о маркировке моторных масел и автохимии: какие товары подлежат, сроки, коды ТН ВЭД, как подготовиться. Проверьте свой товар бесплатно.',
+    category: 'tovary',
+    readTime: 12,
+    date: '2025-12-23',
+    popular: true,
+    tags: ['маркировка масел', 'моторные масла честный знак', 'автохимия маркировка', 'масла 2025']
+  },
+  {
+    id: 'markirovka-igrushek-2025',
+    title: 'Маркировка игрушек в 2025: что нужно знать продавцам',
+    excerpt: 'Детские игрушки под маркировкой Честный ЗНАК: сроки, требования, исключения. Узнайте, подлежит ли ваш товар маркировке.',
+    category: 'tovary',
+    readTime: 10,
+    date: '2025-12-23',
+    popular: true,
+    tags: ['маркировка игрушек', 'честный знак игрушки', 'детские товары маркировка']
+  },
+  {
+    id: 'markirovka-kosmetiki-parfyumerii',
+    title: 'Маркировка косметики и парфюмерии: актуальные требования',
+    excerpt: 'Какая косметика и парфюмерия подлежит маркировке, а какая нет. Коды ТН ВЭД, сроки, особенности для импортёров.',
+    category: 'tovary',
+    readTime: 9,
+    date: '2025-12-23',
+    popular: true,
+    tags: ['маркировка косметики', 'парфюмерия честный знак', 'духи маркировка']
+  },
+  {
+    id: 'markirovka-dlya-ip-poshagovaya',
+    title: 'Маркировка для ИП: пошаговая инструкция 2025',
+    excerpt: 'Как индивидуальному предпринимателю подключиться к маркировке. Регистрация, оборудование, стоимость — всё простым языком.',
+    category: 'chestny-znak',
+    readTime: 8,
+    date: '2025-12-23',
+    popular: true,
+    tags: ['маркировка для ип', 'честный знак ип', 'ип маркировка товаров']
+  },
+  {
+    id: 'markirovka-shin-2025',
+    title: 'Маркировка шин и покрышек: требования 2025 года',
+    excerpt: 'Обязательная маркировка шин: какие покрышки подлежат, как наносить коды, особенности для шиномонтажа и автосервисов.',
+    category: 'tovary',
+    readTime: 8,
+    date: '2025-12-23',
+    popular: false,
+    tags: ['маркировка шин', 'покрышки честный знак', 'шиномонтаж маркировка']
+  },
+  {
+    id: 'markirovka-belya-tekstilya',
+    title: 'Маркировка белья и текстиля: полное руководство',
+    excerpt: 'Постельное бельё, полотенца, домашний текстиль — что маркировать, а что нет. Коды ТН ВЭД и пошаговая инструкция.',
+    category: 'tovary',
+    readTime: 9,
+    date: '2025-12-23',
+    popular: false,
+    tags: ['маркировка белья', 'текстиль честный знак', 'постельное бельё маркировка']
+  },
+  {
+    id: 'markirovka-bytovoj-himii',
+    title: 'Маркировка бытовой химии: сроки и требования',
+    excerpt: 'Когда бытовая химия попадёт под маркировку, какие товары затронет, как подготовиться заранее.',
+    category: 'tovary',
+    readTime: 7,
+    date: '2025-12-23',
+    popular: false,
+    tags: ['маркировка бытовой химии', 'честный знак химия', 'моющие средства маркировка']
+  },
+  {
+    id: 'markirovka-kormov-dlya-zhivotnyh',
+    title: 'Маркировка кормов для животных: что ждёт рынок',
+    excerpt: 'Корма для кошек и собак под маркировкой: сроки введения, какие товары затронет, как подготовиться производителям и продавцам.',
+    category: 'tovary',
+    readTime: 8,
+    date: '2025-12-23',
+    popular: false,
+    tags: ['маркировка кормов', 'корма для животных честный знак', 'зоотовары маркировка']
+  },
 ];
 
 const getCategoryColor = (categoryId) => {
   const colors = {
+    'video': 'bg-rose-100 text-rose-700 border-rose-200',
     'chestny-znak': 'bg-blue-100 text-blue-700 border-blue-200',
     'oborudovanie': 'bg-purple-100 text-purple-700 border-purple-200',
     'import': 'bg-cyan-100 text-cyan-700 border-cyan-200',
@@ -696,15 +792,23 @@ const KnowledgeBasePage = () => {
 
                           <div className="flex items-center gap-4 text-xs text-gray-500">
                             <span className="flex items-center gap-1">
-                              <Clock className="w-3.5 h-3.5" />
-                              {article.readTime} мин чтения
+                              {article.isVideoPage ? <Play className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
+                              {article.isVideoPage ? `${article.videoCount} видео` : `${article.readTime} мин чтения`}
                             </span>
                             <span>{new Date(article.date).toLocaleDateString('ru-RU')}</span>
                           </div>
                         </div>
 
-                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-blue-100 transition-colors">
-                          <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors" />
+                        <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                          article.isVideoPage
+                            ? 'bg-rose-100 group-hover:bg-rose-200'
+                            : 'bg-gray-100 group-hover:bg-blue-100'
+                        }`}>
+                          {article.isVideoPage ? (
+                            <Play className="w-5 h-5 text-rose-500 group-hover:text-rose-600 transition-colors" />
+                          ) : (
+                            <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors" />
+                          )}
                         </div>
                       </div>
                     </Link>

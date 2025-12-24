@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import SEO from '../components/SEO';
+import SEO, { schemas } from '../components/SEO';
 import { toast } from 'sonner';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || 'https://promarkirui.ru';

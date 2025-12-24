@@ -1,26 +1,42 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { MapPin, ChevronDown, Navigation, X, Search } from 'lucide-react';
+import { CITIES, getCityBySlug, getCityByName } from '../data/cities';
 
-// Популярные города России
-const POPULAR_CITIES = [
-  'Москва', 'Санкт-Петербург', 'Новосибирск', 'Екатеринбург', 'Казань',
-  'Нижний Новгород', 'Челябинск', 'Самара', 'Омск', 'Ростов-на-Дону',
-  'Уфа', 'Красноярск', 'Воронеж', 'Пермь', 'Волгоград', 'Краснодар',
-  'Саратов', 'Тюмень', 'Тольятти', 'Ижевск', 'Барнаул', 'Иркутск',
-  'Ульяновск', 'Хабаровск', 'Ярославль', 'Владивосток', 'Махачкала',
-  'Томск', 'Оренбург', 'Кемерово', 'Новокузнецк', 'Рязань', 'Астрахань'
-];
+// Проверка на пререндеринг (react-snap)
+const isPrerendering = typeof navigator !== 'undefined' && navigator.userAgent === 'ReactSnap';
 
 const CitySelector = () => {
-  const [city, setCity] = useState(null);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [city, setCity] = useState(isPrerendering ? 'Москва' : null);
   const [isOpen, setIsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!isPrerendering);
   const [searchQuery, setSearchQuery] = useState('');
   const [isGeoLoading, setIsGeoLoading] = useState(false);
   const dropdownRef = useRef(null);
 
-  // Загрузка сохранённого города или определение по IP
+  // Список городов для отображения (из базы SEO)
+  const cityNames = CITIES.map(c => c.name);
+
+  // Определить текущий город из URL если мы на гео-странице
   useEffect(() => {
+    // Пропускаем логику при пререндеринге
+    if (isPrerendering) return;
+
+    const match = location.pathname.match(/^\/city\/([^/]+)/);
+    if (match) {
+      const slug = match[1];
+      const cityData = getCityBySlug(slug);
+      if (cityData) {
+        setCity(cityData.name);
+        localStorage.setItem('userCity', cityData.name);
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    // Если не на гео-странице - загружаем сохранённый город
     const savedCity = localStorage.getItem('userCity');
     if (savedCity) {
       setCity(savedCity);
@@ -28,10 +44,12 @@ const CitySelector = () => {
     } else {
       detectCityByIP();
     }
-  }, []);
+  }, [location.pathname]);
 
   // Закрытие dropdown при клике вне
   useEffect(() => {
+    if (isPrerendering) return;
+
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
@@ -42,22 +60,31 @@ const CitySelector = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Определение города по IP (без запроса разрешения)
+  // Определение города по IP
   const detectCityByIP = async () => {
+    if (isPrerendering) {
+      setCity('Москва');
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     try {
-      // Используем бесплатный API для определения по IP
-      const response = await fetch('https://ipapi.co/json/', {
-        timeout: 5000
-      });
+      const response = await fetch('https://ipapi.co/json/', { timeout: 5000 });
       if (response.ok) {
         const data = await response.json();
         if (data.city) {
           const detectedCity = data.city;
           setCity(detectedCity);
           localStorage.setItem('userCity', detectedCity);
+
+          // Если есть гео-страница для этого города - переходим
+          const cityData = getCityByName(detectedCity);
+          if (cityData && location.pathname === '/') {
+            navigate(`/city/${cityData.slug}`);
+          }
         } else {
-          setCity('Москва'); // Fallback
+          setCity('Москва');
         }
       } else {
         setCity('Москва');
@@ -70,7 +97,7 @@ const CitySelector = () => {
     }
   };
 
-  // Точное определение по GPS (требует разрешения)
+  // Точное определение по GPS
   const detectCityByGPS = async () => {
     if (!navigator.geolocation) {
       alert('Геолокация не поддерживается вашим браузером');
@@ -83,7 +110,6 @@ const CitySelector = () => {
       async (position) => {
         try {
           const { latitude, longitude } = position.coords;
-          // Используем Nominatim для обратного геокодирования
           const response = await fetch(
             `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=ru`,
             { headers: { 'User-Agent': 'ProMarkirui/1.0' } }
@@ -96,8 +122,7 @@ const CitySelector = () => {
                             data.address?.village ||
                             data.address?.state;
             if (cityName) {
-              setCity(cityName);
-              localStorage.setItem('userCity', cityName);
+              selectCity(cityName);
             }
           }
         } catch (error) {
@@ -125,14 +150,20 @@ const CitySelector = () => {
     localStorage.setItem('userCity', selectedCity);
     setIsOpen(false);
     setSearchQuery('');
+
+    // Если у города есть гео-страница - переходим на неё
+    const cityData = getCityByName(selectedCity);
+    if (cityData) {
+      navigate(`/city/${cityData.slug}`);
+    }
   };
 
   // Фильтрация городов по поиску
   const filteredCities = searchQuery.trim()
-    ? POPULAR_CITIES.filter(c =>
+    ? cityNames.filter(c =>
         c.toLowerCase().includes(searchQuery.toLowerCase())
       )
-    : POPULAR_CITIES;
+    : cityNames;
 
   if (isLoading) {
     return (
@@ -224,17 +255,6 @@ const CitySelector = () => {
               </div>
             )}
           </div>
-
-          {/* Ввод своего города */}
-          {searchQuery && !filteredCities.includes(searchQuery) && searchQuery.length > 1 && (
-            <button
-              onClick={() => selectCity(searchQuery)}
-              className="w-full px-4 py-3 text-sm text-left bg-gray-50 hover:bg-gray-100 border-t border-gray-100 transition-colors"
-            >
-              <span className="text-gray-600">Выбрать: </span>
-              <span className="font-medium text-gray-900">{searchQuery}</span>
-            </button>
-          )}
         </div>
       )}
     </div>

@@ -15,7 +15,8 @@ import {
   XCircle,
   TrendingUp,
   FileText,
-  ScrollText
+  ScrollText,
+  Trash2
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -71,6 +72,22 @@ const EmployeeDashboard = () => {
     }
   };
 
+  const handleDeleteCallback = async (callbackId, contactName) => {
+    if (!window.confirm(`Удалить заявку от "${contactName}"?`)) {
+      return;
+    }
+    try {
+      const response = await authFetch(`${API_URL}/api/employee/callbacks/${callbackId}`, {
+        method: 'DELETE'
+      });
+      if (response.ok) {
+        fetchStats(); // Refresh data
+      }
+    } catch (error) {
+      console.error('Failed to delete callback:', error);
+    }
+  };
+
   const getStatusBadge = (status) => {
     const styles = {
       new: { bg: 'bg-yellow-100', border: 'border-yellow-200', text: 'text-yellow-700', icon: CircleDot, label: 'Новая' },
@@ -94,6 +111,7 @@ const EmployeeDashboard = () => {
       check_page: 'Проверка товара',
       quote_page: 'Запрос КП',
       contact_form: 'Контактная форма',
+      ai_consultant: 'AI-консультант',
       unknown: 'Другое'
     };
     return labels[source] || source || 'Другое';
@@ -101,13 +119,16 @@ const EmployeeDashboard = () => {
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
-    const date = new Date(dateStr);
+    // Добавляем Z если нет часового пояса (время в UTC из базы)
+    const dateWithTZ = dateStr.includes('Z') || dateStr.includes('+') ? dateStr : dateStr + 'Z';
+    const date = new Date(dateWithTZ);
     const now = new Date();
     const diff = now - date;
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
 
+    if (minutes < 1) return 'только что';
     if (minutes < 60) return `${minutes} мин назад`;
     if (hours < 24) return `${hours} ч назад`;
     if (days < 7) return `${days} дн назад`;
@@ -296,6 +317,13 @@ const EmployeeDashboard = () => {
                         Создать клиента
                       </button>
                     )}
+                    <button
+                      onClick={() => handleDeleteCallback(callback.id, callback.contact_name)}
+                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Удалить заявку"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               </div>

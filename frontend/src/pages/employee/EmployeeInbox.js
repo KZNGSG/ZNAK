@@ -330,7 +330,9 @@ const EmployeeInbox = () => {
 
   const getTimeAgo = (dateStr) => {
     if (!dateStr) return '';
-    const date = new Date(dateStr);
+    // Добавляем Z если нет часового пояса (время в UTC из базы)
+    const dateWithTZ = dateStr.includes('Z') || dateStr.includes('+') ? dateStr : dateStr + 'Z';
+    const date = new Date(dateWithTZ);
     const now = new Date();
     const diffMs = now - date;
     const diffMins = Math.floor(diffMs / 60000);
@@ -348,6 +350,7 @@ const EmployeeInbox = () => {
       check_page: 'Проверка товара',
       quote_page: 'Запрос КП',
       contact_form: 'Контакт',
+      ai_consultant: 'AI-консультант',
       unknown: 'Другое'
     };
     return labels[source] || source || 'Другое';
@@ -1077,27 +1080,6 @@ const StatusDropdown = ({ status, onChange }) => {
             ))}
           </div>
         </>
-      )}
-
-      {/* Task Modal */}
-      {showTaskModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md">
-            <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="text-lg font-semibold">Создать задачу</h2>
-              <button onClick={() => setShowTaskModal(false)} className="p-1 hover:bg-gray-100 rounded"><X className="w-5 h-5" /></button>
-            </div>
-            <div className="p-4 space-y-4">
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Название *</label><input type="text" value={taskData.title} onChange={(e) => setTaskData({...taskData, title: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg" /></div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Описание</label><textarea value={taskData.description} onChange={(e) => setTaskData({...taskData, description: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg" rows={2} /></div>
-              <div className="grid grid-cols-2 gap-4"><div><label className="block text-sm font-medium text-gray-700 mb-1">Приоритет</label><select value={taskData.priority} onChange={(e) => setTaskData({...taskData, priority: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg"><option value="low">Низкий</option><option value="normal">Обычный</option><option value="high">Высокий</option><option value="urgent">Срочный</option></select></div><div><label className="block text-sm font-medium text-gray-700 mb-1">Срок</label><input type="datetime-local" value={taskData.due_date} onChange={(e) => setTaskData({...taskData, due_date: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg" /></div></div>
-            </div>
-            <div className="flex gap-3 p-4 border-t bg-gray-50 rounded-b-2xl">
-              <button onClick={() => setShowTaskModal(false)} className="flex-1 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">Отмена</button>
-              <button onClick={createTask} disabled={creatingTask} className="flex-1 px-4 py-2 bg-violet-500 hover:bg-violet-600 text-white rounded-lg disabled:opacity-50">{creatingTask ? "..." : "Создать"}</button>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );

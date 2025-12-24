@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { BookOpen, Ship, Settings, FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
-import SEO from '../components/SEO';
+import SEO, { schemas } from '../components/SEO';
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -45,7 +45,7 @@ const HomePage = () => {
         title='Маркировка товаров под ключ'
         description='Полное сопровождение маркировки товаров. Проверка подлежит ли товар маркировке, подбор оборудования, обучение работе с Честный ЗНАК. Бесплатная консультация!'
         keywords='маркировка товаров, честный знак, маркировка под ключ, сопровождение маркировки'
-        canonical='/'
+        canonical='/' schema={[schemas.organization, schemas.website]}
       />
       {/* Hero Section - Enhanced */}
       <section className="relative py-20 sm:py-32 noise-bg overflow-hidden" data-testid="hero-section">

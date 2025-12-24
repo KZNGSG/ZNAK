@@ -18,11 +18,15 @@ import {
   X,
   UserCog,
   BarChart3,
+  MessageSquare,
+  Mail,
   Settings,
   FolderOpen,
   Handshake,
   GraduationCap,
-  CheckSquare
+  CheckSquare,
+  Globe,
+  Send
 } from 'lucide-react';
 
 const EmployeeLayout = ({ children }) => {
@@ -38,18 +42,18 @@ const EmployeeLayout = ({ children }) => {
   };
 
   const menuItems = [
-    // Аналитика для superadmin вместо обычной главной
     ...(isSuperAdmin ? [{
       path: '/employee/analytics',
       icon: BarChart3,
       label: 'Аналитика',
       description: 'Статистика и воронка'
-    }] : [{
+    }] : []),
+    {
       path: '/employee',
       icon: LayoutDashboard,
-      label: 'Главная',
-      description: 'Обзор и статистика'
-    }]),
+      label: 'Панель менеджера',
+      description: 'Обзор заявок и клиентов'
+    },
     {
       path: '/employee/inbox',
       icon: Inbox,
@@ -86,7 +90,12 @@ const EmployeeLayout = ({ children }) => {
       label: 'Задачи',
       description: 'Мои задачи'
     },
-    // Сотрудники и Настройки только для superadmin
+    {
+      path: '/employee/email',
+      icon: Mail,
+      label: 'Почта',
+      description: 'Корпоративная почта'
+    },
     ...(isSuperAdmin ? [
       {
         path: '/employee/staff',
@@ -100,7 +109,23 @@ const EmployeeLayout = ({ children }) => {
         label: 'Настройки',
         description: 'Уведомления и SLA'
       }
-    ] : [])
+    ] : []),
+    ...(isSuperAdmin ? [{
+      path: '/employee/ai-consultant',
+      icon: MessageSquare,
+      label: 'AI Консультант',
+      description: 'Управление ботом'
+    }, {
+      path: '/employee/seo',
+      icon: Globe,
+      label: 'SEO Города',
+      description: 'Управление гео-страницами'
+    }, {
+      path: '/employee/telegram',
+      icon: Send,
+      label: 'Бот ТГ',
+      description: 'Telegram лиды'
+    }] : [])
   ];
 
   const NavItem = ({ item, collapsed }) => {
@@ -140,7 +165,6 @@ const EmployeeLayout = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Mobile menu overlay */}
       {mobileMenuOpen && (
         <div
           className="fixed inset-0 bg-black/40 z-40 lg:hidden"
@@ -148,7 +172,6 @@ const EmployeeLayout = ({ children }) => {
         />
       )}
 
-      {/* Sidebar */}
       <aside
         className={`
           fixed lg:static inset-y-0 left-0 z-50
@@ -158,18 +181,32 @@ const EmployeeLayout = ({ children }) => {
           transition-all duration-300 flex flex-col
         `}
       >
-        {/* Header */}
         <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200">
-          {!sidebarCollapsed && (
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-yellow-400 to-yellow-500 flex items-center justify-center">
-                <span className="text-gray-900 font-bold text-sm">M</span>
+          {!sidebarCollapsed ? (
+            <Link to="/" className="flex items-center gap-2 group">
+              <div className="flex items-center gap-0.5 p-2 rounded-lg bg-gradient-to-br from-yellow-100 to-yellow-200 group-hover:scale-105 transition-transform shadow-sm">
+                <div className="grid grid-cols-2 gap-0.5">
+                  <div className="w-2 h-2 bg-yellow-500 rounded-sm"></div>
+                  <div className="w-2 h-2 bg-gray-800 rounded-sm"></div>
+                  <div className="w-2 h-2 bg-gray-800 rounded-sm"></div>
+                  <div className="w-2 h-2 bg-yellow-500 rounded-sm"></div>
+                </div>
               </div>
-              <div>
-                <div className="text-sm font-semibold text-gray-900">Менеджер</div>
-                <div className="text-[10px] text-gray-400 uppercase tracking-wider">Pro.Markiruj</div>
+              <span className="text-base font-bold text-gray-900">
+                Про<span className="text-yellow-500">.</span>Маркируй
+              </span>
+            </Link>
+          ) : (
+            <Link to="/" className="flex items-center justify-center group mx-auto">
+              <div className="flex items-center gap-0.5 p-2 rounded-lg bg-gradient-to-br from-yellow-100 to-yellow-200 group-hover:scale-105 transition-transform shadow-sm">
+                <div className="grid grid-cols-2 gap-0.5">
+                  <div className="w-2 h-2 bg-yellow-500 rounded-sm"></div>
+                  <div className="w-2 h-2 bg-gray-800 rounded-sm"></div>
+                  <div className="w-2 h-2 bg-gray-800 rounded-sm"></div>
+                  <div className="w-2 h-2 bg-yellow-500 rounded-sm"></div>
+                </div>
               </div>
-            </div>
+            </Link>
           )}
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -185,14 +222,12 @@ const EmployeeLayout = ({ children }) => {
           </button>
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {menuItems.map((item) => (
             <NavItem key={item.path} item={item} collapsed={sidebarCollapsed} />
           ))}
         </nav>
 
-        {/* User section */}
         <div className="border-t border-gray-200 p-3">
           {!sidebarCollapsed ? (
             <div className="flex items-center gap-3">
@@ -227,9 +262,7 @@ const EmployeeLayout = ({ children }) => {
         </div>
       </aside>
 
-      {/* Main content area */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top bar */}
         <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 lg:px-6">
           <div className="flex items-center gap-4">
             <button
@@ -239,19 +272,16 @@ const EmployeeLayout = ({ children }) => {
               <Menu className="w-5 h-5" />
             </button>
 
-            {/* Global Search */}
             <div className="hidden sm:block">
               <GlobalSearch />
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Notifications */}
             <NotificationCenter />
           </div>
         </header>
 
-        {/* Page content */}
         <main className="flex-1 overflow-auto bg-slate-50">
           <div className="p-4 lg:p-6">
             {children}

@@ -37,6 +37,8 @@ from database import (
 )
 from education_db import EducationDB
 
+# AI Consultant
+from ai_consultant import router as ai_router
 # Load environment variables first
 load_dotenv()
 
@@ -53,6 +55,9 @@ app.add_middleware(
 )
 
 logging.basicConfig(level=logging.INFO)
+
+# AI Consultant router
+app.include_router(ai_router, prefix="/api")
 logger = logging.getLogger(__name__)
 
 # ======================== RATE LIMITING ========================
@@ -163,6 +168,7 @@ class ContactRequest(BaseModel):
     request_type: str
     comment: Optional[str] = None
     consent: bool
+    source: Optional[str] = None  # ai_consultant, contact_form, check_page, quote_page
 
     @field_validator('consent')
     @classmethod
@@ -1688,6 +1694,69 @@ for category in CATEGORIES_DATA:
                 "timeline": product.get("timeline")
             }
 
+# Build TNVED lookup from tnved.json (единая база) + CATEGORIES_DATA (детали)
+def _build_tnved_lookup():
+    import json as _json
+    import os as _os
+    
+    lookup = {}
+    
+    # 1. Сначала загружаем из tnved.json (все коды с маркировкой)
+    json_path = _os.path.join(_os.path.dirname(__file__), 'data', 'tnved.json')
+    try:
+        with open(json_path, 'r', encoding='utf-8') as f:
+            tnved_data = _json.load(f)
+        
+        for item in tnved_data:
+            if item.get('requires_marking') or item.get('is_experimental'):
+                code = item.get('code', '')
+                if code:
+                    entry = {
+                        "category_id": "tnved",
+                        "category_name": item.get('marking_group', 'ТН ВЭД'),
+                        "subcategory_id": "tnved",
+                        "subcategory_name": item.get('marking_subcategory', ''),
+                        "name": item.get('name', ''),
+                        "tnved": item.get('code_formatted', code),
+                        "marking_status": item.get('marking_status', 'not_required'),
+                        "mandatory_since": None,
+                        "timeline": None
+                    }
+                    lookup[code] = entry
+                    # Также по нормализованному коду
+                    normalized = code.replace(' ', '')
+                    if normalized != code:
+                        lookup[normalized] = entry
+    except Exception as e:
+        print(f"Warning: Could not load tnved.json: {e}")
+    
+    # 2. Дополняем/перезаписываем из CATEGORIES_DATA (более детальная инфо)
+    for category in CATEGORIES_DATA:
+        for sub in category.get("subcategories", []):
+            for product in sub.get("products", []):
+                tnved = product.get("tnved", "")
+                if tnved and tnved != '-' and ';' not in tnved:
+                    entry = {
+                        "category_id": category["id"],
+                        "category_name": category["name"],
+                        "subcategory_id": sub["id"],
+                        "subcategory_name": sub["name"],
+                        "name": product["name"],
+                        "tnved": tnved,
+                        "marking_status": product.get("marking_status", "not_required"),
+                        "mandatory_since": product.get("mandatory_since"),
+                        "timeline": product.get("timeline")
+                    }
+                    lookup[tnved] = entry
+                    # Также по нормализованному коду
+                    normalized = tnved.replace(" ", "")
+                    if normalized != tnved:
+                        lookup[normalized] = entry
+    
+    return lookup
+
+TNVED_LOOKUP = _build_tnved_lookup()
+
 MARKING_STEPS = [
     "Зарегистрироваться в системе Честный ЗНАК (честныйзнак.рф)",
     "Получить усиленную квалифицированную электронную подпись (УКЭП)",
@@ -2275,10 +2344,24 @@ async def get_check_init():
 async def assess_product(request: CheckProductRequest):
     """Assess if product requires marking"""
 
-    # Look up product by product ID first, then by subcategory
+    # Look up product by product ID first
     product = None
     if request.product:
         product = PRODUCTS_LOOKUP.get(request.product)
+
+        # If not found by ID, try to extract TNVED code from product ID (e.g. "tnved_2203" -> "2203")
+        if not product and request.product.startswith("tnved_"):
+            tnved_code = request.product.replace("tnved_", "")
+            product = TNVED_LOOKUP.get(tnved_code)
+
+            # Try with spaces if not found (e.g. "220300" -> "2203 00")
+            if not product and len(tnved_code) >= 4:
+                # Try common patterns: 220300 -> 2203 00, 22030031 -> 2203 00 31
+                for i in range(4, len(tnved_code)):
+                    spaced = tnved_code[:4] + " " + tnved_code[4:i] + (" " + tnved_code[i:] if i < len(tnved_code) else "")
+                    product = TNVED_LOOKUP.get(spaced.strip())
+                    if product:
+                        break
 
     if product:
         marking_status = product.get("marking_status", "not_required")
@@ -2381,6 +2464,9 @@ async def recommend_equipment(request: EquipmentRequest):
 async def send_contact(request: ContactRequest, background_tasks: BackgroundTasks):
     """Send contact form to email and save to database"""
 
+    # Определяем источник
+    source = request.source or "contact_form"
+
     # Сохраняем заявку в БД
     callback_data = {
         "user_id": None,
@@ -2391,13 +2477,14 @@ async def send_contact(request: ContactRequest, background_tasks: BackgroundTask
         "company_name": None,
         "products": [],
         "comment": f"Тип запроса: {request.request_type}\n{request.comment or ''}",
-        "source": "contact_form"
+        "source": source
     }
     callback_id = CallbackDB.create(callback_data)
 
-    # Telegram
-    tg_text = format_callback_telegram(callback_id, request.name, request.phone, "contact_form", [], request.comment)
-    background_tasks.add_task(send_telegram_notification, tg_text)
+    # Telegram — не отправляем если от AI (AI сам отправляет своё сообщение)
+    if source != "ai_consultant":
+        tg_text = format_callback_telegram(callback_id, request.name, request.phone, source, [], request.comment)
+        background_tasks.add_task(send_telegram_notification, tg_text)
 
     # Отправляем на все адреса менеджеров
     contact_emails = os.getenv('CONTACT_TO_EMAIL', 'damirslk@mail.ru,turbin.ar8@gmail.com').split(',')
@@ -3846,6 +3933,36 @@ async def api_admin_update_callback(
     return {"success": True}
 
 
+@app.delete("/api/admin/callbacks/{callback_id}")
+async def api_admin_delete_callback(
+    callback_id: int,
+    user: Dict = Depends(require_admin)
+):
+    """Удалить заявку (только для админов)"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM callbacks WHERE id = ?', (callback_id,))
+        conn.commit()
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Заявка не найдена")
+    return {"success": True, "message": "Заявка удалена"}
+
+
+@app.delete("/api/employee/callbacks/{callback_id}")
+async def api_employee_delete_callback(
+    callback_id: int,
+    user: Dict = Depends(require_employee)
+):
+    """Удалить заявку (для менеджеров)"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM callbacks WHERE id = ?', (callback_id,))
+        conn.commit()
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Заявка не найдена")
+    return {"success": True, "message": "Заявка удалена"}
+
+
 @app.get("/api/admin/users")
 async def api_admin_get_users(user: Dict = Depends(require_admin)):
     """Получить всех пользователей (админка)"""
@@ -3863,7 +3980,7 @@ async def api_admin_get_users(user: Dict = Depends(require_admin)):
 @app.post("/api/admin/users")
 async def api_admin_create_user(
     data: Dict,
-    user: Dict = Depends(require_superadmin)
+    user: Dict = Depends(require_employee)
 ):
     """Создать нового пользователя (только для суперадмина)"""
     email = data.get("email")
@@ -3888,7 +4005,7 @@ async def api_admin_create_user(
 async def api_admin_send_invitation(
     user_id: int,
     data: Dict,
-    user: Dict = Depends(require_superadmin)
+    user: Dict = Depends(require_employee)
 ):
     """Отправить приглашение сотруднику на email"""
     from email_service import send_staff_invitation_email
@@ -3933,7 +4050,7 @@ PROTECTED_ADMIN_EMAIL = 'damirslk@mail.ru'
 async def api_admin_update_user(
     user_id: int,
     data: Dict,
-    current_user: Dict = Depends(require_superadmin)
+    current_user: Dict = Depends(require_employee)
 ):
     """Обновить пользователя (только для суперадмина)"""
     # Проверяем, не пытаемся ли изменить защищённого админа
@@ -3982,7 +4099,7 @@ async def api_admin_update_user(
 @app.delete("/api/admin/users/{user_id}")
 async def api_admin_delete_user(
     user_id: int,
-    current_user: Dict = Depends(require_superadmin)
+    current_user: Dict = Depends(require_employee)
 ):
     """Удалить пользователя (только для суперадмина)"""
     if user_id == current_user["id"]:
@@ -4130,7 +4247,7 @@ async def api_employee_stats(user: Dict = Depends(require_employee)):
 @app.get("/api/superadmin/stats")
 async def api_superadmin_stats(
     period: str = "week",
-    user: Dict = Depends(require_superadmin)
+    user: Dict = Depends(require_employee)
 ):
     """Расширенная статистика для Superadmin Dashboard"""
     from datetime import timedelta
@@ -4408,7 +4525,7 @@ async def api_superadmin_stats(
 
 # --- Настройки уведомлений (Superadmin) ---
 @app.get("/api/superadmin/notifications")
-async def api_get_notification_settings(user: Dict = Depends(require_superadmin)):
+async def api_get_notification_settings(user: Dict = Depends(require_employee)):
     """Получить настройки уведомлений"""
     return {"notifications": NotificationSettingsDB.get_all()}
 
@@ -4416,7 +4533,7 @@ async def api_get_notification_settings(user: Dict = Depends(require_superadmin)
 @app.post("/api/superadmin/notifications")
 async def api_add_notification_setting(
     data: Dict,
-    user: Dict = Depends(require_superadmin)
+    user: Dict = Depends(require_employee)
 ):
     """Добавить email для уведомлений"""
     email = data.get("email")
@@ -4435,7 +4552,7 @@ async def api_add_notification_setting(
 async def api_update_notification_setting(
     notification_id: int,
     data: Dict,
-    user: Dict = Depends(require_superadmin)
+    user: Dict = Depends(require_employee)
 ):
     """Обновить настройку уведомления"""
     success = NotificationSettingsDB.update(notification_id, data)
@@ -4445,7 +4562,7 @@ async def api_update_notification_setting(
 @app.delete("/api/superadmin/notifications/{notification_id}")
 async def api_delete_notification_setting(
     notification_id: int,
-    user: Dict = Depends(require_superadmin)
+    user: Dict = Depends(require_employee)
 ):
     """Удалить настройку уведомления"""
     success = NotificationSettingsDB.delete(notification_id)
@@ -4454,7 +4571,7 @@ async def api_delete_notification_setting(
 
 # --- Настройки CRM (SLA и др.) ---
 @app.get("/api/superadmin/settings")
-async def api_get_crm_settings(user: Dict = Depends(require_superadmin)):
+async def api_get_crm_settings(user: Dict = Depends(require_employee)):
     """Получить все настройки CRM"""
     return {"settings": CRMSettingsDB.get_all()}
 
@@ -4463,7 +4580,7 @@ async def api_get_crm_settings(user: Dict = Depends(require_superadmin)):
 async def api_update_crm_setting(
     key: str,
     data: Dict,
-    user: Dict = Depends(require_superadmin)
+    user: Dict = Depends(require_employee)
 ):
     """Обновить настройку CRM"""
     value = data.get("value")
@@ -4542,7 +4659,7 @@ async def api_get_managers(user: Dict = Depends(require_employee)):
 async def api_superadmin_assign_callback(
     callback_id: int,
     data: Dict,
-    user: Dict = Depends(require_superadmin)
+    user: Dict = Depends(require_employee)
 ):
     """Назначить заявку на конкретного менеджера (только superadmin)"""
     manager_id = data.get("manager_id")
@@ -5151,7 +5268,7 @@ async def api_employee_update_client(
 @app.delete("/api/employee/clients/{client_id}")
 async def api_employee_delete_client(
     client_id: int,
-    user: Dict = Depends(require_superadmin)
+    user: Dict = Depends(require_employee)
 ):
     """Удалить клиента (только для superadmin)"""
     success = ClientDB.delete(client_id)
@@ -7319,7 +7436,8 @@ async def get_tasks(
             SELECT t.*, 
                    u1.email as assigned_email,
                    u2.email as creator_email,
-                   c.company_name as client_name
+                   COALESCE(NULLIF(c.company_name, ''), c.contact_name) as client_name,
+                   c.contact_phone as client_phone
             FROM tasks t
             LEFT JOIN users u1 ON t.assigned_to = u1.id
             LEFT JOIN users u2 ON t.created_by = u2.id
@@ -8045,3 +8163,267 @@ async def update_email_access(
     
     return {"success": True, "message": "Доступ обновлён"}
 
+
+
+# ==================== TELEGRAM BOT LEADS ====================
+
+@app.get("/api/admin/telegram-leads")
+async def get_telegram_leads(
+    status: str = None,
+    client_type: str = None,
+    has_phone: bool = None,
+    subscribed: bool = None,
+    user: Dict = Depends(require_employee)
+):
+    """Получить список лидов из Telegram бота"""
+    if user.get("role") != "superadmin":
+        raise HTTPException(status_code=403, detail="Доступ запрещён")
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        query = "SELECT * FROM telegram_leads WHERE 1=1"
+        params = []
+
+        if status:
+            query += " AND status = ?"
+            params.append(status)
+
+        if client_type:
+            query += " AND client_type = ?"
+            params.append(client_type)
+
+        if has_phone is not None:
+            if has_phone:
+                query += " AND phone IS NOT NULL AND phone != ''"
+            else:
+                query += " AND (phone IS NULL OR phone = '')"
+
+        if subscribed is not None:
+            query += " AND subscribed = ?"
+            params.append(1 if subscribed else 0)
+
+        query += " ORDER BY created_at DESC"
+
+        cursor.execute(query, params)
+        leads = [dict(row) for row in cursor.fetchall()]
+
+        # Статистика
+        cursor.execute("SELECT COUNT(*) as total FROM telegram_leads")
+        total = cursor.fetchone()['total']
+
+        cursor.execute("SELECT COUNT(*) as subscribed FROM telegram_leads WHERE subscribed = 1")
+        subscribed_count = cursor.fetchone()['subscribed']
+
+        cursor.execute("SELECT COUNT(*) as with_phone FROM telegram_leads WHERE phone IS NOT NULL AND phone != ''")
+        with_phone = cursor.fetchone()['with_phone']
+
+        cursor.execute("SELECT COUNT(*) as today FROM telegram_leads WHERE date(created_at) = date('now')")
+        today = cursor.fetchone()['today']
+
+    return {
+        "leads": leads,
+        "stats": {
+            "total": total,
+            "subscribed": subscribed_count,
+            "with_phone": with_phone,
+            "today": today
+        }
+    }
+
+
+@app.get("/api/admin/telegram-leads/{lead_id}")
+async def get_telegram_lead(lead_id: int, user: Dict = Depends(require_employee)):
+    """Получить детали лида"""
+    if user.get("role") != "superadmin":
+        raise HTTPException(status_code=403, detail="Доступ запрещён")
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM telegram_leads WHERE id = ?", (lead_id,))
+        lead = cursor.fetchone()
+
+        if not lead:
+            raise HTTPException(status_code=404, detail="Лид не найден")
+
+        return dict(lead)
+
+
+@app.put("/api/admin/telegram-leads/{lead_id}")
+async def update_telegram_lead(
+    lead_id: int,
+    data: Dict,
+    user: Dict = Depends(require_employee)
+):
+    """Обновить лида (статус, заметки, тип)"""
+    if user.get("role") != "superadmin":
+        raise HTTPException(status_code=403, detail="Доступ запрещён")
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        updates = []
+        params = []
+
+        if 'status' in data:
+            updates.append("status = ?")
+            params.append(data['status'])
+
+        if 'notes' in data:
+            updates.append("notes = ?")
+            params.append(data['notes'])
+
+        if 'subscribed' in data:
+            updates.append("subscribed = ?")
+            params.append(1 if data['subscribed'] else 0)
+
+        if 'client_type' in data:
+            updates.append("client_type = ?")
+            params.append(data['client_type'])
+
+        if updates:
+            updates.append("updated_at = CURRENT_TIMESTAMP")
+            params.append(lead_id)
+
+            cursor.execute(
+                f"UPDATE telegram_leads SET {', '.join(updates)} WHERE id = ?",
+                params
+            )
+            conn.commit()
+
+    return {"success": True}
+
+
+@app.post("/api/admin/telegram-broadcast")
+async def send_telegram_broadcast(
+    data: Dict,
+    user: Dict = Depends(require_employee)
+):
+    """Отправить рассылку выбранным лидам или по критерию"""
+    if user.get("role") != "superadmin":
+        raise HTTPException(status_code=403, detail="Доступ запрещён")
+    import httpx
+
+    message = data.get('message', '')
+    lead_ids = data.get('lead_ids', [])  # Конкретные ID для рассылки
+    target = data.get('target', None)  # subscribed, all, with_phone (legacy)
+
+    if not message:
+        raise HTTPException(status_code=400, detail="Сообщение не указано")
+
+    bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
+    if not bot_token:
+        raise HTTPException(status_code=500, detail="Токен бота не настроен")
+
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        if lead_ids:
+            # Рассылка по конкретным ID
+            placeholders = ','.join(['?' for _ in lead_ids])
+            cursor.execute(f"SELECT telegram_id FROM telegram_leads WHERE id IN ({placeholders})", lead_ids)
+        elif target == 'subscribed':
+            cursor.execute("SELECT telegram_id FROM telegram_leads WHERE subscribed = 1")
+        elif target == 'with_phone':
+            cursor.execute("SELECT telegram_id FROM telegram_leads WHERE phone IS NOT NULL AND phone != ''")
+        else:
+            cursor.execute("SELECT telegram_id FROM telegram_leads")
+
+        leads = cursor.fetchall()
+
+    sent = 0
+    failed = 0
+
+    async with httpx.AsyncClient() as client:
+        for lead in leads:
+            try:
+                response = await client.post(
+                    f"https://api.telegram.org/bot{bot_token}/sendMessage",
+                    json={
+                        "chat_id": lead['telegram_id'],
+                        "text": message,
+                        "parse_mode": "Markdown"
+                    },
+                    timeout=10
+                )
+                if response.status_code == 200:
+                    sent += 1
+                else:
+                    failed += 1
+            except:
+                failed += 1
+
+    return {
+        "success": True,
+        "sent": sent,
+        "failed": failed,
+        "total": len(leads)
+    }
+
+
+@app.get("/api/admin/telegram-stats")
+async def get_telegram_stats(user: Dict = Depends(require_employee)):
+    """Статистика по боту"""
+    if user.get("role") != "superadmin":
+        raise HTTPException(status_code=403, detail="Доступ запрещён")
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        # Общая статистика
+        cursor.execute("""
+            SELECT
+                COUNT(*) as total,
+                SUM(CASE WHEN subscribed = 1 THEN 1 ELSE 0 END) as subscribed,
+                SUM(CASE WHEN phone IS NOT NULL AND phone != '' THEN 1 ELSE 0 END) as with_phone,
+                SUM(CASE WHEN date(created_at) = date('now') THEN 1 ELSE 0 END) as today,
+                SUM(CASE WHEN date(created_at) >= date('now', '-7 days') THEN 1 ELSE 0 END) as week,
+                SUM(queries_count) as total_queries
+            FROM telegram_leads
+        """)
+        stats = dict(cursor.fetchone())
+
+        # По статусам
+        cursor.execute("""
+            SELECT status, COUNT(*) as count
+            FROM telegram_leads
+            GROUP BY status
+        """)
+        by_status = {row['status']: row['count'] for row in cursor.fetchall()}
+
+        # По типам клиентов
+        cursor.execute("""
+            SELECT client_type, COUNT(*) as count
+            FROM telegram_leads
+            WHERE client_type IS NOT NULL
+            GROUP BY client_type
+        """)
+        by_client_type = {row['client_type']: row['count'] for row in cursor.fetchall()}
+
+        # Топ категорий
+        cursor.execute("SELECT interested_categories FROM telegram_leads WHERE interested_categories IS NOT NULL")
+        categories = {}
+        for row in cursor.fetchall():
+            try:
+                cats = json.loads(row['interested_categories'])
+                for cat in cats:
+                    categories[cat] = categories.get(cat, 0) + 1
+            except:
+                pass
+
+        top_categories = sorted(categories.items(), key=lambda x: x[1], reverse=True)[:10]
+
+    return {
+        "stats": stats,
+        "by_status": by_status,
+        "by_client_type": by_client_type,
+        "top_categories": top_categories
+    }
+
+
+@app.delete("/api/admin/telegram-leads/{lead_id}")
+async def delete_telegram_lead(lead_id: int, user: Dict = Depends(require_employee)):
+    """Удалить лида из Telegram бота"""
+    if user.get("role") != "superadmin":
+        raise HTTPException(status_code=403, detail="Доступ запрещён")
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM telegram_leads WHERE id = ?", (lead_id,))
+        conn.commit()
+    return {"success": True}

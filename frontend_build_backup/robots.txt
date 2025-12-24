@@ -1,0 +1,43 @@
+# Robots.txt for promarkirui.ru
+# https://promarkirui.ru
+
+User-agent: *
+Allow: /
+Disallow: /employee/
+Disallow: /partner/
+Disallow: /api/
+Disallow: /admin/
+
+# Crawl-delay для снижения нагрузки
+Crawl-delay: 1
+
+# Sitemap
+Sitemap: https://promarkirui.ru/sitemap.xml
+
+# Yandex specific
+User-agent: Yandex
+Allow: /
+Disallow: /employee/
+Disallow: /partner/
+Disallow: /api/
+Disallow: /admin/
+Crawl-delay: 2
+
+# Google specific
+User-agent: Googlebot
+Allow: /
+Disallow: /employee/
+Disallow: /partner/
+Disallow: /api/
+Disallow: /admin/
+
+# Bing
+User-agent: Bingbot
+Allow: /
+Disallow: /employee/
+Disallow: /partner/
+Disallow: /api/
+Disallow: /admin/
+
+# Host directive for Yandex
+Host: https://promarkirui.ru

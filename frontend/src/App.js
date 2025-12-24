@@ -8,6 +8,7 @@ import { EmployeeAuthProvider } from './context/EmployeeAuthContext';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import GlobalSchema from './components/GlobalSchema';
+import AIChatWidget from './components/AIChatWidget';
 import HomePage from './pages/HomePage';
 import CheckProductPage from './pages/CheckProductPage';
 import ImportPage from './pages/ImportPage';
@@ -26,6 +27,7 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import PartnersPage from './pages/PartnersPage';
 import AboutPage from './pages/AboutPage';
+import CityPage from './pages/CityPage';
 import TrainingPage from './pages/TrainingPage';
 
 // Client cabinet pages
@@ -49,6 +51,7 @@ import AdminLayout from './components/admin/AdminLayout';
 import EmployeeLoginPage from './pages/employee/EmployeeLoginPage';
 import EmployeeDashboard from './pages/employee/EmployeeDashboard';
 import EmployeeInbox from './pages/employee/EmployeeInbox';
+import AIConsultantAdmin from './pages/employee/AIConsultantAdmin';
 import EmployeeClients from './pages/employee/EmployeeClients';
 import EmployeeClientCard from './pages/employee/EmployeeClientCard';
 import EmployeeClientNew from './pages/employee/EmployeeClientNew';
@@ -84,6 +87,8 @@ import PartnerChapterView from './pages/partner/PartnerChapterView';
 
 // Admin education
 import AdminEducation from './pages/admin/AdminEducation';
+import AdminSEOPage from './pages/admin/AdminSEOPage';
+import AdminTelegramPage from './pages/admin/AdminTelegramPage';
 
 // Main layout wrapper
 const MainLayout = ({ children }) => (
@@ -127,6 +132,7 @@ function App() {
                 <Route path="/reset-password" element={<MainLayout><ResetPasswordPage /></MainLayout>} />
                 <Route path="/partners" element={<MainLayout><PartnersPage /></MainLayout>} />
                 <Route path="/about" element={<MainLayout><AboutPage /></MainLayout>} />
+                <Route path="/city/:slug" element={<MainLayout><CityPage /></MainLayout>} />
 
                 {/* Client cabinet routes */}
                 <Route path="/cabinet" element={
@@ -177,7 +183,16 @@ function App() {
                     <AdminLayout><AdminEducation /></AdminLayout>
                   </AdminRoute>
                 } />
-
+                <Route path="/admin/seo" element={
+                  <AdminRoute>
+                    <AdminLayout><AdminSEOPage /></AdminLayout>
+                <Route path="/admin/telegram" element={
+                  <AdminRoute>
+                    <AdminLayout><AdminTelegramPage /></AdminLayout>
+                  </AdminRoute>
+                } />
+                  </AdminRoute>
+                } />
                 {/* Employee routes */}
                 <Route path="/employee/login" element={<EmployeeLoginPage />} />
                 <Route path="/employee" element={
@@ -270,6 +285,21 @@ function App() {
                     <EmployeeLayout><EmployeeEmail /></EmployeeLayout>
                   </EmployeeRoute>
                 } />
+                <Route path="/employee/ai-consultant" element={
+                  <EmployeeRoute>
+                    <EmployeeLayout><AIConsultantAdmin /></EmployeeLayout>
+                  </EmployeeRoute>
+                } />
+                <Route path="/employee/seo" element={
+                  <EmployeeRoute>
+                    <EmployeeLayout><AdminSEOPage /></EmployeeLayout>
+                  </EmployeeRoute>
+                } />
+                <Route path="/employee/telegram" element={
+                  <EmployeeRoute>
+                    <EmployeeLayout><AdminTelegramPage /></EmployeeLayout>
+                  </EmployeeRoute>
+                } />
 
                 {/* Partner routes */}
                 <Route path="/partner/login" element={<PartnerLoginPage />} />
@@ -316,6 +346,7 @@ function App() {
                 } />
               </Routes>
             </div>
+            <AIChatWidget />
             </Router>
           </PartnerAuthProvider>
         </EmployeeAuthProvider>

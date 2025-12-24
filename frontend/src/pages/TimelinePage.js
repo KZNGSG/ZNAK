@@ -22,7 +22,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import SEO from '../components/SEO';
+import SEO, { schemas } from '../components/SEO';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -376,7 +376,7 @@ const TimelinePage = () => {
 
   return (
     <div className="max-w-[1400px] mx-auto px-4 py-6">
-      <SEO title='Сроки маркировки товаров 2025' description='Актуальные сроки ввода обязательной маркировки товаров в России. Календарь маркировки на 2025 год: одежда, обувь, молочка, вода, пиво.' keywords='сроки маркировки, календарь маркировки 2025, когда маркировка обязательна' canonical='/timeline' />
+      <SEO title='Сроки маркировки товаров 2025' description='Актуальные сроки ввода обязательной маркировки товаров в России. Календарь маркировки на 2025 год: одежда, обувь, молочка, вода, пиво.' keywords='сроки маркировки, календарь маркировки 2025, когда маркировка обязательна' canonical='/timeline' schema={[schemas.organization, schemas.breadcrumb([{name: 'Главная', url: '/'}, {name: 'Сроки маркировки', url: '/timeline'}])]} />
       {/* Header with Moscow Time */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>

@@ -61,7 +61,8 @@
   "scripts": {
     "start": "craco start",
     "build": "craco build",
-    "test": "craco test"
+    "test": "craco test",
+    "postbuild": "react-snap"
   },
   "browserslist": {
     "production": [
@@ -87,7 +88,67 @@
     "eslint-plugin-react-hooks": "5.2.0",
     "globals": "15.15.0",
     "postcss": "^8.4.49",
+    "react-snap": "^1.23.0",
     "tailwindcss": "^3.4.17"
   },
-  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e",
+  "reactSnap": {
+    "puppeteerArgs": [
+      "--no-sandbox",
+      "--disable-setuid-sandbox"
+    ],
+    "inlineCss": false,
+    "puppeteerExecutablePath": "/usr/bin/chromium-browser",
+    "navigationTimeout": 60000,
+    "include": [
+      "/",
+      "/check",
+      "/timeline",
+      "/equipment",
+      "/training",
+      "/about",
+      "/partners",
+      "/quote",
+      "/import",
+      "/checklist",
+      "/scanner",
+      "/consultation",
+      "/knowledge",
+      "/city/moskva",
+      "/city/sankt-peterburg",
+      "/city/novosibirsk",
+      "/city/ekaterinburg",
+      "/city/kazan",
+      "/city/nizhny-novgorod",
+      "/city/chelyabinsk",
+      "/city/samara",
+      "/city/omsk",
+      "/city/rostov-na-donu",
+      "/city/ufa",
+      "/city/krasnoyarsk",
+      "/city/voronezh",
+      "/city/perm",
+      "/city/volgograd",
+      "/city/krasnodar",
+      "/city/saratov",
+      "/city/tyumen",
+      "/city/tolyatti",
+      "/city/izhevsk",
+      "/city/barnaul",
+      "/city/irkutsk",
+      "/city/ulyanovsk",
+      "/city/khabarovsk",
+      "/city/yaroslavl",
+      "/city/vladivostok",
+      "/city/makhachkala",
+      "/city/tomsk",
+      "/city/orenburg",
+      "/city/kemerovo",
+      "/city/novokuznetsk",
+      "/city/ryazan",
+      "/city/astrakhan"
+    ],
+    "skipThirdPartyRequests": true,
+    "waitFor": 3000
+  }
 }
