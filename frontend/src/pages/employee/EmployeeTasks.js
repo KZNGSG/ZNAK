@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useEmployeeAuth } from '../../context/EmployeeAuthContext';
 import {
   CheckSquare,
@@ -25,6 +25,7 @@ const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const EmployeeTasks = () => {
   const { authFetch, isSuperAdmin, user } = useEmployeeAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
@@ -84,6 +85,23 @@ const EmployeeTasks = () => {
       fetchStaff();
     }
   }, [filter]);
+
+
+  // Автоматически открываем задачу если есть id в URL
+  useEffect(() => {
+    const idFromUrl = searchParams.get("id");
+    if (idFromUrl && tasks.length > 0) {
+      const targetId = parseInt(idFromUrl);
+      const targetTask = tasks.find(t => t.id === targetId);
+      if (targetTask) {
+        setEditingTask(targetTask);
+        setShowEditModal(true);
+        // Убираем id из URL
+        searchParams.delete("id");
+        setSearchParams(searchParams, { replace: true });
+      }
+    }
+  }, [tasks, searchParams]);
 
   // Подсчёт задач без срока (активных)
   const noDeadlineCount = tasks.filter(t => !t.due_date && t.status !== 'completed').length;

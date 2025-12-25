@@ -29,7 +29,8 @@ import {
   AlertTriangle,
   Download,
   User,
-  CheckSquare
+  CheckSquare,
+  CreditCard
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -150,7 +151,7 @@ const EmployeeClientCard = () => {
 
   const handleLoadFromDadata = async () => {
     const inn = editData.inn?.trim();
-    if (!inn || inn.length < 5) {
+    if (!inn || inn.length < 3) {
       toast.error('Введите ИНН (минимум 5 цифр)');
       return;
     }
@@ -885,15 +886,13 @@ const EmployeeClientCard = () => {
                 <FileCheck className="w-5 h-5" />
                 Создать договор
               </button>
-              {client.contact_phone && (
-                <a
-                  href={`tel:${client.contact_phone}`}
-                  className="flex items-center gap-3 w-full px-4 py-3 bg-gray-100 hover:bg-gray-200 border border-gray-200 text-gray-700 rounded-xl transition-colors text-sm"
-                >
-                  <Phone className="w-5 h-5" />
-                  Позвонить
-                </a>
-              )}
+              <Link
+                to={`/employee/clients/${id}/invoice`}
+                className="flex items-center gap-3 w-full px-4 py-3 bg-blue-100 hover:bg-blue-200 border border-blue-200 text-blue-700 rounded-xl transition-colors text-sm font-medium"
+              >
+                <CreditCard className="w-5 h-5" />
+                Выставить счёт
+              </Link>
               {client.contact_email && (
                 <a
                   href={`mailto:${client.contact_email}`}

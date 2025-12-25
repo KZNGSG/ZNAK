@@ -287,7 +287,7 @@ const EmployeeDocuments = () => {
   const handleDownloadPdf = async (doc) => {
     const docId = doc.id;
     const docNumber = doc.quote_number || doc.contract_number;
-    const type = activeTab === 'quotes' ? 'quotes' : activeTab === 'contracts' ? 'contracts' : 'invoices';
+    const type = activeTab === 'quotes' ? 'quotes' : 'contracts';
 
     setDownloadingId(docId);
     try {
@@ -316,7 +316,7 @@ const EmployeeDocuments = () => {
 
   const handleStatusChange = async (doc, newStatus) => {
     const docId = doc.id;
-    const type = activeTab === 'quotes' ? 'quotes' : activeTab === 'contracts' ? 'contracts' : 'invoices';
+    const type = activeTab === 'quotes' ? 'quotes' : 'contracts';
 
     try {
       const response = await authFetch(`${API_URL}/api/employee/${type}/${docId}/status`, {
@@ -695,21 +695,10 @@ const EmployeeDocuments = () => {
                     onClick={() => handleSort(activeTab === 'quotes' ? 'quote_number' : activeTab === 'contracts' ? 'contract_number' : 'invoice_number')}
                   >
                     <div className="flex items-center gap-1">
-                      {activeTab === 'invoices' ? '№ Счёта' : '№ документа'}
+                      № документа
                       <ArrowUpDown className="w-3 h-3" />
                     </div>
                   </th>
-                  {activeTab === 'invoices' && (
-                    <th
-                      className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                      onClick={() => handleSort('contract_number')}
-                    >
-                      <div className="flex items-center gap-1">
-                        № Договора
-                        <ArrowUpDown className="w-3 h-3" />
-                      </div>
-                    </th>
-                  )}
                   <th
                     className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSort('client_name')}
@@ -750,7 +739,7 @@ const EmployeeDocuments = () => {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {filteredDocs.map((doc) => {
-                  const docNumber = activeTab === 'invoices' ? doc.invoice_number : (doc.quote_number || doc.contract_number);
+                  const docNumber = doc.quote_number || doc.contract_number || doc.invoice_number;
                   const statusConfig = getStatusConfig(activeTab, doc.status);
                   const StatusIcon = statusConfig.icon;
                   const Icon = activeTab === 'quotes' ? FileText : activeTab === 'contracts' ? FileCheck : Receipt;
@@ -778,16 +767,6 @@ const EmployeeDocuments = () => {
                           </span>
                         </div>
                       </td>
-                      {activeTab === 'invoices' && (
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <FileCheck className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm text-blue-600 hover:text-blue-800">
-                              {doc.contract_number || '-'}
-                            </span>
-                          </div>
-                        </td>
-                      )}
                       <td className="px-4 py-3">
                         <div>
                           <div className="flex items-center gap-2">
@@ -808,7 +787,7 @@ const EmployeeDocuments = () => {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        {false ? (
+                        {activeTab === 'invoices' ? (
                           <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full ${statusConfig.color}`}>
                             <StatusIcon className="w-3 h-3" />
                             {statusConfig.label}

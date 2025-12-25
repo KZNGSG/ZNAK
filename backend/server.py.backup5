@@ -24,7 +24,7 @@ from collections import defaultdict
 import time
 
 # Импорт генератора документов
-from document_generator import generate_contract_pdf, generate_quote_pdf, generate_act_pdf, generate_invoice_pdf
+from document_generator import generate_contract_pdf, generate_quote_pdf, generate_act_pdf
 
 # Импорт авторизации и БД
 from auth import (
@@ -5904,7 +5904,6 @@ async def api_employee_create_client_quote_full(
 # ВАЖНО: этот роут должен быть ПЕРЕД /contract, иначе FastAPI матчит /contract первым
 @app.post("/api/employee/clients/{client_id}/contract/full")
 async def api_employee_create_contract_full(
-    background_tasks: BackgroundTasks,
     client_id: int,
     request: Request,
     user: Dict = Depends(require_employee)
@@ -5968,89 +5967,11 @@ async def api_employee_create_contract_full(
         'contract_id': result['id']
     })
 
-    # Автоматически создаём счёт
-    invoice_number = get_next_invoice_number(result['contract_number'], result['id'])
-    invoice_id = None
-    try:
-        with get_db() as conn:
-            cursor = conn.cursor()
-            cursor.execute("""
-                INSERT INTO invoices (
-                    invoice_number, contract_id, company_id, amount,
-                    status, description, services_json, manager_id, client_name
-                ) VALUES (?, ?, ?, ?, 'created', ?, ?, ?, ?)
-            """, (
-                invoice_number,
-                result['id'],
-                company_id,
-                total_amount,
-                f'Счёт по договору {result["contract_number"]}',
-                json.dumps(services_list, ensure_ascii=False) if services_list else '[]',
-                user['id'],
-                client.get('company_name') or client.get('contact_name')
-            ))
-            invoice_id = cursor.lastrowid
-        logger.info(f"Auto-created invoice {invoice_number} for contract {result['contract_number']}")
-    except Exception as e:
-        logger.error(f"Failed to auto-create invoice: {e}")
-    # === Уведомления админам ===
-    try:
-        client_name = client.get('company_name') or client.get('contact_name', 'Клиент')
-        client_phone = client.get('contact_phone', '')
-        manager_name = user.get('name', user.get('email', 'Менеджер'))
-        
-        # Telegram уведомление
-        tg_text = f"""📝 <b>Новый договор</b>
-
-📋 <b>{result['contract_number']}</b>
-💰 Сумма: {total_amount:,.0f} ₽
-
-👤 Клиент: {client_name}
-📞 {client_phone}
-
-👨‍💼 Менеджер: {manager_name}
-📄 Услуг: {len(services_list)}
-📦 Товаров: {len(products_list)}"""
-
-        if invoice_number:
-            tg_text += f"""
-
-🧾 Счёт: {invoice_number}"""
-        
-        background_tasks.add_task(send_telegram_notification, tg_text)
-        
-        # Email уведомление
-        manager_emails = os.getenv('CONTACT_TO_EMAIL', 'damirslk@mail.ru,turbin.ar8@gmail.com').split(',')
-        subject = f"Новый договор {result['contract_number']} - {client_name}"
-        body = f"""Создан новый договор из CRM
-
-Номер договора: {result['contract_number']}
-Клиент: {client_name}
-Телефон: {client_phone}
-Сумма: {total_amount:,.0f} ₽
-Услуг: {len(services_list)}
-Товаров: {len(products_list)}
-Менеджер: {manager_name}
-Счёт: {invoice_number if invoice_number else 'не создан'}
-
----
-Про.Маркируй CRM"""
-        
-        for email in manager_emails:
-            if email.strip():
-                background_tasks.add_task(send_email, email.strip(), subject, body)
-    except Exception as e:
-        logger.error(f"Failed to send notifications: {e}")
-
-
-
     return {
         "success": True,
         "contract_id": result['id'],
         "contract_number": result['contract_number'],
-        "total_amount": total_amount,
-        "invoice_id": invoice_id,
-        "invoice_number": invoice_number if invoice_id else None
+        "total_amount": total_amount
     }
 
 
@@ -6226,7 +6147,7 @@ async def api_employee_create_client_contract(
     })
 
     # Автоматически создаём счёт на сумму договора
-    invoice_number = get_next_invoice_number(result['contract_number'], result['id'])
+    invoice_number = get_next_invoice_number()
     invoice_id = None
     try:
         with get_db() as conn:
@@ -9025,46 +8946,22 @@ class InvoiceUpdateRequest(BaseModel):
     status: str  # created, sent, paid, cancelled
 
 
-def get_next_invoice_number(contract_number: str = None, contract_id: int = None) -> str:
-    """Генерирует следующий номер счёта в формате СЧ-{номер_договора}/{порядковый}"""
+def get_next_invoice_number() -> str:
+    """Генерирует следующий номер счёта"""
+    from datetime import datetime
+    today = datetime.now()
+    date_prefix = today.strftime("%y%m%d")
     
-    if contract_number:
-        # Убираем префикс DOG- если есть
-        base_number = contract_number.replace('DOG-', '').replace('dog-', '')
-        
-        with get_db() as conn:
-            cursor = conn.cursor()
-            # Считаем сколько счетов уже есть по этому договору
-            if contract_id:
-                cursor.execute(
-                    "SELECT COUNT(*) FROM invoices WHERE contract_id = ?",
-                    (contract_id,)
-                )
-            else:
-                cursor.execute(
-                    "SELECT COUNT(*) FROM invoices WHERE invoice_number LIKE ?",
-                    (f"СЧ-{base_number}/%",)
-                )
-            row = cursor.fetchone()
-            next_num = (row[0] or 0) + 1
-        
-        return f"СЧ-{base_number}/{next_num}"
-    else:
-        # Fallback - старый формат если нет contract_number
-        from datetime import datetime
-        today = datetime.now()
-        date_prefix = today.strftime("%y%m%d")
-        
-        with get_db() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                "SELECT MAX(CAST(SUBSTR(invoice_number, -4) AS INTEGER)) FROM invoices WHERE invoice_number LIKE ?",
-                (f"СЧ-{date_prefix}-%",)
-            )
-            row = cursor.fetchone()
-            next_num = (row[0] or 0) + 1
-        
-        return f"СЧ-{date_prefix}-{next_num:04d}"
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT MAX(CAST(SUBSTR(invoice_number, -4) AS INTEGER)) FROM invoices WHERE invoice_number LIKE ?",
+            (f"SCH-{date_prefix}-%",)
+        )
+        row = cursor.fetchone()
+        next_num = (row[0] or 0) + 1
+    
+    return f"SCH-{date_prefix}-{next_num:04d}"
 
 
 @app.post("/api/employee/invoices")
@@ -9087,7 +8984,7 @@ async def create_invoice(
         contract = dict(contract)
     
     # Генерируем номер счёта
-    invoice_number = get_next_invoice_number(contract['contract_number'], contract['id'])
+    invoice_number = get_next_invoice_number()
     
     # Рассчитываем дату оплаты (по умолчанию +7 дней)
     from datetime import datetime, timedelta
@@ -9327,255 +9224,4 @@ async def delete_invoice(
         cursor.execute("DELETE FROM invoices WHERE id = ?", (invoice_id,))
     
     return {"success": True}
-
-
-
-
-
-
-# ==================== Invoice PDF & Email ====================
-
-@app.get("/api/invoices/{invoice_id}/pdf")
-async def get_invoice_pdf(
-    invoice_id: int,
-    user: Dict = Depends(require_employee)
-):
-    """Сгенерировать PDF счёта"""
-    # Get invoice data
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT i.*, c.contract_number, comp.name as company_name, comp.inn, comp.kpp, comp.address
-            FROM invoices i
-            LEFT JOIN contracts c ON i.contract_id = c.id
-            LEFT JOIN companies comp ON i.company_id = comp.id
-            WHERE i.id = ?
-        """, (invoice_id,))
-        invoice = cursor.fetchone()
-        
-        if not invoice:
-            raise HTTPException(status_code=404, detail="Счёт не найден")
-        invoice = dict(invoice)
-    
-    # Prepare client info
-    client_info = {
-        "name": invoice.get("company_name") or invoice.get("client_name") or "",
-        "inn": invoice.get("inn") or "",
-        "kpp": invoice.get("kpp") or "",
-        "address": invoice.get("address") or "",
-    }
-    
-    # Parse services
-    services_json = invoice.get("services_json", "[]")
-    services = json.loads(services_json) if services_json else []
-    
-    # Prepare services list
-    services_list = []
-    for s in services:
-        qty = s.get("quantity", 1)
-        price = s.get("price", 0)
-        services_list.append({
-            "name": s.get("name", ""),
-            "quantity": qty,
-            "unit": s.get("unit", "шт"),
-            "price": price,
-            "subtotal": qty * price
-        })
-    
-    # Generate PDF
-    pdf_bytes = generate_invoice_pdf(
-        client_info=client_info,
-        services=services_list,
-        total_amount=invoice.get("amount", 0),
-        invoice_number=invoice.get("invoice_number", str(invoice_id)),
-        contract_number=invoice.get("contract_number"),
-    )
-    
-    # Return PDF
-    from urllib.parse import quote
-    filename = f"Счёт_{invoice.get("invoice_number", invoice_id)}.pdf"
-    filename_encoded = quote(filename, safe="")
-    
-    return Response(
-        content=pdf_bytes,
-        media_type="application/pdf",
-        headers={"Content-Disposition": f"attachment; filename*=UTF-8{filename_encoded}"}
-    )
-
-
-class InvoiceEmailRequest(BaseModel):
-    email: str
-    client_name: Optional[str] = None
-
-
-@app.post("/api/invoices/{invoice_id}/send-email")
-async def send_invoice_email(
-    invoice_id: int,
-    request: InvoiceEmailRequest,
-    background_tasks: BackgroundTasks,
-    user: Dict = Depends(require_employee)
-):
-    """Отправить счёт на email клиента"""
-    # Get invoice data
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT i.*, c.contract_number, comp.name as company_name
-            FROM invoices i
-            LEFT JOIN contracts c ON i.contract_id = c.id
-            LEFT JOIN companies comp ON i.company_id = comp.id
-            WHERE i.id = ?
-        """, (invoice_id,))
-        invoice = cursor.fetchone()
-        
-        if not invoice:
-            raise HTTPException(status_code=404, detail="Счёт не найден")
-        invoice = dict(invoice)
-    
-    # Prepare email
-    client_name = request.client_name or invoice.get("company_name") or invoice.get("client_name") or "Клиент"
-    invoice_number = invoice.get("invoice_number") or f"#{invoice_id}"
-    amount = invoice.get("amount", 0)
-    contract_num = invoice.get("contract_number") or "N/A"
-    
-    subject = f"Счёт {invoice_number} от Про.Маркируй"
-    body = f"""Здравствуйте, {client_name}!
-
-Направляем вам счёт {invoice_number} на сумму {amount:,.0f} руб.
-
-Счёт по договору: {contract_num}
-
-Для оплаты используйте следующие реквизиты:
-ИП Низамов Дамир Рустемович
-ИНН: 165921962906
-Расчётный счёт: 40802810200003471856
-Банк: АО "ТИНЬКОФФ БАНК"
-БИК: 044525974
-К/с: 30101810145250000974
-
-В назначении платежа укажите: Оплата по счёту {invoice_number}
-
-С уважением,
-Команда Про.Маркируй
-https://promarkirui.ru
-"""
-    
-    # Send email
-    background_tasks.add_task(send_email, request.email, subject, body)
-    
-    # Log interaction
-    try:
-        with get_db() as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT client_id FROM contracts WHERE id = ?", (invoice.get("contract_id"),))
-            contract = cursor.fetchone()
-            if contract:
-                InteractionDB.create({
-                    "client_id": contract["client_id"],
-                    "manager_id": user["id"],
-                    "type": "email_sent",
-                    "subject": f"Отправлен счёт {invoice_number}",
-                    "description": f"Счёт на {amount:,.0f} руб. отправлен на {request.email}"
-                })
-    except:
-        pass
-    
-    return {"success": True, "message": f"Счёт отправлен на {request.email}"}
-
-
-# ==================== Invoice Full Creation ====================
-
-class EmployeeInvoiceFullRequest(BaseModel):
-    contract_id: int
-    company: Dict = {}
-    products: List[Dict] = []
-    services: List[Dict] = []
-    contact_name: Optional[str] = None
-    contact_phone: Optional[str] = None
-    contact_email: Optional[str] = None
-
-
-@app.post("/api/employee/clients/{client_id}/invoice/full")
-async def api_employee_create_client_invoice_full(
-    client_id: int,
-    request: EmployeeInvoiceFullRequest,
-    user: Dict = Depends(require_employee)
-):
-    """Создать счёт для клиента с выбором товаров/услуг"""
-    client = ClientDB.get_by_id(client_id)
-    if not client:
-        raise HTTPException(status_code=404, detail="Клиент не найден")
-
-    # Проверяем договор
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM contracts WHERE id = ?", (request.contract_id,))
-        contract = cursor.fetchone()
-        if not contract:
-            raise HTTPException(status_code=404, detail="Договор не найден")
-        contract = dict(contract)
-
-    # Рассчитываем сумму услуг
-    services_breakdown = []
-    total_amount = 0
-
-    for service in request.services:
-        quantity = service.get('quantity', 1)
-        price = service.get('price', 0)
-        subtotal = price * quantity
-        total_amount += subtotal
-
-        services_breakdown.append({
-            'id': service.get('id'),
-            'name': service.get('name'),
-            'description': service.get('description', ''),
-            'price': price,
-            'unit': service.get('unit', 'шт'),
-            'quantity': quantity,
-            'subtotal': subtotal
-        })
-
-    # Генерируем номер счёта
-    invoice_number = get_next_invoice_number(contract['contract_number'], contract['id'])
-
-    # Создаём счёт
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT INTO invoices (
-                invoice_number, contract_id, company_id, amount,
-                status, description, services_json, manager_id, client_name
-            ) VALUES (?, ?, ?, ?, 'created', ?, ?, ?, ?)
-        """, (
-            invoice_number,
-            request.contract_id,
-            contract.get('company_id'),
-            total_amount,
-            f'Счёт по договору {contract["contract_number"]}',
-            json.dumps(services_breakdown, ensure_ascii=False),
-            user['id'],
-            client.get('company_name') or client.get('contact_name')
-        ))
-        invoice_id = cursor.lastrowid
-
-    # Добавляем в историю
-    InteractionDB.create({
-        'client_id': client_id,
-        'manager_id': user["id"],
-        'type': 'invoice_created',
-        'subject': f'Создан счёт {invoice_number}',
-        'description': f'Сумма: {total_amount:,.0f} ₽. По договору {contract["contract_number"]}',
-        'contract_id': request.contract_id
-    })
-
-    logger.info(f"Invoice created: {invoice_number} for client {client_id}")
-
-    return {
-        "success": True,
-        "invoice_id": invoice_id,
-        "invoice_number": invoice_number,
-        "total_amount": total_amount,
-        "services_breakdown": services_breakdown,
-        "created_at": datetime.now().isoformat()
-    }
 

@@ -86,7 +86,7 @@ const EmployeeClientNew = () => {
 
 
   const handleInnLookup = async () => {
-    if (!formData.inn || formData.inn.length < 5) {
+    if (!formData.inn || formData.inn.length < 3) {
       toast.error('Введите минимум 5 цифр ИНН');
       return;
     }

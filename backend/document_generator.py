@@ -465,20 +465,39 @@ def generate_contract_pdf(
     """
     story.append(Paragraph(section7_text, styles['ContractText']))
 
-    story.append(Paragraph("8. ЗАКЛЮЧИТЕЛЬНЫЕ ПОЛОЖЕНИЯ", styles['SectionTitle']))
+    story.append(Paragraph("8. СРОК ДЕЙСТВИЯ ДОГОВОРА И ДОПОЛНИТЕЛЬНЫЕ СОГЛАШЕНИЯ", styles['SectionTitle']))
     section8_text = """
-    8.1. Договор вступает в силу с момента подписания и действует до исполнения обязательств.
+    8.1. Договор вступает в силу с момента подписания и действует в течение 1 (одного) года.
     <br/><br/>
-    8.2. Споры разрешаются путём переговоров, при недостижении согласия — в Арбитражном суде
-    Алтайского края.
+    8.2. По истечении срока действия Договор автоматически пролонгируется на каждый последующий
+    календарный год, если ни одна из Сторон не заявит о его расторжении не менее чем за 30 (тридцать)
+    календарных дней до окончания текущего срока.
     <br/><br/>
-    8.3. Договор составлен в двух экземплярах. Обмен документами допускается посредством ЭДО.
+    8.3. В рамках настоящего Договора Стороны могут заключать Дополнительные соглашения
+    на оказание дополнительных услуг. Дополнительные соглашения оформляются в виде Счетов
+    на оплату, подписанных Сторонами, и являются неотъемлемой частью Договора.
+    <br/><br/>
+    8.4. Оплата Заказчиком выставленного Счёта означает полное и безоговорочное принятие
+    условий соответствующего Дополнительного соглашения (акцепт оферты).
     """
     story.append(Paragraph(section8_text, styles['ContractText']))
 
-    # === РАЗДЕЛ 9. РЕКВИЗИТЫ И ПОДПИСИ ===
+    story.append(Paragraph("9. РАЗРЕШЕНИЕ СПОРОВ И ЗАКЛЮЧИТЕЛЬНЫЕ ПОЛОЖЕНИЯ", styles['SectionTitle']))
+    section9_text = """
+    9.1. Споры разрешаются путём переговоров, при недостижении согласия — в Арбитражном суде
+    Алтайского края.
+    <br/><br/>
+    9.2. Договор составлен в двух экземплярах, имеющих одинаковую юридическую силу.
+    Обмен документами допускается посредством электронного документооборота (ЭДО).
+    <br/><br/>
+    9.3. Все изменения и дополнения к Договору действительны при условии их оформления
+    в письменной форме и подписания уполномоченными представителями Сторон.
+    """
+    story.append(Paragraph(section9_text, styles['ContractText']))
+
+    # === РАЗДЕЛ 10. РЕКВИЗИТЫ И ПОДПИСИ ===
     story.append(Spacer(1, 0.5*cm))
-    story.append(Paragraph("9. РЕКВИЗИТЫ И ПОДПИСИ СТОРОН", styles['SectionTitle']))
+    story.append(Paragraph("10. РЕКВИЗИТЫ И ПОДПИСИ СТОРОН", styles['SectionTitle']))
     story.append(Spacer(1, 0.3*cm))
 
     # Таблица реквизитов
@@ -1186,6 +1205,224 @@ def generate_act_pdf(
 
 
 # ======================== ТЕСТ ========================
+
+
+
+def generate_invoice_pdf(
+    client_info: Dict,
+    services: List[Dict],
+    total_amount: float,
+    invoice_number: str,
+    contract_number: str = None,
+    invoice_date: datetime = None
+) -> bytes:
+    """
+    Генерирует PDF счёта на оплату.
+    
+    Args:
+        client_info: Данные заказчика (name, inn, kpp, address)
+        services: Список услуг [{name, quantity, unit, price, subtotal}, ...]
+        total_amount: Итоговая сумма
+        invoice_number: Номер счёта
+        contract_number: Номер договора
+        invoice_date: Дата счёта
+    
+    Returns:
+        bytes: PDF документ
+    """
+    
+    if invoice_date is None:
+        invoice_date = datetime.now()
+    
+    buffer = io.BytesIO()
+    
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=1.5*cm,
+        leftMargin=1.5*cm,
+        topMargin=1.5*cm,
+        bottomMargin=1.5*cm,
+    )
+    
+    styles = get_styles()
+    story = []
+    
+    # === ШАПКА - Реквизиты получателя ===
+    story.append(Paragraph("<b>СЧЁТ НА ОПЛАТУ</b>", styles["DocTitle"]))
+    story.append(Spacer(1, 0.3*cm))
+    
+    # Номер и дата
+    date_str = format_date_russian(invoice_date)
+    story.append(Paragraph(
+        f"<b>№ {invoice_number}</b> от {date_str}",
+        styles["DocSubtitle"]
+    ))
+    
+    if contract_number:
+        story.append(Paragraph(
+            f"По договору: {contract_number}",
+            styles["Normal_RU"]
+        ))
+    
+    story.append(Spacer(1, 0.5*cm))
+    
+    # === Получатель платежа ===
+    story.append(Paragraph("<b>Получатель:</b>", styles["Normal_RU"]))
+    
+    recipient_data = [
+        [EXECUTOR_INFO["name"]],
+        [f"ИНН: {EXECUTOR_INFO['inn']}"],
+        [f"Расчётный счёт: {EXECUTOR_INFO['bank_account']}"],
+        [f"Банк: {EXECUTOR_INFO['bank_name']}"],
+        [f"БИК: {EXECUTOR_INFO['bank_bik']}"],
+        [f"Корр. счёт: {EXECUTOR_INFO['bank_corr']}"],
+    ]
+    
+    recipient_table = Table(recipient_data, colWidths=[17*cm])
+    recipient_table.setStyle(TableStyle([
+        ("FONTNAME", (0, 0), (-1, -1), FONT_NORMAL),
+        ("FONTSIZE", (0, 0), (-1, -1), 9),
+        ("BACKGROUND", (0, 0), (-1, -1), colors.Color(0.95, 0.95, 0.95)),
+        ("BOX", (0, 0), (-1, -1), 0.5, colors.black),
+        ("TOPPADDING", (0, 0), (-1, -1), 3),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+        ("LEFTPADDING", (0, 0), (-1, -1), 5),
+    ]))
+    story.append(recipient_table)
+    story.append(Spacer(1, 0.5*cm))
+    
+    # === Плательщик ===
+    story.append(Paragraph("<b>Плательщик:</b>", styles["Normal_RU"]))
+    
+    client_name = client_info.get("name", "")
+    client_inn = client_info.get("inn", "")
+    client_kpp = client_info.get("kpp", "")
+    client_address = client_info.get("address", "")
+    
+    payer_text = f"{client_name}"
+    if client_inn:
+        payer_text += f", ИНН: {client_inn}"
+    if client_kpp:
+        payer_text += f", КПП: {client_kpp}"
+    if client_address:
+        payer_text += f"<br/>{client_address}"
+    
+    payer_table = Table([[Paragraph(payer_text, styles["Normal_RU"])]], colWidths=[17*cm])
+    payer_table.setStyle(TableStyle([
+        ("BOX", (0, 0), (-1, -1), 0.5, colors.black),
+        ("TOPPADDING", (0, 0), (-1, -1), 5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+        ("LEFTPADDING", (0, 0), (-1, -1), 5),
+    ]))
+    story.append(payer_table)
+    story.append(Spacer(1, 0.5*cm))
+    
+    # === Таблица услуг ===
+    table_data = [["№", "Наименование", "Кол-во", "Ед.", "Цена", "Сумма"]]
+    
+    for idx, service in enumerate(services, 1):
+        price = service.get("price", 0)
+        quantity = service.get("quantity", 1)
+        subtotal = service.get("subtotal", price * quantity)
+        unit = service.get("unit", "шт")
+        
+        table_data.append([
+            str(idx),
+            service.get("name", "")[:60],
+            str(quantity),
+            unit,
+            format_price(price) + " ₽",
+            format_price(subtotal) + " ₽",
+        ])
+    
+    # Итого
+    table_data.append(["", "", "", "", "ИТОГО:", f"{format_price(total_amount)} ₽"])
+    
+    services_table = Table(table_data, colWidths=[0.8*cm, 9*cm, 1.5*cm, 1.5*cm, 2.2*cm, 2.5*cm])
+    services_table.setStyle(TableStyle([
+        ("FONTNAME", (0, 0), (-1, -1), FONT_NORMAL),
+        ("BACKGROUND", (0, 0), (-1, 0), colors.Color(1, 0.85, 0)),  # Жёлтый заголовок
+        ("FONTNAME", (0, 0), (-1, 0), FONT_BOLD),
+        ("FONTSIZE", (0, 0), (-1, -1), 9),
+        ("ALIGN", (0, 0), (-1, 0), "CENTER"),
+        ("ALIGN", (2, 1), (3, -1), "CENTER"),
+        ("ALIGN", (4, 1), (5, -1), "RIGHT"),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("GRID", (0, 0), (-1, -2), 0.5, colors.black),
+        ("FONTNAME", (4, -1), (5, -1), FONT_BOLD),
+        ("FONTSIZE", (4, -1), (5, -1), 11),
+        ("TOPPADDING", (0, 0), (-1, -1), 5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+    ]))
+    
+    story.append(services_table)
+    story.append(Spacer(1, 0.5*cm))
+    
+    # Сумма прописью
+    amount_words = amount_to_words(total_amount)
+    story.append(Paragraph(
+        f"<b>Всего к оплате: {format_price(total_amount)} рублей</b> ({amount_words})",
+        styles["Normal_RU"]
+    ))
+    story.append(Paragraph("НДС не облагается (УСН).", styles["Small"]))
+    
+    story.append(Spacer(1, 0.8*cm))
+    
+    # Назначение платежа
+    story.append(Paragraph(
+        f"<b>Назначение платежа:</b> Оплата по счёту {invoice_number}" + 
+        (f" (договор {contract_number})" if contract_number else "") +
+        ". НДС не облагается.",
+        styles["Normal_RU"]
+    ))
+    
+    story.append(Spacer(1, 0.8*cm))
+    
+    # Подпись и печать
+    story.append(Paragraph("Индивидуальный предприниматель", styles["Normal_RU"]))
+    story.append(Spacer(1, 0.3*cm))
+    
+    # Подпись с картинкой
+    if os.path.exists(SIGNATURE_PATH):
+        sign_img_table = Table(
+            [[Image(SIGNATURE_PATH, width=4*cm, height=1.5*cm), ""]],
+            colWidths=[5*cm, 5*cm]
+        )
+        sign_img_table.setStyle(TableStyle([
+            ("ALIGN", (0, 0), (0, 0), "LEFT"),
+        ]))
+        story.append(sign_img_table)
+    
+    sign_table = Table(
+        [["_________________", "/ Турбин А.А. /"]],
+        colWidths=[5*cm, 5*cm]
+    )
+    sign_table.setStyle(TableStyle([
+        ("FONTNAME", (0, 0), (-1, -1), FONT_NORMAL),
+        ("FONTSIZE", (0, 0), (-1, -1), 10),
+        ("ALIGN", (0, 0), (0, 0), "CENTER"),
+        ("ALIGN", (1, 0), (1, 0), "LEFT"),
+    ]))
+    story.append(sign_table)
+    
+    # Печать
+    if os.path.exists(STAMP_PATH):
+        story.append(Spacer(1, 0.3*cm))
+        stamp_table = Table(
+            [[Image(STAMP_PATH, width=3*cm, height=3*cm), Paragraph("М.П.", styles["Small"])]],
+            colWidths=[4*cm, 5*cm]
+        )
+        stamp_table.setStyle(TableStyle([
+            ("ALIGN", (0, 0), (0, 0), "LEFT"),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ]))
+        story.append(stamp_table)
+    
+    doc.build(story)
+    buffer.seek(0)
+    return buffer.getvalue()
+
 
 if __name__ == "__main__":
     # Тестовые данные

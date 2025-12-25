@@ -64,6 +64,28 @@ const EmployeeInbox = () => {
     setSelectedIds([]);
   }, [statusFilter, showOverdue, periodFilter]);
 
+  // Автоматически открываем карточку если есть id в URL
+  useEffect(() => {
+    const idFromUrl = searchParams.get('id');
+    if (idFromUrl && callbacks.length > 0) {
+      const targetId = parseInt(idFromUrl);
+      const targetCallback = callbacks.find(c => c.id === targetId);
+      if (targetCallback) {
+        setExpandedId(targetId);
+        // Скроллим к карточке
+        setTimeout(() => {
+          const element = document.getElementById();
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 100);
+        // Убираем id из URL чтобы не открывалось повторно
+        searchParams.delete('id');
+        setSearchParams(searchParams, { replace: true });
+      }
+    }
+  }, [callbacks, searchParams]);
+
   const fetchCallbacks = async () => {
     try {
       let url;
@@ -624,7 +646,7 @@ const EmployeeInbox = () => {
 
                   return (
                     <React.Fragment key={callback.id}>
-                      <tr
+                      <tr id={`callback-${callback.id}`}
                         onClick={() => setExpandedId(isExpanded ? null : callback.id)}
                         className={`hover:bg-gray-50 transition-colors cursor-pointer ${
                           overdue ? 'bg-red-50/50' : ''

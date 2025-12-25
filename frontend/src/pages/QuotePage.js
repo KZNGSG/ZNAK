@@ -169,7 +169,7 @@ const QuotePage = () => {
   };
 
   const searchCompany = async (query) => {
-    if (!query || query.length < 10) return;
+    if (!query || query.length < 3) return;
 
     setSearchLoading(true);
     try {
@@ -503,13 +503,13 @@ const QuotePage = () => {
             category: p.categoryId || p.category || 'other'
           })),
           services: selectedServices.map(s => ({
-            id: s.id,
+            id: s.id || String(Date.now()),
             name: s.name,
             description: s.description || '',
             price: s.price,
-            unit: s.unit,
-            category: s.category,
-            quantity: s.quantity || 1
+            unit: s.unit || "шт",
+            category: s.category || "other",
+            quantity: parseInt(s.quantity) || 1
           })),
           contact_name: contactData.name,
           contact_phone: contactData.phone,
@@ -570,13 +570,13 @@ const QuotePage = () => {
           quote_id: quoteResult.quote_id,
           company: selectedCompany,
           services: selectedServices.map(s => ({
-            id: s.id,
+            id: s.id || String(Date.now()),
             name: s.name,
             description: s.description,
             price: s.price,
-            unit: s.unit,
-            category: s.category,
-            quantity: s.quantity
+            unit: s.unit || "шт",
+            category: s.category || "other",
+            quantity: parseInt(s.quantity) || 1
           })),
           contact_name: contactData.name,
           contact_phone: contactData.phone,
@@ -621,14 +621,15 @@ const QuotePage = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           company: selectedCompany,
+          quote_id: quoteResult?.quote_id || null,
           services: selectedServices.map(s => ({
-            id: s.id,
+            id: s.id || String(Date.now()),
             name: s.name,
             description: s.description,
             price: s.price,
-            unit: s.unit,
-            category: s.category,
-            quantity: s.quantity
+            unit: s.unit || "шт",
+            category: s.category || "other",
+            quantity: parseInt(s.quantity) || 1
           })),
           contact_name: contactData.name,
           contact_phone: contactData.phone,
@@ -638,7 +639,7 @@ const QuotePage = () => {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.detail || 'Ошибка генерации договора');
+        const errorMsg = typeof error.detail === "string" ? error.detail : (Array.isArray(error.detail) ? error.detail.map(e => e.msg || e).join(", ") : "Ошибка генерации договора"); throw new Error(errorMsg);
       }
 
       // Получаем номер договора из заголовка ответа
