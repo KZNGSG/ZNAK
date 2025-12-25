@@ -86,33 +86,7 @@ const PartnerMaterials = () => {
         <p className="text-gray-500 mt-1">Информация об услугах, FAQ и контакты поддержки</p>
       </div>
 
-      {/* Services */}
-      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
-          <FileText className="w-5 h-5 text-amber-500" />
-          <h2 className="font-semibold text-gray-900">Наши услуги</h2>
-        </div>
-        <div className="p-6">
-          <div className="grid md:grid-cols-2 gap-4">
-            {services.map((service, index) => (
-              <div
-                key={index}
-                className="p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-amber-200 transition-colors"
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-medium text-gray-900">{service.title}</h3>
-                  <span className="text-sm font-semibold text-amber-600 whitespace-nowrap ml-2">
-                    {service.price}
-                  </span>
-                </div>
-                <p className="text-sm text-gray-600">{service.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Key selling points */}
+            {/* Key selling points */}
       <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl border border-amber-200 p-6">
         <h2 className="font-semibold text-amber-900 mb-4">Почему клиенты выбирают нас</h2>
         <div className="grid md:grid-cols-2 gap-4">

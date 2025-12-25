@@ -5,6 +5,8 @@
 """
 
 import sqlite3
+import logging
+logger = logging.getLogger(__name__)
 import os
 from datetime import datetime, date
 from typing import Optional, List, Dict, Any
@@ -582,6 +584,22 @@ class UserDB:
         if user and verify_password(password, user['password_hash']):
             return user
         return None
+
+    @staticmethod
+    def update_password(user_id: int, new_password: str) -> bool:
+        """Обновить пароль пользователя"""
+        try:
+            password_hash = hash_password(new_password)
+            with get_db() as conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    'UPDATE users SET password_hash = ?, is_active = 1 WHERE id = ?',
+                    (password_hash, user_id)
+                )
+            return True
+        except Exception as e:
+            logger.error(f"Error updating password: {e}")
+            return False
 
 
 class CompanyDB:
@@ -1931,6 +1949,9 @@ class PartnerDB:
                     q.total_amount,
                     q.status as quote_status,
                     q.created_at,
+                    q.contact_name,
+                    comp.name as company_name,
+                    comp.inn as company_inn,
                     c.status as contract_status,
                     c.total_amount as contract_amount,
                     m.name as manager_name,
@@ -1938,6 +1959,7 @@ class PartnerDB:
                     p.commission_rate
                 FROM quotes q
                 LEFT JOIN contracts c ON c.quote_id = q.id
+                LEFT JOIN companies comp ON q.company_id = comp.id
                 LEFT JOIN users m ON q.manager_id = m.id
                 LEFT JOIN partners p ON q.partner_id = p.id
                 WHERE q.partner_id = ?
@@ -1958,6 +1980,18 @@ class PartnerDB:
                 # Рассчитываем комиссию
                 amount = item['contract_amount'] or item['total_amount'] or 0
                 item['commission'] = amount * (item['commission_rate'] or 10) / 100
+                
+                # Добавляем is_paid и status_label для фронтенда
+                item['is_paid'] = item['payment_status'] == 'paid'
+                status_labels = {
+                    'draft': 'Черновик',
+                    'sent': 'Отправлено',
+                    'viewed': 'Просмотрено', 
+                    'approved': 'Одобрено',
+                    'rejected': 'Отклонено',
+                    'expired': 'Истекло'
+                }
+                item['status_label'] = status_labels.get(item['quote_status'], item['quote_status'])
 
                 results.append(item)
 
@@ -1995,6 +2029,8 @@ class PartnerDB:
                 FROM partners p
                 LEFT JOIN users u ON p.user_id = u.id
                 WHERE p.invite_token = ?
+                AND p.invitation_sent_at IS NOT NULL
+                AND datetime(p.invitation_sent_at, '+7 days') > datetime('now')
             ''', (token,))
             row = cursor.fetchone()
             return dict(row) if row else None
@@ -2023,6 +2059,18 @@ class PartnerDB:
             cursor.execute('''
                 UPDATE users SET email_verified = 1 WHERE id = ?
             ''', (partner['user_id'],))
+
+            # Авто-привязка telegram_id по номеру телефона
+            if partner.get('contact_phone'):
+                cursor.execute('''SELECT tl.telegram_id 
+                    FROM telegram_leads tl
+                    WHERE tl.phone = ? 
+                    ORDER BY tl.created_at DESC 
+                    LIMIT 1
+                ''', (partner['contact_phone'],))
+                tg_row = cursor.fetchone()
+                if tg_row:
+                    cursor.execute('UPDATE partners SET telegram_id = ? WHERE id = ?', (tg_row['telegram_id'], partner['id']))
 
         return PartnerDB.get_by_id(partner['id'])
 

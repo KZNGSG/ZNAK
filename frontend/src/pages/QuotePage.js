@@ -57,6 +57,9 @@ const QuotePage = () => {
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [productSearchQuery, setProductSearchQuery] = useState('');
+  const [productSearchResults, setProductSearchResults] = useState([]);
+  const [productSearchLoading, setProductSearchLoading] = useState(false);
+  const searchTimeoutRef = useRef(null);
 
   // Step 3: Services
   const [services, setServices] = useState([]);
@@ -206,21 +209,46 @@ const QuotePage = () => {
   };
 
   // Product selection (simplified from CheckProductPage)
-  const productSearchResults = useMemo(() => {
-    if (!productSearchQuery.trim() || productSearchQuery.length < 2) return [];
-    const query = productSearchQuery.toLowerCase().trim();
-    const results = [];
+  // Поиск товаров через API
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
 
-    categories.forEach((group) => {
-      group.subcategories?.forEach((sub) => {
-        if (sub.name?.toLowerCase().includes(query) || sub.tnved?.includes(query)) {
-          results.push({ ...sub, groupId: group.id, groupName: group.name, groupStatus: group.status });
+    if (productSearchQuery.length >= 2) {
+      setProductSearchLoading(true);
+      searchTimeoutRef.current = setTimeout(async () => {
+        try {
+          const response = await fetch(`${API_URL}/api/tnved/search?q=${encodeURIComponent(productSearchQuery)}&limit=15`);
+          if (response.ok) {
+            const data = await response.json();
+            // Преобразуем результаты в нужный формат
+            const results = (data.results || []).map(item => ({
+              id: item.id,
+              name: item.name,
+              tnved: item.tnved,
+              marking_status: item.marking_status,
+              groupName: item.category_name || 'Маркировка',
+              groupId: item.category_id
+            }));
+            setProductSearchResults(results);
+          }
+        } catch (error) {
+          console.error('TNVED search error:', error);
+        } finally {
+          setProductSearchLoading(false);
         }
-      });
-    });
+      }, 300);
+    } else {
+      setProductSearchResults([]);
+    }
 
-    return results.slice(0, 10);
-  }, [productSearchQuery, categories]);
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [productSearchQuery]);
 
   const addProduct = (product) => {
     if (selectedProducts.find(p => p.id === product.id)) {
@@ -309,14 +337,14 @@ const QuotePage = () => {
 
     // Ищем тариф, в диапазон которого попадает количество
     for (const tier of tiers) {
-      if (tier.min_qty && tier.max_qty) {
+      if (tier.min_qty !== undefined && tier.max_qty !== undefined) {
         if (qty >= tier.min_qty && qty <= tier.max_qty) {
           return tier;
         }
       }
     }
     // Если не нашли — возвращаем первый тариф (минимальный)
-    return tiers.find(t => t.min_qty) || tiers[0];
+    return tiers.find(t => t.min_qty !== undefined) || tiers[0];
   };
 
   // Рассчитать итог для тарифной категории
@@ -965,7 +993,13 @@ const QuotePage = () => {
                   className="pl-11 rounded-xl"
                 />
 
-                {productSearchResults.length > 0 && (
+                {productSearchLoading && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl border-2 border-gray-200 shadow-xl z-50 p-4 text-center">
+                    <div className="animate-spin inline-block w-5 h-5 border-2 border-yellow-500 border-t-transparent rounded-full"></div>
+                    <span className="ml-2 text-gray-500">Поиск...</span>
+                  </div>
+                )}
+                {!productSearchLoading && productSearchResults.length > 0 && (
                   <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl border-2 border-gray-200 shadow-xl z-50 max-h-[300px] overflow-y-auto">
                     {productSearchResults.map((product, idx) => (
                       <button

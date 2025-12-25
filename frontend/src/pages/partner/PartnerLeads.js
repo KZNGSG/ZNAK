@@ -212,7 +212,16 @@ const PartnerLeads = () => {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         {getStatusIcon(lead.status, lead.is_paid)}
-                        <span className="font-medium text-gray-900">#{lead.id}</span>
+                        <div>
+                          <div className="font-medium text-gray-900">{lead.contact_name || "Клиент"}</div>
+                          {lead.company_name && (
+                            <div className="text-sm text-gray-600">{lead.company_name}</div>
+                          )}
+                          <div className="text-xs text-gray-400">
+                            {lead.company_inn && <span>ИНН {lead.company_inn} · </span>}
+                            #{lead.quote_number || lead.id}
+                          </div>
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">

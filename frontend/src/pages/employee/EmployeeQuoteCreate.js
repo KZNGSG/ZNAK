@@ -251,13 +251,13 @@ const EmployeeQuoteCreate = () => {
     const qty = parseInt(quantity) || 0;
 
     for (const tier of tiers) {
-      if (tier.min_qty && tier.max_qty) {
+      if (tier.min_qty !== undefined && tier.max_qty !== undefined) {
         if (qty >= tier.min_qty && qty <= tier.max_qty) {
           return tier;
         }
       }
     }
-    return tiers.find(t => t.min_qty) || tiers[0];
+    return tiers.find(t => t.min_qty !== undefined) || tiers[0];
   };
 
   const calculateTieredTotal = (categoryId) => {
