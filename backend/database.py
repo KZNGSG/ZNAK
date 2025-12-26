@@ -637,7 +637,6 @@ class CompanyDB:
                     data.get('kpp'), data.get('ogrn'), data['name'],
                     data.get('name_short'), data.get('name_full'),
                     data.get('opf'), data.get('type'), data.get('address'),
-                data.get('city'),
                     data.get('management_name'), data.get('management_post'),
                     data.get('status'), existing['id']
                 ))
@@ -653,7 +652,6 @@ class CompanyDB:
                     user_id, data['inn'], data.get('kpp'), data.get('ogrn'),
                     data['name'], data.get('name_short'), data.get('name_full'),
                     data.get('opf'), data.get('type'), data.get('address'),
-                data.get('city'),
                     data.get('management_name'), data.get('management_post'),
                     data.get('status')
                 ))
@@ -1182,7 +1180,6 @@ class ClientDB:
                 data.get('contact_email'),
                 data.get('contact_position'),
                 data.get('address'),
-                data.get('city'),
                 data.get('comment'),
                 data.get('source', 'manual'),
                 data.get('status', 'lead'),
