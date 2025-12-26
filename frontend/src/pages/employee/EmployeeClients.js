@@ -375,6 +375,9 @@ const EmployeeClients = () => {
                   <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                     Менеджер
                   </th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                    Дата
+                  </th>
                   <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
                     Действия
                   </th>
@@ -509,6 +512,13 @@ const EmployeeClients = () => {
                         ) : (
                           <span className="text-xs text-gray-400">-</span>
                         )}
+                      </td>
+
+                      {/* Дата создания */}
+                      <td className="px-4 py-3">
+                        <span className="text-xs text-gray-500">
+                          {client.created_at ? new Date(client.created_at).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '-'}
+                        </span>
                       </td>
 
                       {/* Действия */}
