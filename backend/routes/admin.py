@@ -23,7 +23,7 @@ from auth import (
 )
 from database import get_db, UserDB, PartnerDB
 from education_db import EducationDB
-from email_service import send_user_invitation_email, send_password_reset_email
+from email_service import send_staff_invitation_email, send_password_reset_email
 
 router = APIRouter(tags=["admin"])
 logger = logging.getLogger(__name__)
@@ -162,7 +162,7 @@ async def create_user(
     # Отправляем приглашение
     if data.send_invitation:
         background_tasks.add_task(
-            send_user_invitation_email,
+            send_staff_invitation_email,
             data.email,
             data.name or data.email,
             temp_password
@@ -197,7 +197,7 @@ async def resend_user_invitation(
     
     # Отправляем email
     background_tasks.add_task(
-        send_user_invitation_email,
+        send_staff_invitation_email,
         user['email'],
         user.get('name') or user['email'],
         temp_password
