@@ -76,6 +76,10 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 # AI Consultant router
 app.include_router(ai_router, prefix="/api")
+
+# Auth router
+from routes.auth import router as auth_router
+app.include_router(auth_router)
 logger = logging.getLogger(__name__)
 
 # ======================== RATE LIMITING ========================
