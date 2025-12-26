@@ -80,6 +80,15 @@ app.include_router(ai_router, prefix="/api")
 # Auth router
 from routes.auth import router as auth_router
 app.include_router(auth_router)
+# TNVED router
+from routes.tnved import router as tnved_router
+app.include_router(tnved_router)
+# Public router
+from routes.public import router as public_router
+app.include_router(public_router)
+# Callbacks router
+from routes.callbacks import router as callbacks_router
+app.include_router(callbacks_router)
 logger = logging.getLogger(__name__)
 
 # ======================== RATE LIMITING ========================
