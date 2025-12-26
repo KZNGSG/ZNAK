@@ -89,6 +89,27 @@ app.include_router(public_router)
 # Callbacks router
 from routes.callbacks import router as callbacks_router
 app.include_router(callbacks_router)
+# Clients router
+from routes.clients import router as clients_router
+app.include_router(clients_router, prefix="/api")
+# Quotes router
+from routes.quotes import router as quotes_router
+app.include_router(quotes_router, prefix="/api")
+# Contracts router
+from routes.contracts import router as contracts_router
+app.include_router(contracts_router, prefix="/api")
+# Invoices router
+from routes.invoices import router as invoices_router
+app.include_router(invoices_router)
+# Partners router
+from routes.partners import router as partners_router
+app.include_router(partners_router)
+# Admin router
+from routes.admin import router as admin_router
+app.include_router(admin_router)
+# Stats router
+from routes.stats import router as stats_router
+app.include_router(stats_router)
 logger = logging.getLogger(__name__)
 
 # ======================== RATE LIMITING ========================
